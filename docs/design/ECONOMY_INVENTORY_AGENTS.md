@@ -1,6 +1,6 @@
 # Economy, Inventory and Autonomous Agents
 
-- **Version:** 0.1.0
+- **Version:** 0.2.0
 - **Status:** Design hypothesis
 - **Updated:** 2026-10-13
 
@@ -94,9 +94,11 @@ Potential constraints:
 - equipped items;
 - currency;
 - ownership/permissions;
-- container nesting rules.
+- container rules.
 
 The final UI representation can differ from simulation representation.
+
+Important item identity/lifecycle rules are defined in `ITEM_PERSISTENCE_AND_PROVENANCE.md`.
 
 ## Weight
 
@@ -114,30 +116,32 @@ Exact penalties are balance decisions.
 
 ## Bags and Containers
 
-Bags are equipment/content that modifies carrying capacity rather than permanent stat points.
+Bags are progression equipment rather than simple permanent stat points.
 
-Possible bag properties:
+Bag interaction is primarily synthesis/fusion/consumption, **not** an intended recursive `bag inside bag inside bag` progression model.
 
-- maximum weight contribution;
+Possible bag properties include:
+
+- maximum effective carry capacity;
 - slot/volume capacity;
-- weight reduction for contained items;
+- category-specific weight modifiers;
+- preservation/decay modifiers;
 - allowed item categories;
-- enchantments;
-- durability;
+- enchantments/traits;
+- durability/stability;
+- synthesis history;
 - rarity.
 
-### Magical Bags
+A magical bag and an arcane bag may solve different logistics problems rather than one being universally superior.
 
-A magical bag may offer:
+Example:
 
-- very large or scrollable logical capacity;
-- partial weight reduction;
-- category-specific compression;
-- special protections.
+- magical bag: broad weight reduction, food still decays;
+- arcane bag: strong food preservation and item/weapon compression, but raw materials may remain relatively heavy.
 
-It should not automatically imply infinite effective carrying power.
+Bags may consume/fuse with donor bags to inherit a bounded percentage of compatible properties.
 
-Restrictions may prevent exploits such as infinitely nesting weight-reducing bags.
+Full design is defined in `BAGS_AND_CONTAINERS.md`.
 
 ## NPC Inventory
 
@@ -154,6 +158,26 @@ Relevant NPCs may possess:
 At high fidelity, this can be individual inventory.
 
 At low fidelity, cohorts/organizations may use aggregated stocks while named important actors preserve personal state.
+
+Rare/history-bearing item instances must not disappear merely because their holder is represented at lower simulation fidelity.
+
+## Persistent Rare Items in the Economy
+
+Rare/notable items remain part of the same economy.
+
+An autonomous adventurer can:
+
+- earn a unique item;
+- equip it;
+- lose it;
+- die while carrying it;
+- have it stolen/looted;
+- sell it to a merchant;
+- transfer it through trade.
+
+A merchant receiving a notable item receives that exact persistent instance where item identity matters.
+
+The world should preserve custody/provenance rather than silently duplicating or deleting unique objects.
 
 ## Household Economy
 
@@ -182,7 +206,8 @@ Price can depend on:
 - merchant margin;
 - reputation;
 - scarcity;
-- quality.
+- quality;
+- item history/uniqueness where buyers know it.
 
 Price systems should be bounded/stabilized to avoid numeric explosions from temporary scarcity.
 
@@ -208,6 +233,8 @@ Instead it can offer combinations such as:
 - an item inherited/stored by the community.
 
 This makes quest rewards reflect world state.
+
+For unique persistent quest items, objectives should follow item identity/state rather than assume the object remains forever at the original spawn point.
 
 ## Guilds as Marketplaces for Problems
 
@@ -317,6 +344,8 @@ At distance, the economy resolves through batches and scheduled transactions rat
 
 When a player is present, relevant transactions can materialize into physical inventories, NPC actions and transport events.
 
+Fungible goods may aggregate into lots. Rare/modified/quest/history-bearing objects preserve stable item identity even while off-screen.
+
 ## Diagnostics
 
 Track at minimum:
@@ -332,4 +361,6 @@ Track at minimum:
 - active contracts;
 - quest reward funding source;
 - autonomous adventurer income/deaths/progression;
-- inventory mass distributions.
+- inventory mass distributions;
+- rare item custody/location;
+- duplicate or orphaned unique-item references.
