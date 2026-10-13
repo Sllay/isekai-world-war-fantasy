@@ -16,8 +16,15 @@ Exit criteria:
 - stack/engine chosen from evidence;
 - Web/mobile prototype runs on target phone/browser;
 - camera/2.5D spatial model validated;
-- basic asset pipeline validated;
-- performance baseline recorded.
+- basic asset/character rig pipeline validated;
+- performance baseline recorded;
+- persistent simulation scheduler shown feasible;
+- active <-> aggregate simulation transition demonstrated;
+- minimal authoritative networking flow demonstrated;
+- basic persistence/restart restoration demonstrated;
+- M1 experiment evidence and unresolved risks documented.
+
+Detailed plan: `docs/roadmap/M1_TECHNICAL_PROOF.md`.
 
 ## M2 — Modular Core
 
