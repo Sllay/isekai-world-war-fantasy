@@ -1,0 +1,16 @@
+# Project-level Codex configuration.
+# Loaded only when this repository is trusted by the local/remote Codex host.
+
+[mcp_servers.godot]
+enabled = true
+command = "npx"
+args = ["-y", "@satelliteoflove/godot-mcp@4.1.11"]
+default_tools_approval_mode = "writes"
+startup_timeout_sec = 30
+
+# Keep OpenAI product/API documentation current when work touches Codex,
+# plugins, MCP, or OpenAI platform integration.
+[mcp_servers.openai_docs]
+enabled = true
+url = "https://developers.openai.com/mcp"
+default_tools_approval_mode = "approve"
