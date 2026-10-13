@@ -51,6 +51,67 @@ O mapa deve comunicar:
 
 Atualização visual pode ser periódica em vez de frame-a-frame.
 
+## Military Defeat Is Not Extinction
+
+A vitória de uma facção não elimina automaticamente os povos historicamente associados ao lado derrotado.
+
+Guerra deve produzir resultados intermediários e humanos antes de chegar a uma catástrofe populacional:
+
+- retirada;
+- rendição individual ou coletiva;
+- prisioneiros de guerra;
+- deserção;
+- fuga de civis;
+- refugiados;
+- ocupação;
+- perda de território;
+- dissolução de unidades militares;
+- assimilação parcial;
+- resistência e insurgência;
+- exílio;
+- tratados e cessar-fogo;
+- mudança de lealdade;
+- sobrevivência de minorias dentro de território inimigo.
+
+A facção derrotada pode deixar de existir como potência militar enquanto as raças e culturas que a compunham continuam existindo como minorias, diásporas, comunidades ocupadas, refugiados ou novos grupos políticos.
+
+Extinção racial ou cultural completa é um resultado extremo, não o resultado padrão de uma derrota territorial.
+
+## Positive and Negative Pressures
+
+A simulação deve possuir forças de deterioração e forças de recuperação.
+
+Exemplos de pressões negativas:
+
+- guerra;
+- fome;
+- doença;
+- perda territorial;
+- predação;
+- baixa moral;
+- escassez;
+- colapso logístico.
+
+Exemplos de pressões positivas ou estabilizadoras:
+
+- rendição;
+- retirada;
+- abrigo;
+- migração;
+- alianças;
+- ajuda externa;
+- comércio;
+- reconstrução;
+- reprodução;
+- reassentamento;
+- cessar-fogo;
+- defesa organizada;
+- diplomacia;
+- integração de refugiados;
+- recuperação de recursos.
+
+O objetivo não é proteger o mundo de consequências, mas impedir que sistemas incompletos ou RNG ordinário causem massacres e extinções por falta de variáveis de recuperação.
+
 ## Information Model
 
 Conhecimento não é automaticamente global. Crimes, mortes, espionagem e eventos locais podem exigir testemunhas, mensageiros, descoberta ou comunicação antes de alterarem conhecimento de NPCs/facções.
