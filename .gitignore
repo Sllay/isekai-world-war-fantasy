@@ -16,6 +16,10 @@
 **/export.cfg
 **/export_presets.cfg
 
+# Godot MCP is installed locally on development hosts.
+# Keep the Android/mobile project clean from a mandatory editor-only addon.
+client/addons/godot_mcp/
+
 # Godot Android/Gradle generated build output
 client/android/build/.gradle/
 client/android/build/build/
