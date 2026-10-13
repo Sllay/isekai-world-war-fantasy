@@ -1,6 +1,6 @@
 # M1.2 — Project Bootstrap & Client/World Proof
 
-- **Status:** Planned
+- **Status:** In progress — Android bootstrap validated
 - **Updated:** 2026-10-13
 
 ## Goal
@@ -38,14 +38,16 @@ A GitHub Codespace is the first dev-host candidate for this proof.
 
 ## Gate C — Android development device
 
-Prove the Android device can:
+Current device runtime: **Godot Android Editor 4.7.2**.
 
-1. obtain the same repository revision;
-2. open `client/project.godot` in the Godot Android Editor;
-3. run the project locally;
-4. execute touch input;
-5. capture basic performance/debug information;
-6. update to a newer repository revision without rebuilding the project structure manually.
+Validated on 2026-10-13:
+
+- [x] obtain the repository revision on Android through Termux/Git;
+- [x] open `client/project.godot` in Godot Android Editor 4.7.2;
+- [x] run the bootstrap project locally and display the expected bootstrap screen;
+- [ ] execute and validate project touch input;
+- [ ] capture basic performance/debug information;
+- [ ] pull a newer repository revision and run it without manually rebuilding the project structure.
 
 Godot/GABE setup specifics belong to the device setup checklist, not gameplay code.
 
