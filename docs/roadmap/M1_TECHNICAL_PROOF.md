@@ -116,7 +116,9 @@ Prove that stable IDs and versioned state can survive:
 - server/process restart;
 - load;
 - module state restoration;
-- at least one schema migration experiment.
+- at least one schema migration experiment;
+- transfer of one persistent item between multiple owners/containers without duplication;
+- one persistent modified bag retaining inherited traits/synthesis history.
 
 Production storage technology does not need to be chosen solely from this prototype.
 
@@ -194,6 +196,39 @@ Minimum experiment:
 
 This experiment should validate data flow and performance, not define final demographic rates.
 
+## Persistent Item Custody Proof Scenario
+
+M1 must prove that a notable item can move through the world without being duplicated, silently deleted or tied to one fixed quest spawn.
+
+Minimum chain:
+
+1. create one unique item with stable ID;
+2. assign it to an autonomous adventurer;
+3. kill/remove the actor from active simulation;
+4. preserve the item in corpse/loot state after visual cleanup;
+5. let another autonomous actor loot it;
+6. promote that holder to persistent individual state because the item matters;
+7. let that actor sell the exact item instance to a merchant;
+8. save/restart/load the server;
+9. verify the merchant still owns the same item instance;
+10. resolve a quest/query to the item's current state without respawning a duplicate.
+
+This proof should also test an invariant that one unique item ID cannot legally exist in two inventories at once.
+
+## Bag Persistence Proof Scenario
+
+A minimal container test should prove:
+
+- one base bag;
+- category-specific weight/preservation traits;
+- one donor bag consumed through synthesis;
+- bounded inheritance of at least one trait;
+- donor permanently removed;
+- host bag keeps stable identity;
+- save/load preserves the resulting traits and synthesis history.
+
+Final crafting balance is not required in M1.
+
 ## Evidence Package
 
 Each technical experiment should leave:
@@ -216,7 +251,8 @@ Likely decisions include:
 - character rendering/rig strategy;
 - initial networking model;
 - initial simulation scheduling model;
-- persistence direction.
+- persistence direction;
+- persistent item identity/aggregation strategy if the proof exposes a major architectural choice.
 
 Do not write an ADR as `Accepted` before the relevant proof exists.
 
@@ -236,6 +272,8 @@ M1 is complete when:
 - one connected social/economic causal chain is demonstrated;
 - one live battle demonstrates non-lethal defeat states;
 - one population test demonstrates recovery/migration without arbitrary adult spawning;
+- one unique item survives a multi-owner custody chain and restart without duplication;
+- one synthesized bag survives save/load with inherited traits;
 - unresolved risks are explicitly documented rather than hidden.
 
 ## Principle
