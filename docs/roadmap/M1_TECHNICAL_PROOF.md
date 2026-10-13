@@ -138,6 +138,62 @@ Track at minimum:
 
 A 30-day equivalent accelerated run should be one of the test scenarios, but the exact acceleration and model complexity are experimental rather than production guarantees.
 
+## Social/Economic Proof Scenario
+
+M1 should include one deliberately small connected society rather than separate isolated mock systems.
+
+Suggested test world:
+
+- one village;
+- several households;
+- one farmer;
+- one hunter;
+- one merchant;
+- one baker/crafter;
+- one local leader;
+- a few guards;
+- two or more autonomous adventurer agents;
+- finite food, money and inventories;
+- one nearby creature threat;
+- one external settlement or trade source represented abstractly.
+
+The test should prove a causal chain such as:
+
+`food shortage -> household pressure -> production/hunting/import attempt -> contract created -> adventurer evaluates/accepts -> encounter succeeds/fails -> goods/money move -> village state changes`
+
+The important proof is not final balance. It is that the same inventory, money, relationship and quest state can flow through multiple modules without fake infinite resources.
+
+## Live Battle Proof Scenario
+
+M1 should also run a small live battle that demonstrates behavior beyond HP depletion.
+
+Minimum proof:
+
+- two squads with commanders;
+- morale/cohesion;
+- wounds/incapacitation distinct from death;
+- retreat or surrender possible;
+- command succession if an officer falls;
+- battle state can be reduced to aggregate form and later materialized again;
+- statistics record dead, wounded, surrendered, captured and routed separately.
+
+A commander should not have a hard-coded `fight to death` rule. Rank is one decision input among personality, morale, tactical state, culture, loyalty and perceived prisoner treatment.
+
+## Population/Relationship Proof Scenario
+
+M1 does not need a finished life simulator, but should prove that population can change without random adult spawning.
+
+Minimum experiment:
+
+- several households/relationships;
+- births represented as demographic/family events;
+- aging or cohort progression in accelerated time;
+- migration into/out of the test settlement;
+- relationship changes caused by actions/events rather than gift spam;
+- named important NPCs preserved while distant population can be aggregated.
+
+This experiment should validate data flow and performance, not define final demographic rates.
+
 ## Evidence Package
 
 Each technical experiment should leave:
@@ -177,6 +233,9 @@ M1 is complete when:
 - aggregate/active simulation transition is demonstrated;
 - minimal authoritative network flow is demonstrated;
 - persistence basics are demonstrated;
+- one connected social/economic causal chain is demonstrated;
+- one live battle demonstrates non-lethal defeat states;
+- one population test demonstrates recovery/migration without arbitrary adult spawning;
 - unresolved risks are explicitly documented rather than hidden.
 
 ## Principle
