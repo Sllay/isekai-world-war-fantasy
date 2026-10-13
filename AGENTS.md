@@ -1,46 +1,81 @@
 # AGENTS.md
 
-Regras obrigatórias para qualquer agente/IA que trabalhe neste repositório.
+Operational rules for AI/Codex work in this repository.
 
-## Antes de modificar código
+Keep this file small. Read only the documentation relevant to the task; do not preload the whole repository or every design document.
 
-1. Leia `README.md`.
-2. Leia `docs/architecture/ARCHITECTURE.md`.
-3. Leia a documentação do sistema afetado.
-4. Consulte `docs/adr/` por decisões relacionadas.
-5. Verifique se já existe módulo, contrato ou evento que resolve parte do problema.
+## Source of truth
 
-## Regras de arquitetura
+- Game vision: `docs/gdd/GDD.md`
+- Architecture: `docs/architecture/`
+- Decisions: `docs/adr/`
+- Roadmap: `docs/roadmap/`
+- Development workflow: `docs/development/`
+- Detailed reusable workflow: `skills/project-development/SKILL.md`
 
-- Não criar God Classes, God Managers ou scripts monolíticos.
-- Não adicionar feature específica diretamente ao Core sem justificativa arquitetural registrada em ADR.
-- Preferir composição a herança profunda.
-- Preferir contratos/capabilities e eventos tipados a referências diretas entre módulos.
-- Não criar dependência circular.
-- Conteúdo novo deve ser data-driven quando a lógica puder ser reutilizada.
-- Não duplicar sistemas existentes (`CombatSystem2`, `NewInventoryManager`, etc.).
-- Módulos devem declarar dependências obrigatórias e opcionais.
-- Sistemas opcionais devem degradar graciosamente quando ausentes.
-- Toda feature deve considerar mobile/Web desde o desenho inicial.
+## Before changing code
 
-## Ao implementar uma feature
+1. Identify the subsystem being changed.
+2. Read only its relevant design/architecture document and related ADRs.
+3. Check whether an existing module, contract, component, event or data definition already solves the problem.
+4. Prefer the smallest correct change.
 
-- Identifique o módulo proprietário do comportamento.
-- Defina entradas, saídas, eventos e dados.
-- Mantenha integração mínima com outros módulos.
-- Adicione teste isolado sempre que aplicável.
-- Adicione/atualize test world para comportamentos visuais ou sistêmicos.
-- Atualize documentação impactada.
-- Registre decisões arquiteturais importantes em ADR.
+Do not read every project document for a local change.
 
-## Convenção de mudança
+## Architecture rules
 
-A menor alteração correta é preferível à alteração ampla. Se uma feature exige editar muitos sistemas sem uma razão fundamental, pare e reavalie o contrato entre módulos.
+- No God Classes, God Managers or monolithic scripts.
+- Core must not contain feature-specific gameplay without an accepted architectural reason.
+- Prefer composition to deep inheritance.
+- Prefer contracts/capabilities and typed events to hard references between modules.
+- Circular dependencies are architectural errors.
+- New content should be data-driven when behavior is reusable.
+- Do not create duplicate systems such as `CombatSystem2` or `NewInventoryManager`.
+- Optional systems must degrade cleanly when unavailable.
+- Mobile/Web constraints are first-class requirements.
+- Canonical server state must never be reconstructed from presentation defaults.
 
-## Fonte de verdade
+## Agent budget policy
 
-- Visão do jogo: `docs/gdd/GDD.md`
-- Arquitetura: `docs/architecture/`
-- Decisões: `docs/adr/`
-- Planejamento: `docs/roadmap/`
-- Instruções detalhadas para agentes: `skills/project-development/SKILL.md`
+Default to **one primary agent**.
+
+Subagents are optional, not the default. Spawn one only when the task has a clearly independent subproblem whose parallel work is expected to save more context/time than it costs.
+
+Rules:
+
+- normal task: 0 subagents;
+- complex task: at most 2 concurrent subagents unless the user explicitly requests more;
+- never create recursive agent trees for routine coding;
+- do not spawn separate agents for trivial research, formatting, linting, or file discovery;
+- reuse an existing subagent/thread for follow-up work instead of spawning another;
+- summarize subagent findings before carrying them forward;
+- prefer deterministic tools/tests over asking another agent to re-check obvious facts.
+
+Token/context efficiency matters. Avoid dumping large logs, whole files, screenshots or MCP results into context when a narrow query or structured state is sufficient.
+
+## Godot / MCP policy
+
+When the Godot MCP is available:
+
+- use structured runtime/editor state before screenshots when possible;
+- use screenshots only when visual verification is actually required;
+- use deterministic stepping for reproducible gameplay tests when supported;
+- profile before proposing optimization;
+- do not let multiple subagents fight for the same live Godot editor connection;
+- file edits remain normal repository edits; MCP is primarily for engine-aware inspection, execution and verification.
+
+See `docs/development/CODEX_MCP_WORKFLOW.md`.
+
+## Implementing a feature
+
+- Identify the owning module.
+- Define inputs, outputs, data and events.
+- Keep cross-module integration minimal.
+- Add isolated tests where practical.
+- Add/update a test world for visual/systemic behavior where appropriate.
+- Update only affected documentation.
+- Record architecture-changing decisions in an ADR.
+
+## Change rule
+
+If a feature requires unrelated edits across many systems, stop and re-evaluate the contract instead of forcing the implementation through.
