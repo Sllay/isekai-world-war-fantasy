@@ -54,8 +54,8 @@ else
   trap - EXIT
 fi
 
-log "Installing/updating Codex CLI..."
-sudo npm install -g @openai/codex@latest
+log "Installing/updating Codex CLI for the Codespace user..."
+npm install -g @openai/codex@latest
 
 log "Validating pinned Godot MCP package..."
 npx -y "$MCP_PACKAGE" --version
@@ -76,11 +76,13 @@ cat <<'EOF'
 
 Codespace bootstrap complete.
 
-Next:
-  1. Sign in to Codex once:        codex
-  2. Start virtual Godot editor:   bash tools/dev/start_godot_mcp_editor.sh
-  3. Verify the full MCP chain:    node tools/dev/mcp_smoke_test.mjs
-  4. Check Codex MCP config:       codex mcp list
+First-time order:
+  1. Run `codex`, complete ChatGPT sign-in, then EXIT Codex.
+  2. Start virtual Godot editor: bash tools/dev/start_godot_mcp_editor.sh
+  3. Verify the full MCP chain:  node tools/dev/mcp_smoke_test.mjs
+  4. Check project MCP config:   codex mcp list
+  5. Start `codex` again for real work.
 
+The smoke test must run before a Codex session holds the single live Godot MCP connection.
 Do not forward port 6550 publicly. The Godot MCP bridge should remain localhost-only.
 EOF
