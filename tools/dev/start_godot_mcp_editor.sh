@@ -76,6 +76,9 @@ PID_FILE="$LOCAL_DIR/godot-editor.pid"
 
 # Run a normal editor on a virtual X11 display. Do NOT use Godot --headless:
 # godot-mcp is designed around a live EditorPlugin bridge.
+# Force Mesa software rendering so Codespaces do not depend on a virtual GPU.
+LIBGL_ALWAYS_SOFTWARE=1 \
+GALLIUM_DRIVER=llvmpipe \
 xvfb-run -a -s "-screen 0 1280x720x24" \
   godot --editor --path "$PROJECT_DIR" \
   --rendering-method gl_compatibility \
