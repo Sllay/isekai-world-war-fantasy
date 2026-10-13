@@ -5,8 +5,12 @@
 enabled = true
 command = "npx"
 args = ["-y", "@satelliteoflove/godot-mcp@4.1.11"]
+env = { GODOT_HOST = "127.0.0.1", GODOT_PORT = "6550", GODOT_MCP_USAGE_LOG = "0" }
 default_tools_approval_mode = "writes"
 startup_timeout_sec = 30
+tool_timeout_sec = 120
+# Intentionally not marked required: Codex must still start if the virtual
+# Godot editor is temporarily offline. Tool calls will report the bridge issue.
 
 # Keep OpenAI product/API documentation current when work touches Codex,
 # plugins, MCP, or OpenAI platform integration.
