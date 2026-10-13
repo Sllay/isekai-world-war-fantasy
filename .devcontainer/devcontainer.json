@@ -1,0 +1,11 @@
+{
+  "name": "Isekai World War Fantasy",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    }
+  },
+  "postCreateCommand": "bash tools/dev/bootstrap_codespace.sh",
+  "remoteUser": "vscode"
+}
