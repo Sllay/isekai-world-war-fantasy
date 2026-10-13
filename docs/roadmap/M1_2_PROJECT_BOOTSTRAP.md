@@ -13,28 +13,53 @@ M1.2 begins with project bootstrap, not features.
 
 Required before gameplay coding:
 
-- `client/`, `server/`, and `shared/` boundaries exist;
-- project `AGENTS.md` uses concise/context-efficient rules;
-- Codex project MCP configuration exists;
-- Godot MCP version is pinned;
-- agent/subagent budget policy exists;
-- mobile/cloud workflow is documented;
-- secrets/caches are excluded from source control.
+- [x] `client/`, `server/`, and `shared/` boundaries exist;
+- [x] project `AGENTS.md` uses concise/context-efficient rules;
+- [x] Codex project MCP configuration exists;
+- [x] Godot MCP version is pinned;
+- [x] agent/subagent budget policy exists;
+- [x] mobile/cloud workflow is documented;
+- [x] secrets/caches are excluded from source control;
+- [x] Codespaces devcontainer/bootstrap scripts exist.
 
 ## Gate B — Development host
 
 Prove one remote/local host can:
 
-1. clone the repository;
-2. load project-level Codex configuration;
-3. start the pinned Godot MCP server;
-4. install/enable the Godot MCP addon in the client project;
-5. run Godot 4.7.x against the client project;
-6. perform an MCP status/read operation;
-7. run a minimal scene and return structured runtime state;
-8. commit/push a change.
+1. [ ] create/start the project Codespace;
+2. [ ] complete the bootstrap script successfully;
+3. [ ] authenticate Codex CLI with the user's ChatGPT plan;
+4. [ ] load project-level Codex configuration;
+5. [ ] start the pinned Godot MCP server;
+6. [ ] install/enable the Godot MCP addon in the client project;
+7. [ ] run Godot 4.7.2 editor under Xvfb (normal editor, **not** Godot `--headless`);
+8. [ ] perform the independent MCP JSON-RPC smoke test;
+9. [ ] return structured Godot editor state through `godot_editor_read`;
+10. [ ] run a minimal scene and return structured runtime state;
+11. [ ] commit/push a change.
 
-A GitHub Codespace is the first dev-host candidate for this proof.
+A GitHub Codespace is the selected development-host candidate for this proof.
+
+### MCP research result
+
+The selected MCP remains:
+
+`@satelliteoflove/godot-mcp@4.1.11`
+
+Upstream requirements fit the project:
+
+- Node.js 20+;
+- Godot 4.5+;
+- stdio-capable MCP client;
+- local editor addon bridge on WebSocket port 6550 by default.
+
+Important correction discovered during verification:
+
+**The supported workflow expects a live Godot Editor.** The agent can be headless, but Godot `--headless` is not the intended interactive bridge. Codespaces therefore use a normal Godot editor under Xvfb.
+
+The bridge accepts one active MCP client per editor. The primary Codex agent owns the live Godot connection; subagents must not compete for it.
+
+See `docs/development/CODESPACE_GODOT_MCP.md`.
 
 ## Gate C — Android development device
 
@@ -83,6 +108,21 @@ Codex must be able to use the Godot MCP to verify at least:
 
 This proves the agent can test rather than merely edit.
 
+### Independent smoke test
+
+Before trusting Codex integration, run:
+
+```bash
+bash tools/dev/start_godot_mcp_editor.sh
+node tools/dev/mcp_smoke_test.mjs
+```
+
+The smoke test directly verifies:
+
+`MCP stdio -> Node server -> localhost WebSocket -> Godot Editor addon -> editor state`
+
+This isolates MCP/editor failures from Codex configuration.
+
 ## Token/Agent Budget
 
 Default execution model:
@@ -92,7 +132,14 @@ Default execution model:
 - at most one specialist for an independent blocker;
 - maximum two concurrent subagents without explicit user direction;
 - no recursive teams;
+- only the primary agent owns the live Godot MCP connection;
 - structured MCP observations before screenshots/log dumps.
+
+## Codespace Performance Caveat
+
+Xvfb/virtual-GPU results are useful for correctness and regression comparisons, but they are **not** accepted as mobile performance evidence.
+
+Mobile FPS, memory, thermal behavior, battery impact and touch latency must be measured on the real Android device.
 
 ## Non-goals
 
@@ -111,7 +158,7 @@ M1.2 bootstrap does not implement:
 
 Bootstrap is complete when the same commit can be:
 
-- edited/tested by Codex on the development host;
+- edited/tested by Codex in the Codespace;
 - engine-verified through MCP;
 - pulled/opened/run on Android;
 - measured on the real phone;
