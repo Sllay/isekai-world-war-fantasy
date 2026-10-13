@@ -118,7 +118,8 @@ Prove that stable IDs and versioned state can survive:
 - module state restoration;
 - at least one schema migration experiment;
 - transfer of one persistent item between multiple owners/containers without duplication;
-- one persistent modified bag retaining inherited traits/synthesis history.
+- one persistent modified bag retaining inherited traits/synthesis history;
+- one mixed-condition stack preserving internal decay layers across save/restart.
 
 Production storage technology does not need to be chosen solely from this prototype.
 
@@ -229,6 +230,27 @@ A minimal container test should prove:
 
 Final crafting balance is not required in M1.
 
+## Decay Stack Proof Scenario
+
+M1 should validate that stackable perishables remain compact without destroying per-batch condition.
+
+Minimum chain:
+
+1. create three healing potions in one batch;
+2. advance simulated time until that batch degrades;
+3. craft one fresh potion later;
+4. merge it into the same visual stack;
+5. verify the visual stack remains one slot while internal condition layers stay distinct;
+6. direct-use consumption selects the configured layer correctly;
+7. move the remaining stack into a preservation container;
+8. advance time without per-frame item updates;
+9. move the stack back out and settle elapsed decay correctly;
+10. save/restart/load;
+11. verify total quantity, layer quantities and condition remain consistent;
+12. fully decay one layer and verify data-driven transformation without losing quantity.
+
+The proof should explicitly reject the bug where adding a fresh item refreshes old items or where an old stack degrades a fresh item instantly.
+
 ## Evidence Package
 
 Each technical experiment should leave:
@@ -252,7 +274,8 @@ Likely decisions include:
 - initial networking model;
 - initial simulation scheduling model;
 - persistence direction;
-- persistent item identity/aggregation strategy if the proof exposes a major architectural choice.
+- persistent item identity/aggregation strategy if the proof exposes a major architectural choice;
+- condition-layer/batch representation if performance or storage constraints require an explicit decision.
 
 Do not write an ADR as `Accepted` before the relevant proof exists.
 
@@ -274,6 +297,7 @@ M1 is complete when:
 - one population test demonstrates recovery/migration without arbitrary adult spawning;
 - one unique item survives a multi-owner custody chain and restart without duplication;
 - one synthesized bag survives save/load with inherited traits;
+- one mixed-condition consumable stack survives merge, decay, preservation-container transfer and restart without condition corruption;
 - unresolved risks are explicitly documented rather than hidden.
 
 ## Principle
