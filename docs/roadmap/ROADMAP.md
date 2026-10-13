@@ -6,6 +6,14 @@
 
 O projeto será construído por vertical slices e feature slices. Nenhuma fase deve exigir implementar o universo inteiro antes de produzir algo executável.
 
+## M1 Progress
+
+- **M1.1 — Technical Foundation Research:** Completed (2026-10-13).
+- **Next:** M1.2 — Client / 2.5D World Proof.
+- Candidate technologies from M1.1 remain `Proposed` until measured in M1 prototypes.
+
+See `docs/roadmap/M1_1_TECHNICAL_FOUNDATION_RESEARCH.md` and ADR-0004 through ADR-0008.
+
 ## Phase 0 — Pre-production
 
 - consolidar GDD v0.x;
