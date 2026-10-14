@@ -26,6 +26,17 @@ Do not read every project document for a local change.
 
 For visual/vector asset work, read `docs/design/ART_DIRECTION.md` and `skills/vector-art/SKILL.md` before generating or integrating important assets.
 
+## Production-intent rule
+
+M1.1/M1.2 resolved the major stack/tooling/2.5D uncertainties. From M1.3 onward, default to **production-intent implementation**, not throwaway prototypes.
+
+- Do not create a disposable prototype when the required behavior/contracts are already known.
+- Temporary proofs require a named unresolved technical risk and must not silently become production architecture.
+- Reuse proof code only when it cleanly satisfies production contracts.
+- Generated visual assets should target real game use when their requirements are known; do not spend tokens generating low-quality temporary art for the same role first.
+- Placeholders are acceptable only when visual fidelity is irrelevant to the task or final art would block an unresolved technical dependency.
+- Prefer one complete small production slice over several temporary demonstrations.
+
 ## Architecture rules
 
 - No God Classes, God Managers or monolithic scripts.
