@@ -1,6 +1,6 @@
 # M1.2 — Project Bootstrap & Client/World Proof
 
-- **Status:** In progress — Android bootstrap validated
+- **Status:** In progress — Android bootstrap + Codespace MCP smoke validated
 - **Updated:** 2026-10-13
 
 ## Goal
@@ -26,19 +26,19 @@ Required before gameplay coding:
 
 Prove one remote/local host can:
 
-1. [ ] create/start the project Codespace;
-2. [ ] complete the bootstrap script successfully;
-3. [ ] authenticate Codex CLI with the user's ChatGPT plan;
+1. [x] create/start the project Codespace;
+2. [x] complete the bootstrap script successfully;
+3. [x] authenticate Codex CLI with the user's ChatGPT plan;
 4. [ ] load project-level Codex configuration;
-5. [ ] start the pinned Godot MCP server;
-6. [ ] install/enable the Godot MCP addon in the client project;
-7. [ ] run Godot 4.7.2 editor under Xvfb (normal editor, **not** Godot `--headless`);
-8. [ ] perform the independent MCP JSON-RPC smoke test;
-9. [ ] return structured Godot editor state through `godot_editor_read`;
+5. [x] start the pinned Godot MCP server;
+6. [x] install/enable the Godot MCP addon in the client project;
+7. [x] run Godot 4.7.2 editor under Xvfb (normal editor, **not** Godot `--headless`);
+8. [x] perform the independent MCP JSON-RPC smoke test;
+9. [x] return structured Godot editor state through `godot_editor_read`;
 10. [ ] run a minimal scene and return structured runtime state;
 11. [ ] commit/push a change.
 
-A GitHub Codespace is the selected development-host candidate for this proof.
+A GitHub Codespace is the selected development host for this proof.
 
 ### MCP research result
 
@@ -58,6 +58,18 @@ Important correction discovered during verification:
 **The supported workflow expects a live Godot Editor.** The agent can be headless, but Godot `--headless` is not the intended interactive bridge. Codespaces therefore use a normal Godot editor under Xvfb.
 
 The bridge accepts one active MCP client per editor. The primary Codex agent owns the live Godot connection; subagents must not compete for it.
+
+### Verified Codespace smoke result — 2026-10-13
+
+The independent smoke test passed on the real project Codespace with:
+
+- Godot editor reachable as `4.7.2-stable (official)`;
+- current scene resolved as `res://scenes/bootstrap/bootstrap.tscn`;
+- MCP server `godot-mcp 4.1.11`;
+- successful chain `MCP stdio -> WebSocket bridge -> Godot editor`;
+- one successful connection attempt.
+
+The smoke script was corrected to account for godot-mcp connecting to Godot asynchronously after its stdio MCP server is initialized. A temporary `Not connected to Godot` immediately after MCP initialization is therefore treated as startup state and retried until the editor bridge is ready or the smoke-test timeout expires.
 
 See `docs/development/CODESPACE_GODOT_MCP.md`.
 
