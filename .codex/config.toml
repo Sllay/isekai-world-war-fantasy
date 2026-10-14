@@ -1,12 +1,26 @@
 # Project-level Codex configuration.
 # Loaded only when this repository is trusted by the local/remote Codex host.
+#
+# Default autonomy profile for this dedicated project workspace:
+# - keep the agent sandboxed to the repository/workspace;
+# - let it handle routine edits/tests without stopping BK every few seconds;
+# - send eligible approval requests to Codex auto-review instead of the user;
+# - allow network access from inside the workspace sandbox for Git/MCP/dev tooling.
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+approvals_reviewer = "auto_review"
+
+[sandbox_workspace_write]
+network_access = true
 
 [mcp_servers.godot]
 enabled = true
 command = "npx"
 args = ["-y", "@satelliteoflove/godot-mcp@4.1.11"]
 env = { GODOT_HOST = "127.0.0.1", GODOT_PORT = "6550", GODOT_MCP_USAGE_LOG = "0" }
-default_tools_approval_mode = "writes"
+# Let Codex use MCP tool annotations + the project auto-review policy instead of
+# forcing a manual approval on every Godot state-changing tool call.
+default_tools_approval_mode = "auto"
 startup_timeout_sec = 30
 tool_timeout_sec = 120
 # Intentionally not marked required: Codex must still start if the virtual
