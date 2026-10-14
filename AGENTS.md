@@ -12,6 +12,8 @@ Keep this file small. Read only the documentation relevant to the task; do not p
 - Roadmap: `docs/roadmap/`
 - Development workflow: `docs/development/`
 - Detailed reusable workflow: `skills/project-development/SKILL.md`
+- Visual art direction: `docs/design/ART_DIRECTION.md`
+- Vector asset workflow: `skills/vector-art/SKILL.md`
 
 ## Before changing code
 
@@ -21,6 +23,8 @@ Keep this file small. Read only the documentation relevant to the task; do not p
 4. Prefer the smallest correct change.
 
 Do not read every project document for a local change.
+
+For visual/vector asset work, read `docs/design/ART_DIRECTION.md` and `skills/vector-art/SKILL.md` before generating or integrating important assets.
 
 ## Architecture rules
 
