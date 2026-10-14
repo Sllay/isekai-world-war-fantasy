@@ -29,7 +29,7 @@ Prove one remote/local host can:
 1. [x] create/start the project Codespace;
 2. [x] complete the bootstrap script successfully;
 3. [x] authenticate Codex CLI with the user's ChatGPT plan;
-4. [ ] load project-level Codex configuration;
+4. [x] load project-level Codex configuration;
 5. [x] start the pinned Godot MCP server;
 6. [x] install/enable the Godot MCP addon in the client project;
 7. [x] run Godot 4.7.2 editor under Xvfb (normal editor, **not** Godot `--headless`);
@@ -70,6 +70,8 @@ The independent smoke test passed on the real project Codespace with:
 - one successful connection attempt.
 
 The smoke script was corrected to account for godot-mcp connecting to Godot asynchronously after its stdio MCP server is initialized. A temporary `Not connected to Godot` immediately after MCP initialization is therefore treated as startup state and retried until the editor bridge is ready or the smoke-test timeout expires.
+
+The Codex CLI project configuration was also verified with `codex mcp list`: the pinned `godot` MCP entry and the OpenAI docs MCP entry were both discovered and enabled from the repository configuration.
 
 See `docs/development/CODESPACE_GODOT_MCP.md`.
 
