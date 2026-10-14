@@ -64,6 +64,19 @@ When the Godot MCP is available:
 - do not let multiple subagents fight for the same live Godot editor connection;
 - file edits remain normal repository edits; MCP is primarily for engine-aware inspection, execution and verification.
 
+### MCP recovery rule
+
+Do **not** improvise repeated Godot/Xvfb restarts when the MCP bridge is unavailable.
+
+Use this bounded recovery flow only:
+
+1. Run `bash tools/dev/ensure_godot_mcp_editor.sh` once.
+2. Retry the failed MCP/editor read after the launcher reports healthy.
+3. If connection still fails, wait briefly and retry at most one additional time.
+4. After two failed MCP retries total, **stop retrying**, inspect `.codex-local/godot-editor.log`, and report the blocker.
+
+Never launch ad-hoc `nohup`, `xvfb-run`, or raw background Godot editor commands when the project launcher scripts exist. Never enter an open-ended reconnect/restart loop.
+
 See `docs/development/CODEX_MCP_WORKFLOW.md`.
 
 ## Implementing a feature
