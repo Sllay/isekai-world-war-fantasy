@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PROJECT_DIR="$ROOT_DIR/client"
 LOCAL_DIR="$ROOT_DIR/.codex-local"
 PROJECT_FILE="$PROJECT_DIR/project.godot"
+BACKUP_FILE="$LOCAL_DIR/project.godot.before-mcp"
 MCP_PACKAGE="@satelliteoflove/godot-mcp@4.1.11"
 PORT="${GODOT_PORT:-6550}"
 
@@ -20,24 +21,34 @@ if nc -z 127.0.0.1 "$PORT" >/dev/null 2>&1; then
   exit 0
 fi
 
+# Recover cleanly after a previous interrupted/crashed MCP session.
+# While an MCP editor is alive, project.godot intentionally contains the
+# locally-enabled editor plugin. The stop script restores this backup.
+if [[ -f "$BACKUP_FILE" ]]; then
+  echo "Recovering project.godot from a previous interrupted MCP session..."
+  cp "$BACKUP_FILE" "$PROJECT_FILE"
+  rm -f "$BACKUP_FILE"
+fi
+
 if [[ ! -f "$PROJECT_DIR/addons/godot_mcp/plugin.cfg" ]]; then
   echo "Installing pinned Godot MCP addon locally..."
   npx -y "$MCP_PACKAGE" --install-addon "$PROJECT_DIR" --force
 fi
 
-BACKUP="$(mktemp)"
-cp "$PROJECT_FILE" "$BACKUP"
-restore_project() {
-  if [[ -f "$BACKUP" ]]; then
-    cp "$BACKUP" "$PROJECT_FILE"
-    rm -f "$BACKUP"
+cp "$PROJECT_FILE" "$BACKUP_FILE"
+
+restore_on_failure() {
+  if [[ -f "$BACKUP_FILE" ]]; then
+    cp "$BACKUP_FILE" "$PROJECT_FILE"
+    rm -f "$BACKUP_FILE"
   fi
 }
-trap restore_project EXIT
+trap restore_on_failure ERR INT TERM
 
-# Enable the editor plugin only for this virtual editor launch. The original
-# project.godot is restored as soon as the bridge is listening, so Android does
-# not gain a mandatory MCP editor dependency and local user changes are kept.
+# Enable the editor plugin for the lifetime of this virtual editor session.
+# Do NOT immediately restore project.godot after the port opens: Godot can
+# observe the external settings change and unload/reconfigure the plugin,
+# dropping the MCP WebSocket bridge. stop_godot_mcp_editor.sh restores it.
 python3 - "$PROJECT_FILE" <<'PY'
 from pathlib import Path
 import re
@@ -90,8 +101,9 @@ printf '%s\n' "$PID" > "$PID_FILE"
 printf 'Starting Godot editor (pid %s), waiting for MCP bridge on port %s...\n' "$PID" "$PORT"
 for _ in $(seq 1 60); do
   if nc -z 127.0.0.1 "$PORT" >/dev/null 2>&1; then
-    restore_project
-    trap - EXIT
+    # Startup succeeded. Keep the local plugin-enable change in place until
+    # the explicit stop script restores the backup.
+    trap - ERR INT TERM
     echo "Godot MCP bridge is listening on 127.0.0.1:$PORT"
     echo "Editor log: $LOG_FILE"
     exit 0
@@ -99,6 +111,7 @@ for _ in $(seq 1 60); do
   if ! kill -0 "$PID" >/dev/null 2>&1; then
     echo "Godot editor exited before the MCP bridge became ready." >&2
     tail -n 120 "$LOG_FILE" >&2 || true
+    restore_on_failure
     exit 1
   fi
   sleep 1
@@ -106,4 +119,6 @@ done
 
 echo "Timed out waiting for the Godot MCP bridge." >&2
 tail -n 120 "$LOG_FILE" >&2 || true
+kill "$PID" >/dev/null 2>&1 || true
+restore_on_failure
 exit 1
