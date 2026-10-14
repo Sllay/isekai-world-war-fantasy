@@ -47,6 +47,8 @@ Acceptance:
 - event subscriptions can be added/removed safely;
 - no gameplay-specific rules live in Core.
 
+Slice 1 implementation: production runtime and focused validation are in `client/core/`, `client/foundation/entity_components.gd`, and `client/tests/core_tests.gd`. Run `bash tools/dev/test_core.sh`. See ADR-0009 for lifecycle, scheduling and snapshot contracts. Later slices remain pending; this does not mark the whole milestone complete.
+
 ## Slice 2 — Production player foundation
 
 Create the real player entity on top of the Core/Foundation contracts:
