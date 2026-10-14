@@ -16,6 +16,23 @@ if [[ ! -f "$PROJECT_FILE" ]]; then
   exit 1
 fi
 
+# Fail fast with a useful message if a resumed/old Codespace predates required
+# native Godot/X11 packages. bootstrap_codespace.sh installs these for new or
+# rebuilt environments.
+missing_libs=()
+for lib in libxkbcommon.so.0 libdbus-1.so.3; do
+  if ! ldconfig -p 2>/dev/null | grep -Fq "$lib"; then
+    missing_libs+=("$lib")
+  fi
+done
+if (( ${#missing_libs[@]} > 0 )); then
+  printf 'Missing Godot runtime libraries: %s\n' "${missing_libs[*]}" >&2
+  echo "Repair this Codespace once with:" >&2
+  echo "  sudo apt-get update && sudo apt-get install -y libxkbcommon0 libxkbcommon-x11-0 libdbus-1-3" >&2
+  echo "Then rerun this script. Future rebuilt Codespaces install them automatically via bootstrap_codespace.sh." >&2
+  exit 2
+fi
+
 if nc -z 127.0.0.1 "$PORT" >/dev/null 2>&1; then
   echo "Godot MCP bridge is already listening on 127.0.0.1:$PORT"
   exit 0
