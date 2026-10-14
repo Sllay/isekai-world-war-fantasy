@@ -1,17 +1,15 @@
 # M1.2 — Project Bootstrap & Client/World Proof
 
-- **Status:** In progress — Codespace/Codex round-trip validated; Android post-pull run pending
+- **Status:** Completed
 - **Updated:** 2026-10-13
 
 ## Goal
 
-Turn the M1.1 research direction into a reproducible development environment before gameplay implementation expands.
+Turn the M1.1 research direction into a reproducible development environment and prove the 2.5D/mobile client assumptions before production gameplay expands.
 
-M1.2 begins with project bootstrap, not features.
+M1.2 is a technical proof milestone, not a production-content phase.
 
 ## Gate A — Repository / Codex bootstrap
-
-Required before gameplay coding:
 
 - [x] `client/`, `server/`, and `shared/` boundaries exist;
 - [x] project `AGENTS.md` uses concise/context-efficient rules;
@@ -24,186 +22,112 @@ Required before gameplay coding:
 
 ## Gate B — Development host
 
-Prove one remote/local host can:
+The project Codespace has proven it can:
 
-1. [x] create/start the project Codespace;
-2. [x] complete the bootstrap script successfully;
+1. [x] start the project Codespace;
+2. [x] complete bootstrap successfully;
 3. [x] authenticate Codex CLI with the user's ChatGPT plan;
 4. [x] load project-level Codex configuration;
 5. [x] start the pinned Godot MCP server;
 6. [x] install/enable the Godot MCP addon in the client project;
-7. [x] run Godot 4.7.2 editor under Xvfb (normal editor, **not** Godot `--headless`);
+7. [x] run Godot 4.7.2 editor under Xvfb using the normal editor, not Godot `--headless`;
 8. [x] perform the independent MCP JSON-RPC smoke test;
 9. [x] return structured Godot editor state through `godot_editor_read`;
-10. [x] run a minimal scene and return structured runtime state;
-11. [x] commit/push a change from the Codex development host.
+10. [x] run a scene and return structured runtime state;
+11. [x] commit/push from the Codex development host.
 
-A GitHub Codespace is the selected development host for this proof.
-
-### MCP research result
-
-The selected MCP remains:
+Selected MCP:
 
 `@satelliteoflove/godot-mcp@4.1.11`
 
-Upstream requirements fit the project:
+Verified requirements and behavior:
 
 - Node.js 20+;
 - Godot 4.5+;
-- stdio-capable MCP client;
-- local editor addon bridge on WebSocket port 6550 by default.
+- stdio MCP client;
+- local editor addon bridge on WebSocket port 6550;
+- one active MCP client per editor;
+- normal Godot Editor under Xvfb for the Codespace interactive bridge;
+- bounded recovery through the project launcher scripts rather than ad-hoc restart loops.
 
-Important correction discovered during verification:
+The smoke/runtime path was verified end to end:
 
-**The supported workflow expects a live Godot Editor.** The agent can be headless, but Godot `--headless` is not the intended interactive bridge. Codespaces therefore use a normal Godot editor under Xvfb.
+`Codex/MCP stdio -> Node MCP server -> localhost WebSocket -> Godot Editor addon -> runtime/editor state`
 
-The bridge accepts one active MCP client per editor. The primary Codex agent owns the live Godot connection; subagents must not compete for it.
+Codex successfully exercised:
 
-### Verified Codespace smoke result — 2026-10-13
+- project start/stop;
+- structured runtime/editor reads;
+- injected input;
+- deterministic freeze/step/thaw;
+- profiler capture;
+- Git commit/push.
 
-The independent smoke test passed on the real project Codespace with:
-
-- Godot editor reachable as `4.7.2-stable (official)`;
-- current scene resolved as `res://scenes/bootstrap/bootstrap.tscn`;
-- MCP server `godot-mcp 4.1.11`;
-- successful chain `MCP stdio -> WebSocket bridge -> Godot editor`;
-- one successful connection attempt.
-
-The smoke script was corrected to account for godot-mcp connecting to Godot asynchronously after its stdio MCP server is initialized. A temporary `Not connected to Godot` immediately after MCP initialization is therefore treated as startup state and retried until the editor bridge is ready or the smoke-test timeout expires.
-
-The Codex CLI project configuration was also verified with `codex mcp list`: the pinned `godot` MCP entry and the OpenAI docs MCP entry were both discovered and enabled from the repository configuration.
-
-### Verified Codex runtime result — 2026-10-13
-
-Codex itself successfully used the configured Godot MCP to:
-
-- start the current Godot project;
-- inspect structured runtime/editor state;
-- observe the visible `M1.2 Mobile Bootstrap OK` label at 1280×720;
-- inject the safe `ui_focus_next` input action for 100 ms without destabilizing runtime state;
-- freeze game time, advance exactly 3 frames while frozen, verify it remained frozen, then thaw;
-- capture a profiler sample of 239 frames over 5.47 seconds;
-- stop the project again;
-- confirm `is_playing: false` after shutdown;
-- complete the checks without modifying project files.
-
-The Codespace/Xvfb profiler sample averaged about 44.6 FPS, recorded seven spikes, and reached an 82.21 ms maximum frame time. These values are **not accepted as mobile performance evidence** because the Codespace uses a virtual display/software-rendered environment; they only prove that the profiler path and regression instrumentation work.
-
-The virtual Codespace/Xvfb editor log also emitted `XServer BadWindow` warnings during the run. These are tracked as a host-display warning rather than accepted as a gameplay error. Until proven otherwise, Codespace/Xvfb remains a correctness/automation environment, while authoritative rendering/performance validation remains on the Android device.
-
-### Verified Git round-trip — 2026-10-13
-
-Codex created `docs/development/CODEX_HOST_VERIFIED.md`, committed it as `3a3d1fe` with message `chore: verify Codex development host`, and pushed it to `main` from the Codespace. The temporary local `client/project.godot` MCP/editor change was preserved outside the commit.
-
-The Android Termux clone then fetched and fast-forwarded from `ed35863` to `3a3d1fe`, proving the development-host-to-GitHub-to-phone source path without manual file copying. The remaining device-side proof is to reopen/run the pulled revision in Godot Android.
-
-See `docs/development/CODESPACE_GODOT_MCP.md`.
+Codespace/Xvfb profiler numbers are diagnostic only and are not accepted as mobile performance evidence.
 
 ## Gate C — Android development device
 
-Current device runtime: **Godot Android Editor 4.7.2**.
+Runtime: **Godot Android Editor 4.7.2**.
 
-Validated on 2026-10-13:
+Validated on the real Android device:
 
-- [x] obtain the repository revision on Android through Termux/Git;
-- [x] open `client/project.godot` in Godot Android Editor 4.7.2;
-- [x] run the bootstrap project locally and display the expected bootstrap screen;
-- [ ] execute and validate project touch input;
-- [ ] capture basic performance/debug information;
-- [ ] pull a newer repository revision and run it without manually rebuilding the project structure.
+- [x] repository updates through Termux/Git;
+- [x] `client/project.godot` opens in Godot Android Editor 4.7.2;
+- [x] project runs locally;
+- [x] touch/mobile controls are usable for movement/camera interaction in the 2.5D proof;
+- [x] a newer branch/revision can be fetched and run without manual file copying;
+- [x] basic real-device performance was observed at a mostly locked 60 FPS in the minimal proof scene, with occasional 59 FPS dips.
 
-The newer revision has already been pulled successfully through Termux/Git; only the post-pull Godot Android execution remains to complete the last item.
+That FPS observation applies only to the minimal proof scene and is not a production benchmark.
 
-Godot/GABE setup specifics belong to the device setup checklist, not gameplay code.
+## Gate D — 2.5D client assumption proof
 
-## Gate D — Minimal Godot client proof
+The Android-tested proof established that the selected presentation is viable:
 
-Create the smallest real client project needed to test the M1.1 assumptions:
+- [x] Compatibility renderer baseline;
+- [x] true 3D world space;
+- [x] inclined top-down camera;
+- [x] rotatable camera;
+- [x] visually 2D player presentation inside 3D world space;
+- [x] real elevation/descent;
+- [x] jump/gravity;
+- [x] movement around 3D obstacles/terrain;
+- [x] touch/mobile input path;
+- [x] runtime/debug instrumentation.
 
-- Compatibility renderer baseline;
-- one 3D spatial test scene;
-- inclined top-down camera;
-- camera rotation;
-- placeholder 2D-looking character in 3D space;
-- real elevation/descent;
-- one jump/drop test;
-- simple occluder;
-- basic touch + keyboard/controller abstraction;
-- debug overlay with FPS/frame timing/build info.
-
-No final art or gameplay systems are required.
+The proof used simplified visual behavior such as billboard-style facing. That behavior is evidence only and is not automatically promoted into the production character presentation.
 
 ## Gate E — MCP self-verification
 
-Codex must be able to use the Godot MCP to verify at least:
+Validated:
 
 - [x] project/editor connection;
-- [x] scene tree/effective state;
+- [x] scene/effective-state reads;
 - [x] run/stop;
 - [x] injected input;
 - [x] structured runtime state;
-- [x] one deterministic/frozen-time test;
-- [x] profiler sample;
-- [ ] screenshot only for a genuinely visual assertion.
+- [x] deterministic/frozen-time stepping;
+- [x] profiler sample.
 
-This proves the agent can test rather than merely edit.
+Screenshot verification remains optional and should be used only for a genuinely visual assertion; it is not required to close this milestone.
 
-The remaining screenshot item is intentionally deferred until M1.2 has a genuinely visual 2.5D assertion. Screenshots are not used merely to satisfy a checklist when structured runtime state is sufficient.
+## Lessons carried into production
 
-### Independent smoke test
+M1.2 proved the unknowns. It must not become an endless prototype branch.
 
-Before trusting Codex integration, run:
+From M1.3 onward:
 
-```bash
-bash tools/dev/start_godot_mcp_editor.sh
-node tools/dev/mcp_smoke_test.mjs
-```
+- new gameplay/core work is production-intent code;
+- proof code is reused only when it meets production contracts and quality;
+- throwaway prototypes require a specific unresolved technical question;
+- generated art should target production use when requirements are already known;
+- placeholders are reserved for cases where final art would block a technical task or where visual fidelity is irrelevant;
+- token budget is treated as a development resource and must not be spent repeatedly generating disposable content.
 
-The smoke test directly verifies:
+## Exit Result
 
-`MCP stdio -> Node server -> localhost WebSocket -> Godot Editor addon -> editor state`
+The project now has a working mobile/cloud development loop:
 
-This isolates MCP/editor failures from Codex configuration.
+`Codex -> Godot MCP -> Git -> GitHub -> Termux -> Godot Android -> real-device validation`
 
-## Token/Agent Budget
-
-Default execution model:
-
-- one main agent;
-- zero subagents for routine bootstrap work;
-- at most one specialist for an independent blocker;
-- maximum two concurrent subagents without explicit user direction;
-- no recursive teams;
-- only the primary agent owns the live Godot MCP connection;
-- structured MCP observations before screenshots/log dumps.
-
-## Codespace Performance Caveat
-
-Xvfb/virtual-GPU results are useful for correctness and regression comparisons, but they are **not** accepted as mobile performance evidence.
-
-Mobile FPS, memory, thermal behavior, battery impact and touch latency must be measured on the real Android device.
-
-## Non-goals
-
-M1.2 bootstrap does not implement:
-
-- production server;
-- economy;
-- population;
-- real combat;
-- final terrain pipeline;
-- final character art;
-- production hosting;
-- direct phone MCP as a hard dependency.
-
-## Exit Criteria
-
-Bootstrap is complete when the same commit can be:
-
-- edited/tested by Codex in the Codespace;
-- engine-verified through MCP;
-- pulled/opened/run on Android;
-- measured on the real phone;
-- iterated through Git without manual file shuffling.
-
-After this gate, M1.2 proceeds into the actual 2.5D client/world benchmark prototype.
+The next milestone is **M1.3 — Core Production Foundation**.
