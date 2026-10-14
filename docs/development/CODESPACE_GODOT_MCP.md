@@ -145,7 +145,7 @@ The project `.codex/config.toml` already defines the pinned Godot MCP and OpenAI
 
 The MCP addon is a **development-host tool**, not a gameplay dependency.
 
-It is installed locally into `client/addons/godot_mcp/`, which is ignored by Git. The launcher temporarily enables it for the virtual editor process and restores the original `client/project.godot` once the MCP bridge is ready.
+It is installed locally into `client/addons/godot_mcp/`, which is ignored by Git. The launcher enables it for the lifetime of the virtual editor session. The official stop script restores the original `client/project.godot`; restoring it while the editor is connected can unload the bridge.
 
 This keeps the Android checkout clean and avoids forcing an editor-only MCP plugin onto the real mobile test device.
 

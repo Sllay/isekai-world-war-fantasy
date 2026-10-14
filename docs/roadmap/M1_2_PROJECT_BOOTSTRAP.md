@@ -1,7 +1,7 @@
 # M1.2 — Project Bootstrap & Client/World Proof
 
 - **Status:** In progress — Android bootstrap + Codespace/Codex MCP runtime validated
-- **Updated:** 2026-10-13
+- **Updated:** 2026-10-14
 
 ## Goal
 
@@ -125,6 +125,13 @@ Create the smallest real client project needed to test the M1.1 assumptions:
 
 No final art or gameplay systems are required.
 
+Host implementation and MCP verification completed on 2026-10-14 in
+`client/tests/world_proof/`: ramp/elevation, jump/landing, controller movement,
+orbit, collision, touch-adapter cleanup, respawn and billboard depth occlusion.
+The debug overlay also fits a portrait test viewport. See
+`docs/development/M1_2_WORLD_PROOF.md` for evidence and Android test steps.
+Gate D real-device acceptance remains pending.
+
 ## Gate E — MCP self-verification
 
 Codex must be able to use the Godot MCP to verify at least:
@@ -136,11 +143,11 @@ Codex must be able to use the Godot MCP to verify at least:
 - [x] structured runtime state;
 - [x] one deterministic/frozen-time test;
 - [x] profiler sample;
-- [ ] screenshot only for a genuinely visual assertion.
+- [x] screenshot only for a genuinely visual assertion.
 
 This proves the agent can test rather than merely edit.
 
-The remaining screenshot item is intentionally deferred until M1.2 has a genuinely visual 2.5D assertion. Screenshots are not used merely to satisfy a checklist when structured runtime state is sufficient.
+Two screenshots on 2026-10-14 verified the 2.5D world/character appearance and ordinary billboard depth occlusion behind the wall. Structured state was used for physical and input assertions.
 
 ### Independent smoke test
 
