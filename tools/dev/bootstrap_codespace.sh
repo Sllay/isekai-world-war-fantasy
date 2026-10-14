@@ -15,6 +15,7 @@ sudo apt-get update -y
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
   ca-certificates curl unzip xauth xvfb netcat-openbsd \
   libx11-6 libxcursor1 libxinerama1 libxrandr2 libxi6 \
+  libxkbcommon0 libxkbcommon-x11-0 libdbus-1-3 \
   libgl1 libgl1-mesa-dri libfontconfig1 libasound2t64
 
 ARCH="$(uname -m)"
