@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 const MCP_PACKAGE = '@satelliteoflove/godot-mcp@4.1.11';
 const EXPECTED_GODOT = '4.7.2';
 const TIMEOUT_MS = 30000;
+const RETRY_MS = 500;
 const HOST = process.env.GODOT_HOST ?? '127.0.0.1';
 const PORT = Number(process.env.GODOT_PORT ?? '6550');
 
@@ -40,16 +41,17 @@ const child = spawn('npx', ['-y', MCP_PACKAGE], {
 });
 
 let finished = false;
-const timer = setTimeout(() => fail('Timed out waiting for MCP responses.'), TIMEOUT_MS);
+let nextRequestId = 2;
+let attempts = 0;
+const startedAt = Date.now();
+const timer = setTimeout(() => fail('Timed out waiting for MCP/Godot connection.'), TIMEOUT_MS);
 
 child.stderr.on('data', (chunk) => {
   process.stderr.write(`[godot-mcp] ${chunk}`);
 });
 
 child.on('exit', (code, signal) => {
-  if (!finished) {
-    fail(`godot-mcp exited early (code=${code}, signal=${signal}).`);
-  }
+  if (!finished) fail(`godot-mcp exited early (code=${code}, signal=${signal}).`);
 });
 
 const rl = readline.createInterface({ input: child.stdout });
@@ -70,49 +72,91 @@ rl.on('line', (line) => {
     const version = msg?.result?.serverInfo?.version ?? 'unknown';
     console.log(`MCP server initialized: godot-mcp ${version}`);
 
-    send({
-      jsonrpc: '2.0',
-      method: 'notifications/initialized',
-      params: {},
-    });
+    send({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} });
+    scheduleStateProbe(0);
+    return;
+  }
 
+  if (typeof msg.id === 'number' && msg.id >= 2) {
+    handleStateProbe(msg);
+  }
+});
+
+function scheduleStateProbe(delayMs = RETRY_MS) {
+  if (finished) return;
+  if (Date.now() - startedAt >= TIMEOUT_MS) {
+    printEditorDiagnostics();
+    return fail('Godot MCP server initialized, but never became connected to the editor.');
+  }
+
+  setTimeout(() => {
+    if (finished) return;
+    attempts += 1;
+    const id = nextRequestId++;
     send({
       jsonrpc: '2.0',
-      id: 2,
+      id,
       method: 'tools/call',
       params: {
         name: 'godot_editor_read',
         arguments: { action: 'get_state' },
       },
     });
+  }, delayMs);
+}
+
+function handleStateProbe(msg) {
+  if (msg.error) {
+    return retryOrFail(`Godot tool transport error: ${JSON.stringify(msg.error)}`);
+  }
+
+  const text = msg?.result?.content?.find((entry) => entry.type === 'text')?.text;
+  if (!text) return retryOrFail(`Tool returned no text state: ${JSON.stringify(msg.result)}`);
+
+  const lower = text.toLowerCase();
+  const transient =
+    msg?.result?.isError === true ||
+    lower.includes('not connected to godot') ||
+    lower.includes('never successfully connected') ||
+    lower.includes('cannot reach godot') ||
+    lower.includes('connection refused');
+
+  if (transient) {
+    if (attempts === 1 || attempts % 5 === 0) {
+      console.log(`Waiting for Godot bridge connection... attempt ${attempts}`);
+    }
+    return scheduleStateProbe();
+  }
+
+  let state;
+  try {
+    state = JSON.parse(text);
+  } catch {
+    return retryOrFail(`Could not parse Godot editor state: ${text}`);
+  }
+
+  const version = String(state.godot_version ?? 'unknown');
+  if (!version.startsWith(EXPECTED_GODOT)) {
+    return fail(`Expected Godot ${EXPECTED_GODOT}, got ${version}`);
+  }
+
+  console.log(`Godot editor reachable: ${version}`);
+  console.log(`Current scene: ${state.current_scene ?? '(none)'}`);
+  console.log(`Playing: ${Boolean(state.is_playing)}`);
+  console.log(`Connection attempts: ${attempts}`);
+  console.log('PASS: MCP stdio -> WebSocket bridge -> Godot editor is healthy.');
+  succeed();
+}
+
+function retryOrFail(message) {
+  if (Date.now() - startedAt < TIMEOUT_MS) {
+    if (attempts === 1 || attempts % 5 === 0) console.log(`Retrying: ${message}`);
+    scheduleStateProbe();
     return;
   }
-
-  if (msg.id === 2) {
-    if (msg.error) return fail(`Godot tool call failed: ${JSON.stringify(msg.error)}`);
-
-    const text = msg?.result?.content?.find((entry) => entry.type === 'text')?.text;
-    if (!text) return fail(`Tool returned no text state: ${JSON.stringify(msg.result)}`);
-
-    let state;
-    try {
-      state = JSON.parse(text);
-    } catch {
-      return fail(`Could not parse Godot editor state: ${text}`);
-    }
-
-    const version = String(state.godot_version ?? 'unknown');
-    if (!version.startsWith(EXPECTED_GODOT)) {
-      return fail(`Expected Godot ${EXPECTED_GODOT}, got ${version}`);
-    }
-
-    console.log(`Godot editor reachable: ${version}`);
-    console.log(`Current scene: ${state.current_scene ?? '(none)'}`);
-    console.log(`Playing: ${Boolean(state.is_playing)}`);
-    console.log('PASS: MCP stdio -> WebSocket bridge -> Godot editor is healthy.');
-    succeed();
-  }
-});
+  printEditorDiagnostics();
+  fail(message);
+}
 
 function send(payload) {
   child.stdin.write(`${JSON.stringify(payload)}\n`);
@@ -184,6 +228,6 @@ send({
   params: {
     protocolVersion: '2024-11-05',
     capabilities: {},
-    clientInfo: { name: 'isekai-mcp-smoke', version: '1' },
+    clientInfo: { name: 'isekai-mcp-smoke', version: '2' },
   },
 });
