@@ -1,17 +1,40 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import net from 'node:net';
+import path from 'node:path';
 import readline from 'node:readline';
+import { fileURLToPath } from 'node:url';
 
 const MCP_PACKAGE = '@satelliteoflove/godot-mcp@4.1.11';
 const EXPECTED_GODOT = '4.7.2';
 const TIMEOUT_MS = 30000;
+const HOST = process.env.GODOT_HOST ?? '127.0.0.1';
+const PORT = Number(process.env.GODOT_PORT ?? '6550');
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const ROOT_DIR = path.resolve(HERE, '../..');
+const LOCAL_DIR = path.join(ROOT_DIR, '.codex-local');
+const PID_FILE = path.join(LOCAL_DIR, 'godot-editor.pid');
+const LOG_FILE = path.join(LOCAL_DIR, 'godot-editor.log');
+
+if (!(await canConnect(HOST, PORT))) {
+  printEditorDiagnostics();
+  console.error(
+    `FAIL: Godot bridge is not listening at ${HOST}:${PORT} before the smoke test starts.\n` +
+    'Start the editor from a persistent shell/terminal, not from a short-lived agent command, then retry.'
+  );
+  process.exit(1);
+}
+
+console.log(`Preflight: Godot bridge is listening at ${HOST}:${PORT}`);
 
 const child = spawn('npx', ['-y', MCP_PACKAGE], {
   stdio: ['pipe', 'pipe', 'pipe'],
   env: {
     ...process.env,
-    GODOT_HOST: process.env.GODOT_HOST ?? '127.0.0.1',
-    GODOT_PORT: process.env.GODOT_PORT ?? '6550',
+    GODOT_HOST: HOST,
+    GODOT_PORT: String(PORT),
     GODOT_MCP_USAGE_LOG: '0',
   },
 });
@@ -111,6 +134,47 @@ function fail(message) {
   console.error(`FAIL: ${message}`);
   try { child.kill('SIGTERM'); } catch {}
   setTimeout(() => process.exit(1), 50);
+}
+
+function canConnect(host, port) {
+  return new Promise((resolve) => {
+    const socket = net.createConnection({ host, port });
+    const finish = (value) => {
+      socket.removeAllListeners();
+      socket.destroy();
+      resolve(value);
+    };
+    socket.setTimeout(1200);
+    socket.once('connect', () => finish(true));
+    socket.once('timeout', () => finish(false));
+    socket.once('error', () => finish(false));
+  });
+}
+
+function printEditorDiagnostics() {
+  if (fs.existsSync(PID_FILE)) {
+    const pid = fs.readFileSync(PID_FILE, 'utf8').trim();
+    let alive = false;
+    try {
+      process.kill(Number(pid), 0);
+      alive = true;
+    } catch {}
+    console.error(`Editor launcher PID: ${pid} (${alive ? 'alive' : 'not running'})`);
+  } else {
+    console.error('Editor launcher PID: no pid file found');
+  }
+
+  if (fs.existsSync(LOG_FILE)) {
+    const lines = fs.readFileSync(LOG_FILE, 'utf8').split(/\r?\n/);
+    const tail = lines.slice(-40).join('\n').trim();
+    if (tail) {
+      console.error('--- last Godot editor log lines ---');
+      console.error(tail);
+      console.error('--- end Godot editor log ---');
+    }
+  } else {
+    console.error('Godot editor log: not found');
+  }
 }
 
 send({
