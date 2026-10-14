@@ -1,6 +1,6 @@
 # M1.2 — Project Bootstrap & Client/World Proof
 
-- **Status:** In progress — Android bootstrap + Codespace/Codex MCP runtime validated
+- **Status:** In progress — Codespace/Codex round-trip validated; Android post-pull run pending
 - **Updated:** 2026-10-13
 
 ## Goal
@@ -36,7 +36,7 @@ Prove one remote/local host can:
 8. [x] perform the independent MCP JSON-RPC smoke test;
 9. [x] return structured Godot editor state through `godot_editor_read`;
 10. [x] run a minimal scene and return structured runtime state;
-11. [ ] commit/push a change from the Codex development host.
+11. [x] commit/push a change from the Codex development host.
 
 A GitHub Codespace is the selected development host for this proof.
 
@@ -91,6 +91,12 @@ The Codespace/Xvfb profiler sample averaged about 44.6 FPS, recorded seven spike
 
 The virtual Codespace/Xvfb editor log also emitted `XServer BadWindow` warnings during the run. These are tracked as a host-display warning rather than accepted as a gameplay error. Until proven otherwise, Codespace/Xvfb remains a correctness/automation environment, while authoritative rendering/performance validation remains on the Android device.
 
+### Verified Git round-trip — 2026-10-13
+
+Codex created `docs/development/CODEX_HOST_VERIFIED.md`, committed it as `3a3d1fe` with message `chore: verify Codex development host`, and pushed it to `main` from the Codespace. The temporary local `client/project.godot` MCP/editor change was preserved outside the commit.
+
+The Android Termux clone then fetched and fast-forwarded from `ed35863` to `3a3d1fe`, proving the development-host-to-GitHub-to-phone source path without manual file copying. The remaining device-side proof is to reopen/run the pulled revision in Godot Android.
+
 See `docs/development/CODESPACE_GODOT_MCP.md`.
 
 ## Gate C — Android development device
@@ -105,6 +111,8 @@ Validated on 2026-10-13:
 - [ ] execute and validate project touch input;
 - [ ] capture basic performance/debug information;
 - [ ] pull a newer repository revision and run it without manually rebuilding the project structure.
+
+The newer revision has already been pulled successfully through Termux/Git; only the post-pull Godot Android execution remains to complete the last item.
 
 Godot/GABE setup specifics belong to the device setup checklist, not gameplay code.
 
