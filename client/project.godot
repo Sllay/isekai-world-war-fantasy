@@ -1,11 +1,11 @@
 ; Engine configuration file.
-; Minimal Android-first bootstrap for M1.2.
+; Production runtime with Compatibility renderer for mobile/Web.
 
 config_version=5
 
 [application]
 config/name="Isekai World War Fantasy"
-run/main_scene="res://scenes/bootstrap/bootstrap.tscn"
+run/main_scene="res://scenes/runtime/game_runtime.tscn"
 
 [display]
 window/size/viewport_width=1280
