@@ -80,9 +80,14 @@ Codex itself successfully used the configured Godot MCP to:
 - start the current Godot project;
 - inspect structured runtime/editor state;
 - observe the visible `M1.2 Mobile Bootstrap OK` label at 1280×720;
+- inject the safe `ui_focus_next` input action for 100 ms without destabilizing runtime state;
+- freeze game time, advance exactly 3 frames while frozen, verify it remained frozen, then thaw;
+- capture a profiler sample of 239 frames over 5.47 seconds;
 - stop the project again;
 - confirm `is_playing: false` after shutdown;
-- complete the check without modifying project files.
+- complete the checks without modifying project files.
+
+The Codespace/Xvfb profiler sample averaged about 44.6 FPS, recorded seven spikes, and reached an 82.21 ms maximum frame time. These values are **not accepted as mobile performance evidence** because the Codespace uses a virtual display/software-rendered environment; they only prove that the profiler path and regression instrumentation work.
 
 The virtual Codespace/Xvfb editor log also emitted `XServer BadWindow` warnings during the run. These are tracked as a host-display warning rather than accepted as a gameplay error. Until proven otherwise, Codespace/Xvfb remains a correctness/automation environment, while authoritative rendering/performance validation remains on the Android device.
 
@@ -127,13 +132,15 @@ Codex must be able to use the Godot MCP to verify at least:
 - [x] project/editor connection;
 - [x] scene tree/effective state;
 - [x] run/stop;
-- [ ] injected input;
+- [x] injected input;
 - [x] structured runtime state;
-- [ ] one deterministic/frozen-time test;
-- [ ] profiler sample;
+- [x] one deterministic/frozen-time test;
+- [x] profiler sample;
 - [ ] screenshot only for a genuinely visual assertion.
 
 This proves the agent can test rather than merely edit.
+
+The remaining screenshot item is intentionally deferred until M1.2 has a genuinely visual 2.5D assertion. Screenshots are not used merely to satisfy a checklist when structured runtime state is sufficient.
 
 ### Independent smoke test
 
