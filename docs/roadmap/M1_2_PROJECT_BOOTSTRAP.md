@@ -1,6 +1,6 @@
 # M1.2 — Project Bootstrap & Client/World Proof
 
-- **Status:** In progress — Android bootstrap + Codespace MCP smoke validated
+- **Status:** In progress — Android bootstrap + Codespace/Codex MCP runtime validated
 - **Updated:** 2026-10-13
 
 ## Goal
@@ -35,8 +35,8 @@ Prove one remote/local host can:
 7. [x] run Godot 4.7.2 editor under Xvfb (normal editor, **not** Godot `--headless`);
 8. [x] perform the independent MCP JSON-RPC smoke test;
 9. [x] return structured Godot editor state through `godot_editor_read`;
-10. [ ] run a minimal scene and return structured runtime state;
-11. [ ] commit/push a change.
+10. [x] run a minimal scene and return structured runtime state;
+11. [ ] commit/push a change from the Codex development host.
 
 A GitHub Codespace is the selected development host for this proof.
 
@@ -72,6 +72,19 @@ The independent smoke test passed on the real project Codespace with:
 The smoke script was corrected to account for godot-mcp connecting to Godot asynchronously after its stdio MCP server is initialized. A temporary `Not connected to Godot` immediately after MCP initialization is therefore treated as startup state and retried until the editor bridge is ready or the smoke-test timeout expires.
 
 The Codex CLI project configuration was also verified with `codex mcp list`: the pinned `godot` MCP entry and the OpenAI docs MCP entry were both discovered and enabled from the repository configuration.
+
+### Verified Codex runtime result — 2026-10-13
+
+Codex itself successfully used the configured Godot MCP to:
+
+- start the current Godot project;
+- inspect structured runtime/editor state;
+- observe the visible `M1.2 Mobile Bootstrap OK` label at 1280×720;
+- stop the project again;
+- confirm `is_playing: false` after shutdown;
+- complete the check without modifying project files.
+
+The virtual Codespace/Xvfb editor log also emitted `XServer BadWindow` warnings during the run. These are tracked as a host-display warning rather than accepted as a gameplay error. Until proven otherwise, Codespace/Xvfb remains a correctness/automation environment, while authoritative rendering/performance validation remains on the Android device.
 
 See `docs/development/CODESPACE_GODOT_MCP.md`.
 
@@ -111,14 +124,14 @@ No final art or gameplay systems are required.
 
 Codex must be able to use the Godot MCP to verify at least:
 
-- project/editor connection;
-- scene tree/effective state;
-- run/stop;
-- injected input;
-- structured runtime state;
-- one deterministic/frozen-time test;
-- profiler sample;
-- screenshot only for a genuinely visual assertion.
+- [x] project/editor connection;
+- [x] scene tree/effective state;
+- [x] run/stop;
+- [ ] injected input;
+- [x] structured runtime state;
+- [ ] one deterministic/frozen-time test;
+- [ ] profiler sample;
+- [ ] screenshot only for a genuinely visual assertion.
 
 This proves the agent can test rather than merely edit.
 
