@@ -39,7 +39,7 @@ func run() -> void:
 		check(JSON.parse_string(JSON.stringify(runtime.persistence.capture_snapshot(), "", true, true)) == expected, "all canonical sections restored across OS process boundary")
 		check(state.health == 63 and state.max_health() == 125 and state.resource == 39 and state.max_resource() == 70, "current and derived max resources retained")
 		check(state.attributes.capture_modifiers().size() == 2 and state.entity_id == expected.sections["foundation.player"].state.entity_id, "modifier sources and stable Player identity retained")
-		check(service.combatant(state.entity_id) == runtime.player.capabilities.capability("foundation.combatant") and runtime.core.entities.capture().ids.size() == 1, "no duplicated Player or detached combat capability")
+		check(service.combatant(state.entity_id) == runtime.player.capabilities.capability("foundation.combatant") and runtime.core.entities.capture().ids.size() == 2 and runtime.core.entities.contains(runtime.enemies.actor.entity_id), "no duplicated Player or detached combat capability")
 		var hit := DamageRequest.new(state.entity_id, state.entity_id, 1)
 		hit.allow_self = true
 		check(service.damage(hit).actual == 1 and state.health == 62, "damage still functional after fresh-process restore")

@@ -16,7 +16,7 @@ func _init(modules: CoreModuleRegistry, adapter: CoreSaveStore, definition: Worl
 # Pure with respect to canonical state. Core prepares/migrates every section first.
 func prepare(snapshot: Dictionary) -> Dictionary:
 	reason = "SCHEMA_INVALID"
-	var upgraded := _upgrade_legacy(snapshot)
+	var upgraded := _upgrade_enemy_release(_upgrade_legacy(snapshot))
 	if upgraded.is_empty():
 		return _reject("LEGACY_SAVE_INVALID")
 	var staged := store.prepare_restore(registry, upgraded)
@@ -47,6 +47,23 @@ func prepare(snapshot: Dictionary) -> Dictionary:
 	var player_combat: Dictionary = staged.sections["foundation.player_combat"].state
 	if player_combat.entity_id != entity_id:
 		return _reject("PLAYER_COMBAT_ID_MISMATCH")
+	var seen: Dictionary = {entity_id: true}
+	for region_id in regions:
+		for actor in regions[region_id].get("actors", {}).values():
+			if seen.has(actor.entity_id) or not staged.sections["core.runtime"].state.entities.ids.has(actor.entity_id):
+				return _reject("ACTOR_ID_ORPHANED_OR_DUPLICATE")
+			seen[actor.entity_id] = true
+	# Known finite void positions from old slots recover through the authored
+	# Region contract. Gross/nonfinite corruption still fails Player validation.
+	var player_state: Dictionary = staged.sections["foundation.player"].state
+	var region := content.region(world.current_region_id)
+	var position := Vector3(player_state.position[0], player_state.position[1], player_state.position[2])
+	if not region.safe_position(position):
+		var safe: Dictionary = regions[world.current_region_id].get("last_safe", {})
+		player_state.position = safe.position.duplicate() if not safe.is_empty() else [region.to_world_position(region.entries[region.default_entry]).x, region.to_world_position(region.entries[region.default_entry]).y, region.to_world_position(region.entries[region.default_entry]).z]
+		player_state.velocity = [0, 0, 0]
+		if not safe.is_empty():
+			player_state.facing = safe.facing.duplicate()
 	reason = "VALID"
 	return staged
 
@@ -80,3 +97,36 @@ func _upgrade_legacy(snapshot: Dictionary) -> Dictionary:
 	var owner := registry.modules["foundation.player_combat"] as PlayerCombatModule
 	upgraded.sections[owner.id] = {"version": owner.state_version, "state": owner.initial_state(entity_id)}
 	return upgraded
+
+func _upgrade_enemy_release(snapshot: Dictionary) -> Dictionary:
+	if snapshot.is_empty() or not registry.modules.has("gameplay.enemies") or not snapshot.get("modules") is Dictionary or snapshot.modules.has("gameplay.enemies"):
+		return snapshot
+	var previous := ["core.runtime", "foundation.player", "foundation.world", "foundation.regions", "foundation.combat", "foundation.player_combat"]
+	if snapshot.get("game_version") != GAME_VERSION or snapshot.modules.size() != previous.size() or not snapshot.get("sections") is Dictionary:
+		return {}
+	for id in previous:
+		if snapshot.modules.get(id) != "1.0.0":
+			return {}
+	if snapshot.sections.get("foundation.regions", {}).get("version") != 1:
+		return {}
+	var result := snapshot.duplicate(true)
+	result.modules["gameplay.enemies"] = registry.modules["gameplay.enemies"].version
+	result.modules["foundation.targeting"] = registry.modules["foundation.targeting"].version
+	var owner := registry.modules["gameplay.enemies"] as EnemyModule
+	var section: Variant = result.sections.get("foundation.regions")
+	if not section is Dictionary or not section.get("state") is Dictionary or not section.state.get("regions") is Dictionary or not section.state.regions.get(owner.actor.region_id) is Dictionary:
+		return {}
+	var core: Variant = result.sections.get("core.runtime")
+	if not core is Dictionary or not core.get("state") is Dictionary or not core.state.get("entities") is Dictionary or not core.state.entities.get("ids") is Array:
+		return {}
+	var saved: Dictionary = section.state.regions[owner.actor.region_id]
+	if saved.has("actors") or saved.has("last_safe"):
+		return {}
+	for region in result.sections["foundation.regions"].state.regions.values():
+		if not region is Dictionary or region.has("actors") or region.has("last_safe"):
+			return {}
+		region["last_safe"] = {}
+	saved["actors"] = {EnemyModule.SPAWN: owner.initial_state.duplicate(true)}
+	result.sections["foundation.regions"].version = 2
+	result.sections["core.runtime"].state.entities.ids.append(owner.initial_state.entity_id)
+	return result

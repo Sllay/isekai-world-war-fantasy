@@ -33,6 +33,8 @@ func _ready() -> void:
 	visual.material_override = surface_material
 	add_child(visual)
 	var ground := StaticBody3D.new()
+	# Layer 1 remains general collision; layer 3 is surface-only projection.
+	ground.collision_layer = 1 | 4
 	var collision := CollisionShape3D.new()
 	collision.shape = mesh.create_trimesh_shape()
 	ground.add_child(collision)
