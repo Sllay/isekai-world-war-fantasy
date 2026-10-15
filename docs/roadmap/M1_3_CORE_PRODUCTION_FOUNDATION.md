@@ -1,6 +1,6 @@
 # M1.3 — Core Production Foundation
 
-- **Status:** Implementation complete — Android acceptance pending
+- **Status:** Completed — Android accepted
 - **Updated:** 2026-10-15
 
 ## Purpose
@@ -65,7 +65,7 @@ The M1.2 billboard placeholder is not the final presentation contract.
 
 Character presentation must support the future modular vector rig and directional visual states without coupling movement logic to a specific sprite implementation.
 
-Slice 2 implementation: `client/foundation/player/` and `client/runtime/`. Contracts and Android controls: `docs/architecture/PLAYER_FOUNDATION.md`; decision: ADR-0010. Run Core and Player test scripts. Live MCP acceptance remains blocked by the host bridge connection; Android acceptance awaits BK.
+Slice 2 implementation: `client/foundation/player/` and `client/runtime/`. Contracts and Android controls: `docs/architecture/PLAYER_FOUNDATION.md`; decision: ADR-0010. Run Core and Player test scripts. Live MCP acceptance remained blocked by the host bridge connection; BK accepted movement, camera, jump and runtime behavior on the real Android device.
 
 ## Slice 3 — Production world/region shell
 
@@ -81,7 +81,7 @@ Create the first real world shell rather than another test map:
 
 This becomes the home for later combat, living-world and survival slices.
 
-Slice 3 implementation: `client/foundation/world/` owns World/Region contracts and save sections; `client/world/` supplies production residency, Region-owned player spawning and the first terrain scene. See `docs/architecture/WORLD_REGION_FOUNDATION.md` and ADR-0011. Run Core, Player and World test scripts. Live MCP acceptance is blocked by the bridge connection; Android validation awaits BK.
+Slice 3 implementation: `client/foundation/world/` owns World/Region contracts and save sections; `client/world/` supplies production residency, Region-owned player spawning and the first terrain scene. See `docs/architecture/WORLD_REGION_FOUNDATION.md` and ADR-0011. Run Core, Player and World test scripts. Live MCP acceptance remained blocked by the bridge connection; BK accepted the four-module World/Region runtime on the real Android device with no runtime errors.
 
 ## Slice 4 — Save / resume loop
 
@@ -103,14 +103,16 @@ full-snapshot integrity validation and application save/resume orchestration.
 The real `user://saves/current.json` path uses validated full-precision JSON and
 flushed temporary-file/rename replacement. Startup resumes only valid existing
 saves; corrupt slots block visibly and remain protected. See
-`docs/architecture/SAVE_SYSTEM.md` and ADR-0012 for contracts, failures and BK steps.
+`docs/architecture/SAVE_SYSTEM.md` and ADR-0012 for contracts and failures.
 
 Automated validation: Core 55 checks, Player 23, World/Region 50, persistence 90,
 independent-process save 5, resume 11 and lifecycle/exit 4; zero failures.
 The process proof walks onto the real ridge, saves to disk, exits Godot, starts
 another process, restores all canonical sections and continues jump/move/camera.
-MCP remains blocked after bounded recovery. BK's Android save/terminate/resume
-acceptance is pending; no mobile performance claim is made.
+MCP remained blocked after bounded recovery. BK completed Android save/terminate/resume
+acceptance: repeated launches returned to the saved position instead of the default
+spawn and emitted `RESUME_OK` for the same World/Region/Player identity. No mobile
+performance claim is inferred from this persistence acceptance.
 
 ## Visual asset rule
 
@@ -143,11 +145,11 @@ Implementation evidence for each Definition of Done item:
 - [x] Production World/Region shell owning terrain, membership and Player attachment.
 - [x] Versioned, validated disk save/resume across separate OS processes, independent
   of the M1.2 proof scene, with explicit failure/lifecycle behavior.
+- [x] Real Android acceptance for Player, World/Region, and save/terminate/resume behavior.
 
-The implementation Definition of Done is satisfied. Full device acceptance is
-still pending BK's Android check; the status above does not claim that result.
-Next production milestone: **Combat Production Slice** (Phase 2 in ROADMAP.md),
-starting with attributes/health/resources and combat contracts on these foundations.
+The M1.3 Definition of Done is satisfied. The next production milestone is
+**Combat Production Slice** (Phase 2 in ROADMAP.md), starting with
+attributes/health/resources and combat contracts on these foundations.
 
 ## Explicit non-goals
 
