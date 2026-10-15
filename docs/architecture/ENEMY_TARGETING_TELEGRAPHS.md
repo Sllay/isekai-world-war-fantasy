@@ -161,6 +161,25 @@ are repaired in staged application validation using last-safe/default entry;
 nonfinite/gross malformed data still rejects. No fall damage, checkpoint, death
 or revive gameplay is implied.
 
+### Future vertical terrain recovery refinement
+
+Android acceptance could not naturally reproduce a terrain fall-through, but BK
+identified an additional resilience case that must be preserved for future world
+work: collision bugs may place the Player below otherwise valid terrain while the
+same X/Z location still has a usable surface above.
+
+When terrain/world querying becomes rich enough to support this safely, Region
+recovery should first attempt a **dynamic vertical surface recovery** before
+falling back to last-safe/default entry. The recovery query belongs to World/Region,
+not Player code: use the Player's current horizontal position, query upward/downward
+against authoritative walkable terrain/surface data, choose a validated standing
+transform slightly above that surface, verify collision clearance and Region
+safety constraints, then restore the same Player with falling velocity cleared.
+If no trustworthy surface can be resolved, use the existing last-safe/default
+entry path. This is a future resilience extension, not a license to teleport from
+normal airborne gameplay or bypass caves/bridges/multi-level structures without a
+surface-selection policy.
+
 ## Development save deletion
 
 Debug SaveControls sits beside Save and remains available even when corrupt saves
@@ -201,10 +220,19 @@ Existing exact catalog/module/entity-count assertions now include the added
 production content; historical migration fixtures construct the actual old schema.
 No old behavior assertions were removed.
 
-Live MCP is blocked on this host: one official ensure launcher reported healthy;
-both permitted read retries returned Not connected. The editor log was inspected,
-recovery stopped, and the official stop script restored local configuration.
-No screenshot/readability or Android performance claim is made from headless tests.
+Live MCP was blocked on the implementation host: one official ensure launcher
+reported healthy; both permitted read retries returned Not connected. The editor
+log was inspected, recovery stopped, and the official stop script restored local
+configuration.
+
+BK Android acceptance passed for the device-observable Slice 3 behavior: the
+telegraph is clearly readable, leaving its area avoids the pending hit, the enemy
+acquires/follows the Player and disengages after sufficient distance, defeated
+enemy state can be saved, and Delete Save/confirmation works correctly. BK noted
+that the current enemy movement is visibly simple, which is expected for this
+slice and is why movement remains behind a replaceable navigation port. A natural
+terrain fall-through/void case could not be reproduced on device, so runtime void
+recovery remains automated/headless validated rather than manually device-proven.
 
 ## BK Android acceptance steps
 
