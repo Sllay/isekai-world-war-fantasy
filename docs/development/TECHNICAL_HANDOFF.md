@@ -58,13 +58,13 @@ Use the shortest entry that preserves the useful fact.
 ## Current open / recent notes
 
 ### 2026-10-15 — Slice 3 live Godot MCP unavailable
-- **Status:** OPEN
+- **Status:** RESOLVED
 - **Branch / slice:** `phase2/enemy-telegraphs` / Phase 2 Slice 3
 - **Developer note:** The bounded MCP recovery procedure was followed. The official launcher reported healthy, but both permitted MCP read retries returned `Not connected`. Recovery was stopped and the editor log inspected as required.
 - **Impact:** Automated/headless coverage passed, but live telegraph readability, live interaction, and Android/device behavior are not proven by MCP.
 - **Evidence:** `docs/architecture/ENEMY_TARGETING_TELEGRAPHS.md`; automated result recorded there as 598 checks / 0 failures.
 - **Needs Technical Design:** Confirm Android acceptance should remain the merge gate for this slice.
-- **Resolution:** Pending Technical Design / BK Android acceptance.
+- **Resolution:** Technical Design confirms Android acceptance remains the merge gate. The implementation can proceed to device testing, but must not be merged solely on headless evidence.
 
 ### 2026-10-15 — Enemy movement boundary is intentionally minimal
 - **Status:** INFO
@@ -73,7 +73,7 @@ Use the shortest entry that preserves the useful fact.
 - **Impact:** This is sufficient for the current open-terrain encounter. Complex obstacles/terrain will require a navigation implementation behind the existing movement boundary rather than changes to CombatService or ActionExecutor.
 - **Evidence:** `client/gameplay/enemies/enemy_controller.gd`, `client/gameplay/enemies/enemy_body.gd`.
 - **Needs Technical Design:** No.
-- **Resolution:** Future navigation slice should preserve the movement-port boundary.
+- **Resolution:** Future navigation work should preserve the movement-port boundary.
 
 ### 2026-10-15 — Melee telegraph circle is a warning range, not AoE authority
 - **Status:** INFO
@@ -83,3 +83,12 @@ Use the shortest entry that preserves the useful fact.
 - **Evidence:** `client/foundation/telegraphs/telegraph_tracker.gd`, `client/foundation/telegraphs/telegraph_renderer.gd`, `docs/architecture/ENEMY_TARGETING_TELEGRAPHS.md`.
 - **Needs Technical Design:** No.
 - **Resolution:** Preserve the rule that telegraphs visualize canonical action intent but never become gameplay authority.
+
+### 2026-10-15 — First enemy instance is intentionally single-content scope
+- **Status:** INFO
+- **Branch / slice:** `phase2/enemy-telegraphs` / Phase 2 Slice 3
+- **Developer note:** `EnemyModule` currently owns the one authored Home Valley skirmisher instance needed by this slice. The archetype registry/family belongs to the module, while the instance is Region-owned persistent state.
+- **Impact:** Future enemy scaling should extend this ownership into multiple authored/runtime actor records under the same contracts; it should not create one new Core module or a parallel combat framework per enemy instance.
+- **Evidence:** `client/gameplay/enemies/enemy_module.gd`, `client/foundation/world/region_actor_state.gd`.
+- **Needs Technical Design:** No.
+- **Resolution:** Accepted for Slice 3. Revisit spawning/collection ownership only when the next content scale requires more than this one production actor.
