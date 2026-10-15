@@ -65,18 +65,18 @@ The existing M1.2 visual proof is evidence. Individual pieces may be reused only
 - one modular mini-boss;
 - minimum production equipment path.
 
-Slice 1 — **Production Combat Foundation implemented**: generic stable-ID
+Slice 1 — **Production Combat Foundation implemented and Android-accepted**: generic stable-ID
 combatants, typed attributes and source modifiers, damage/healing transactions,
 relationship policy, typed facts, defeat boundary and disk-backed Player combat
 persistence. See `docs/architecture/COMBAT_FOUNDATION.md` and ADR-0013.
-This completes only the foundation slice; Android combat acceptance is pending.
-Slice 2 — **Player Combat Actions and Modular Ability Execution implemented**:
-semantic keyboard/controller/touch slots, typed data-defined strike/self-heal,
+
+Slice 2 — **Player Combat Actions and Modular Ability Execution implemented and Android-accepted**:
+semantic keyboard/controller/touch actions, typed data-defined strike/self-heal,
 Core-tick action execution, targeting/effect contracts, cancellation/interruption,
 movement gates, typed facts/cue hooks and persisted cooldowns. See
-`docs/architecture/COMBAT_ACTIONS.md` and ADR-0014. Automated and live MCP acceptance
-passed; BK Android acceptance remains pending. Enemy AI, telegraphs, defensive
-verbs, mini-boss and equipment remain future Phase 2 work.
+`docs/architecture/COMBAT_ACTIONS.md` and ADR-0014. Automated, live MCP and BK Android acceptance passed. The mobile combat/inventory interaction direction is captured in `docs/design/MOBILE_COMBAT_UI_AND_INVENTORY.md` and is intentionally deferred until the owning gameplay slices require each control.
+
+Next Phase 2 slice: **first production enemy archetype + telegraph/targeting integration**, reusing CombatService and the generic action executor. Defensive verbs, equipment and mini-boss remain later Phase 2 work.
 
 ## Phase 3 — Living World Production Slice
 
