@@ -1,8 +1,8 @@
 # Bags and Containers
 
-- **Version:** 0.1.0
+- **Version:** 0.2.0
 - **Status:** Design hypothesis
-- **Updated:** 2026-10-13
+- **Updated:** 2026-10-15
 
 ## Core Principle
 
@@ -20,7 +20,8 @@ A bag may define:
 - archetype/type;
 - rarity/tier;
 - effective weight capacity;
-- optional slot/volume capacity;
+- capacity mode (`FIXED_SLOTS` or `DYNAMIC_SLOTS`);
+- optional finite slot count;
 - category weight modifiers;
 - preservation modifiers;
 - durability/stability;
@@ -29,6 +30,60 @@ A bag may define:
 - inherited traits;
 - synthesis history;
 - owner/provenance.
+
+Slot capacity and weight capacity are independent constraints.
+
+A bag can have available slots and still be unable to accept an item because of mass. Likewise, a light inventory can still be full because a fixed-slot bag has no valid slot remaining.
+
+## Capacity Modes
+
+### Fixed Slots
+
+A conventional container declares a finite logical slot count.
+
+- Empty slots exist as capacity.
+- Compatible stacks are filled first.
+- New stacks can occupy only available slots.
+- When no valid slot remains, additional items cannot be inserted even if weight capacity remains.
+- Weight limits/rules apply independently.
+
+### Dynamic Slots
+
+Some magical or special bags can have effectively unbounded **logical slot allocation** without having unlimited carrying capacity.
+
+- Empty slots do not need to be pre-created.
+- A logical slot/stack appears only when an item instance or stack requires one.
+- Compatible stacks are still filled before creating another stack.
+- New logical stacks may be allocated only while category and weight rules permit them.
+- Runtime/UI implementations must not preallocate an infinite grid.
+
+Technical contracts should use `DYNAMIC_SLOTS`, not "infinite slots", to avoid implying infinite memory or infinite carrying power.
+
+## Stack Allocation
+
+When adding a stackable item:
+
+1. Fill compatible existing stacks first, respecting stack size and item condition/lot rules.
+2. If quantity remains, allocate a new logical stack/slot.
+3. A fixed-slot bag rejects or partially accepts when no valid slot remains.
+4. A dynamic-slot bag may allocate another stack if weight/category constraints allow it.
+
+Item condition and decay rules remain authoritative. Fresh items must not silently inherit the degradation state of an older incompatible lot merely to save a slot.
+
+## Canonical Weight
+
+Every physical item definition should expose one base mass in a canonical unit.
+
+Recommended representation:
+
+- canonical storage/calculation: **integer grams**;
+- presentation: grams or kilograms depending on magnitude.
+
+The canonical item mass never changes merely because a bag compresses weight. Containers instead calculate **effective carried mass** from item mass, quantity and category modifiers.
+
+Examples are balancing data rather than fixed targets. A meat portion may weigh hundreds of grams, while ore, stone, armor and tools may be substantially heavier.
+
+A few ore stacks can therefore overload a bag even while occupying very few logical slots.
 
 ## Bag Families
 
@@ -52,7 +107,7 @@ General magical storage focused on capacity and broad weight reduction.
 
 Possible behavior:
 
-- large/scrollable logical capacity;
+- large or dynamic logical capacity;
 - reduced effective weight for many item categories;
 - food still degrades normally unless another trait changes this;
 - can absorb compatible bags to strengthen selected properties.
@@ -82,6 +137,8 @@ Example concept:
 - ore: 100%;
 - wood: 90%;
 - quest/artifact items: special rules.
+
+These percentages modify effective carried mass, not the item's canonical base mass.
 
 Preservation can also be category-specific:
 
@@ -175,6 +232,16 @@ Possible rule:
 
 The final rule should preserve usability while preventing exponential weight reduction.
 
+## Inventory Presentation
+
+The final mobile inventory is a vertically scrollable grid and should materialize only the logical slots required by the underlying container mode.
+
+A dynamic-slot bag must not render thousands of empty cells. A fixed-slot bag may show its finite empty capacity.
+
+The inventory UI is presentation over real container state; it never owns item quantity, weight, stack identity or provenance.
+
+Detailed mobile interaction rules are defined in `MOBILE_COMBAT_UI_AND_INVENTORY.md`.
+
 ## NPC and Economy Integration
 
 NPCs can own, equip, trade, craft, inherit, steal and lose bags.
@@ -189,12 +256,10 @@ Rare, modified or synthesized bags should normally persist as item instances wit
 
 Cheap identical bags may be represented more compactly while they remain fungible stock.
 
-## M1 Question
+Persistent bag state should preserve capacity mode, finite slot limit where applicable, weight/category traits and synthesis history. Empty UI cells are not canonical persistent objects unless later inventory architecture requires explicit compartment identity.
 
-M1 does not need final bag crafting. It should verify that the item model can persist:
+## Implementation Timing
 
-- a bag instance;
-- category-specific modifiers;
-- one donor consumption;
-- one inherited trait;
-- save/load without losing synthesis history.
+Bag/container simulation and final inventory UI should be built in the Survival/Economy production phase, not pulled forward merely because combat already has a mobile HUD.
+
+Earlier systems may reserve semantic hooks/bindings, but must not create a second temporary inventory model.
