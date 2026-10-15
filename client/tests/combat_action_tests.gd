@@ -49,7 +49,7 @@ func run() -> void:
 	service.target_policy = policy
 	executor = ActionExecutor.new(service, module.actions, owner.entity_id)
 	executor.position_of = func(id: String) -> Variant: return positions.get(id)
-	check(module.actions.ids() == [HEAL, STRIKE], "production action IDs")
+	check(module.actions.ids() == [HEAL, STRIKE, "combat.action.enemy.basic_strike"], "production action IDs")
 	check(core.data.lookup(STRIKE).get("kind") == "action", "Core data discovery projection")
 	check(module.actions.register(module.actions.lookup(STRIKE)) == ERR_ALREADY_EXISTS, "duplicate IDs reject")
 	var definition := module.actions.lookup(STRIKE)

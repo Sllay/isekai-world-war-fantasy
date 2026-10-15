@@ -1,0 +1,62 @@
+class_name RegionRecovery
+extends RefCounted
+
+var definition: RegionDefinition
+var player: PlayerState
+var last_safe: Dictionary = {}
+var recovery_count := 0
+var diagnostics: CoreDiagnostics
+
+func observe() -> void:
+	if definition.safe_position(player.position) and (player.grounded or definition.approved_surface(player.position)):
+		last_safe = {"position": _array(player.position), "facing": _array(player.facing)}
+	elif not definition.safe_position(player.position):
+		recover()
+
+func valid(value: Dictionary) -> bool:
+	if value.is_empty():
+		return true
+	if value.size() != 2:
+		return false
+	for key in ["position", "facing"]:
+		if not value.get(key) is Array or value[key].size() != 3:
+			return false
+		for n in value[key]:
+			if not (n is float or n is int) or not is_finite(float(n)):
+				return false
+	var facing := _vector(value.facing)
+	return definition.safe_position(_vector(value.position)) and absf(facing.y) < 0.001 and is_equal_approx(facing.length(), 1.0)
+
+func recovery_transform() -> Dictionary:
+	if not last_safe.is_empty() and valid(last_safe):
+		return last_safe.duplicate(true)
+	return {"position": _array(definition.to_world_position(definition.entries[definition.default_entry])), "facing": [0, 0, -1]}
+
+func recover() -> void:
+	var safe := recovery_transform()
+	player.position = _vector(safe.position)
+	player.facing = _vector(safe.facing)
+	player.velocity = Vector3.ZERO
+	player.grounded = false
+	player.intent = Vector2.ZERO
+	recovery_count += 1
+	if diagnostics != null:
+		diagnostics.record("info", "foundation.regions", "VOID_RECOVERED", {"region_id": definition.region_id, "entity_id": player.entity_id, "position": _array(player.position)})
+
+# Save captures a validated recovery transform for airborne/unsafe state without
+# mutating the live Player. Approved authored surface contact also supports entry
+# and immediate resume before the first physics contact callback.
+func safe_snapshot(value: Dictionary) -> Dictionary:
+	if definition.safe_position(player.position) and (player.grounded or definition.approved_surface(player.position)):
+		return value
+	var result := value.duplicate(true)
+	var safe := recovery_transform()
+	result.position = safe.position
+	result.facing = safe.facing
+	result.velocity = [0, 0, 0]
+	return result
+
+func _array(v: Vector3) -> Array:
+	return [v.x, v.y, v.z]
+func _vector(v: Array) -> Vector3:
+	return Vector3(v[0], v[1], v[2])

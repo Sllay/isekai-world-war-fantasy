@@ -173,3 +173,12 @@ Slice 2 composes typed actions above these unchanged transactions. Player Combat
 now owns section v2 with action schema v1 cooldowns, explicitly migrated from this
 slice's v1. See [Combat Actions](COMBAT_ACTIONS.md) and ADR-0014 for execution,
 input, cancellation, persistence and the replacement device acceptance steps.
+
+## Production enemy integration
+
+Slice 3 extends the runtime with Region-owned enemy state, Foundation targeting,
+fact-driven telegraphs, safe-transform recovery and confirmed development save
+deletion. The current contracts supersede earlier slice-specific fixture,
+version/residency and void-policy descriptions where applicable. See
+[Enemy, targeting and telegraph contracts](ENEMY_TARGETING_TELEGRAPHS.md) and
+[ADR-0015](../adr/ADR-0015-region-actor-state-and-recovery.md).

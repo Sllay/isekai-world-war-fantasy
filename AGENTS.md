@@ -11,6 +11,7 @@ Keep this file small. Read only the documentation relevant to the task; do not p
 - Decisions: `docs/adr/`
 - Roadmap: `docs/roadmap/`
 - Development workflow: `docs/development/`
+- Developer <-> Technical Design handoff: `docs/development/TECHNICAL_HANDOFF.md`
 - Detailed reusable workflow: `skills/project-development/SKILL.md`
 - Visual art direction: `docs/design/ART_DIRECTION.md`
 - Vector asset workflow: `skills/vector-art/SKILL.md`
@@ -93,6 +94,12 @@ Use this bounded recovery flow only:
 Never launch ad-hoc `nohup`, `xvfb-run`, or raw background Godot editor commands when the project launcher scripts exist. Never enter an open-ended reconnect/restart loop.
 
 See `docs/development/CODEX_MCP_WORKFLOW.md`.
+
+## Developer <-> Technical Design handoff
+
+Use `docs/development/TECHNICAL_HANDOFF.md` as the concise asynchronous communication channel from Codex/engineering to Technical Design.
+
+Before finishing a production slice, add or update a handoff entry when there is a material tool failure, unresolved design/architecture question, bounded workaround, validation gap, discovered future risk, or non-obvious invariant the next slice must preserve. Do not log routine narration, raw logs, secrets, or private reasoning. Durable decisions still belong in the appropriate GDD/design/architecture/ADR document, and the normal final task report is still required.
 
 ## Implementing a feature
 

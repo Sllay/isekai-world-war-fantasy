@@ -66,3 +66,12 @@ one-shots and stable-ID/world-space target values. PlayerInput maps F/H/X,
 controller RB/LB/B and direct multi-finger touch action rectangles to those same
 slots. The Player action adapter maps slots to content; motor movement/turn gates
 remain generic callables. See [combat action contracts](COMBAT_ACTIONS.md).
+
+## Region recovery and current target
+
+Slice 3 extends the runtime with Region-owned enemy state, Foundation targeting,
+fact-driven telegraphs, safe-transform recovery and confirmed development save
+deletion. The current contracts supersede earlier slice-specific fixture,
+version/residency and void-policy descriptions where applicable. See
+[Enemy, targeting and telegraph contracts](ENEMY_TARGETING_TELEGRAPHS.md) and
+[ADR-0015](../adr/ADR-0015-region-actor-state-and-recovery.md).

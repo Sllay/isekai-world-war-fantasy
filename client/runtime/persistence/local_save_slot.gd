@@ -32,3 +32,16 @@ func write(store: CoreSaveStore, snapshot: Dictionary) -> Error:
 	if error != OK and FileAccess.file_exists(path + ".tmp"):
 		DirAccess.remove_absolute(path + ".tmp")
 	return error
+
+func delete() -> Error:
+	if not valid():
+		return ERR_INVALID_PARAMETER
+	if DirAccess.dir_exists_absolute(path):
+		return ERR_FILE_CANT_WRITE
+	# Exact slot and its atomic-write sibling only. Never recurse or remove dirs.
+	for candidate in [path, path + ".tmp"]:
+		if FileAccess.file_exists(candidate):
+			var error := DirAccess.remove_absolute(candidate)
+			if error != OK:
+				return error
+	return OK

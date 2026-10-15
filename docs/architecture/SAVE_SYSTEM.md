@@ -178,3 +178,12 @@ explicitly with empty cooldowns; missing action data in v2 rejects. Active casts
 recovery and input never resume. Committed effects/resource remain canonical;
 cooldowns retain remaining simulation ticks without offline expiry. See
 [combat action contracts](COMBAT_ACTIONS.md).
+
+## Slice 3 persistence extension
+
+Slice 3 extends the runtime with Region-owned enemy state, Foundation targeting,
+fact-driven telegraphs, safe-transform recovery and confirmed development save
+deletion. The current contracts supersede earlier slice-specific fixture,
+version/residency and void-policy descriptions where applicable. See
+[Enemy, targeting and telegraph contracts](ENEMY_TARGETING_TELEGRAPHS.md) and
+[ADR-0015](../adr/ADR-0015-region-actor-state-and-recovery.md).

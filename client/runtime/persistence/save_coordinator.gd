@@ -10,6 +10,9 @@ var scene: WorldScene
 var integrity: SaveIntegrity
 var startup_mode := ""
 var ready := false
+var initial_snapshot: Dictionary = {}
+var suppress_autosave := false
+var delete_code := "NOT_DELETED"
 var writes_blocked := false
 var last_save_code := "NOT_SAVED"
 var last_resume_code := "NOT_RESUMED"
@@ -37,6 +40,9 @@ func capture_snapshot() -> Dictionary:
 	var snapshot := store.capture(registry, scene.directory.world.world_id, scene.directory.world.world_seed)
 	if not snapshot.is_empty():
 		snapshot.game_version = SaveIntegrity.GAME_VERSION
+		if scene.active_region != null:
+			var recovery := scene.active_region.record.recovery
+			snapshot.sections["foundation.player"].state = recovery.safe_snapshot(snapshot.sections["foundation.player"].state)
 		for id in transient_entity_ids:
 			snapshot.sections["core.runtime"].state.entities.ids.erase(id)
 	return snapshot
@@ -53,6 +59,7 @@ func save_game() -> Error:
 	var error := slot.write(store, staged)
 	if error != OK:
 		return _save_failure("SAVE_WRITE_FAILED", error)
+	suppress_autosave = false
 	last_save_code = "SAVE_OK"
 	_report(last_save_code)
 	return OK
@@ -103,9 +110,34 @@ func _resume_failure(code: String, reason: String) -> Error:
 	return ERR_INVALID_DATA
 
 func development_state() -> Dictionary:
-	return {"startup_mode": startup_mode, "slot_id": slot.id, "slot_path": slot.path, "save_format_version": CoreSaveStore.FORMAT_VERSION, "world_id": scene.directory.world.world_id, "current_region_id": scene.directory.world.current_region_id, "player_entity_id": scene.player.entity_id, "player_position": [scene.player.position.x, scene.player.position.y, scene.player.position.z], "world_tick": scene.directory.world.clock.tick, "save_code": last_save_code, "resume_code": last_resume_code, "writes_blocked": writes_blocked}
+	return {"startup_mode": startup_mode, "slot_id": slot.id, "slot_path": slot.path, "save_format_version": CoreSaveStore.FORMAT_VERSION, "world_id": scene.directory.world.world_id, "current_region_id": scene.directory.world.current_region_id, "player_entity_id": scene.player.entity_id, "player_position": [scene.player.position.x, scene.player.position.y, scene.player.position.z], "world_tick": scene.directory.world.clock.tick, "save_code": last_save_code, "resume_code": last_resume_code, "writes_blocked": writes_blocked, "delete_code": delete_code, "autosave_suppressed": suppress_autosave}
 
 func _report(code: String, details: Dictionary = {}) -> void:
 	var context := development_state()
 	context.merge(details)
 	registry.diagnostics.record("error" if code in ["SAVE_INVALID", "SAVE_BLOCKED", "SAVE_WRITE_FAILED", "RESUME_ATTACH_FAILED", "NEW_GAME_FAILED"] else "info", "runtime.persistence", code, context)
+
+func delete_and_reset() -> Error:
+	# Validate a concrete clean reset before touching disk. Autosave is latched
+	# off through reset and afterward until the user's next explicit Save.
+	var staged := integrity.prepare(initial_snapshot)
+	if staged.is_empty():
+		return ERR_INVALID_DATA
+	suppress_autosave = true
+	var error := slot.delete()
+	if error != OK:
+		delete_code = "SAVE_DELETE_FAILED"
+		_report(delete_code, {"error": error})
+		return error
+	ready = false
+	writes_blocked = true
+	scene.close_region()
+	error = store.restore(registry, staged)
+	if error == OK:
+		error = scene.open_current()
+	ready = error == OK
+	writes_blocked = not ready
+	startup_mode = "new_game"
+	delete_code = "SAVE_DELETED" if ready else "SAVE_RESET_FAILED"
+	_report(delete_code, {"error": error})
+	return error

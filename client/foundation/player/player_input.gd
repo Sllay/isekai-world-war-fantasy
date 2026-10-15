@@ -25,11 +25,11 @@ func _ready() -> void:
 	label.position = Vector2(20, 20)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(label)
-	for slot in [0, 1, 2]:
+	for slot in [0, 1, 2, 3]:
 		var button := Button.new()
-		button.text = ["Strike (F)", "Heal (H)", "Cancel (X)"][slot]
+		button.text = ["Strike (F)", "Heal (H)", "Cancel (X)", "Target (T)"][slot]
 		button.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-		button.position = Vector2(-150, -230 + slot * 65)
+		button.position = Vector2(-150, (-295 if slot == 3 else -230 + slot * 65))
 		button.size = Vector2(135, 55)
 		# Touch is read directly, so a second finger can act while moving.
 		button.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -50,6 +50,8 @@ func _input(event: InputEvent) -> void:
 				touch_axis = Vector2.ZERO
 			if event.index == camera_touch:
 				camera_touch = -1
+		elif OS.is_debug_build() and Rect2(Vector2(size.x - 435, 20), Vector2(285, 55)).has_point(event.position):
+			return
 		elif event.position.x < size.x * 0.45 and move_touch == -1:
 			move_touch = event.index
 			move_origin = event.position
@@ -72,6 +74,8 @@ func _input(event: InputEvent) -> void:
 		mouse_rotating = event.pressed
 	elif event is InputEventMouseMotion and mouse_rotating:
 		intent.camera_delta -= event.relative.x * tuning.mouse_radians_per_pixel
+	elif event is InputEventKey and event.physical_keycode == KEY_T and event.pressed and not event.echo:
+		intent.select_target = true
 	elif event.is_action_pressed("player_primary") and not event.is_echo():
 		request_action(0)
 	elif event.is_action_pressed("player_secondary") and not event.is_echo():
@@ -95,6 +99,7 @@ func _notification(what: int) -> void:
 		intent.jump = false
 		intent.camera_delta = 0
 		intent.consume_actions()
+		intent.select_target = false
 
 func _physics_process(delta: float) -> void:
 	var axis := Input.get_vector("player_left", "player_right", "player_forward", "player_back")
@@ -117,9 +122,10 @@ func request_action(slot: int) -> void:
 		0: intent.primary_action = true
 		1: intent.secondary_action = true
 		2: intent.cancel_action = true
+		3: intent.select_target = true
 
 func _action_slot(point: Vector2) -> int:
-	for slot in range(3):
-		if Rect2(Vector2(size.x - 150, size.y - 230 + slot * 65), Vector2(135, 55)).has_point(point):
+	for slot in range(4):
+		if Rect2(Vector2(size.x - 150, size.y + (-295 if slot == 3 else -230 + slot * 65)), Vector2(135, 55)).has_point(point):
 			return slot
 	return -1

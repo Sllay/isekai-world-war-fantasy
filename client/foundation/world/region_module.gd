@@ -10,6 +10,7 @@ func _init() -> void:
 	requires.assign(["core.runtime", "foundation.world", "foundation.player"])
 	provides.assign(["foundation.regions", "foundation.player_location"])
 	persistent = true
+	state_version = 2
 
 func register(services: CoreServices) -> Error:
 	var error := services.provide("foundation.regions", directory)
@@ -27,6 +28,11 @@ func initialize(services: CoreServices) -> Error:
 	for region in definition.regions:
 		if directory.add(region) != OK:
 			return ERR_INVALID_DATA
+	for record in directory.records.values():
+		record.recovery = RegionRecovery.new()
+		record.recovery.definition = record.definition
+		record.recovery.player = player
+		record.recovery.diagnostics = services.resolve("core.diagnostics") as CoreDiagnostics
 	directory.location.world_id = directory.world.world_id
 	return capabilities.attach("foundation.location", directory.location)
 
@@ -49,9 +55,27 @@ func validate_state(value: Dictionary) -> Error:
 
 func restore_state(value: Dictionary) -> void:
 	for region_id in directory.records:
-		directory.records[region_id].last_entry_id = value.regions[region_id].last_entry_id
+		var record := directory.record(region_id)
+		var saved: Dictionary = value.regions[region_id]
+		record.last_entry_id = saved.last_entry_id
+		record.recovery.last_safe = saved.last_safe.duplicate(true)
+		record.recovery.recovery_count = 0
+		for key in record.actors:
+			record.actors[key].restore(saved.actors[key])
 
 func dispose() -> void:
 	if capabilities != null:
 		capabilities.detach("foundation.location")
 	directory.location.region_id = ""
+
+func migrate_state(from_version: int, value: Dictionary) -> Variant:
+	if from_version != 1 or not value.get("regions") is Dictionary:
+		return null
+	var result := value.duplicate(true)
+	for id in result.regions:
+		if result.regions[id].has("last_safe") or result.regions[id].has("actors"):
+			return null
+		result.regions[id]["last_safe"] = {}
+		# No actor defaults here: application release migration owns introducing
+		# new content and its Core identities, never malformed current saves.
+	return result

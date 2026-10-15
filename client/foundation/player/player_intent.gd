@@ -29,3 +29,5 @@ func consume_camera() -> float:
 	var result := camera_delta
 	camera_delta = 0.0
 	return result
+
+var select_target := false

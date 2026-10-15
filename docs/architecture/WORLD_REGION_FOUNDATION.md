@@ -124,3 +124,12 @@ physical Android acceptance result.
 Desktop equivalents: WASD/arrows, Space, Q/E or right-mouse drag. Controller:
 left stick, A/cross, right stick. Report real-device control/visual results;
 headless/Codespace frame rate is not mobile performance evidence.
+
+## Region actor and recovery extension
+
+Slice 3 extends the runtime with Region-owned enemy state, Foundation targeting,
+fact-driven telegraphs, safe-transform recovery and confirmed development save
+deletion. The current contracts supersede earlier slice-specific fixture,
+version/residency and void-policy descriptions where applicable. See
+[Enemy, targeting and telegraph contracts](ENEMY_TARGETING_TELEGRAPHS.md) and
+[ADR-0015](../adr/ADR-0015-region-actor-state-and-recovery.md).

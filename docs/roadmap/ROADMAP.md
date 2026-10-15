@@ -76,7 +76,22 @@ Core-tick action execution, targeting/effect contracts, cancellation/interruptio
 movement gates, typed facts/cue hooks and persisted cooldowns. See
 `docs/architecture/COMBAT_ACTIONS.md` and ADR-0014. Automated, live MCP and BK Android acceptance passed. The mobile combat/inventory interaction direction is captured in `docs/design/MOBILE_COMBAT_UI_AND_INVENTORY.md` and is intentionally deferred until the owning gameplay slices require each control.
 
-Next Phase 2 slice: **first production enemy archetype + telegraph/targeting integration**, reusing CombatService and the generic action executor. Defensive verbs, equipment and mini-boss remain later Phase 2 work.
+Slice 3 — **Production Enemy Archetype, Targeting and Telegraphs implemented and Android-accepted**:
+Region-owned persistent melee skirmisher, Core-tick autonomous controller, shared
+CombatService/ActionExecutor, Foundation targeting/disposition, fact-driven range
+telegraphs, development Delete Save, and Region-owned safe-transform/void recovery.
+See `docs/architecture/ENEMY_TARGETING_TELEGRAPHS.md` and ADR-0015. Automated
+validation reports 598 checks / 0 failures. Live MCP was unavailable on the
+implementation host, but BK validated the device-observable behavior on Android:
+telegraph readability and avoidance, chase/disengage, enemy combat/defeat/save,
+and Delete Save. Natural terrain fall-through could not be reproduced on device;
+that recovery path remains automated/headless validated. Dynamic vertical terrain
+recovery for collision-tunneling cases is documented as a future Region/World
+resilience refinement rather than being hard-coded before multi-level terrain
+surface policy exists. No final enemy art or combat HUD is claimed.
+
+Next Phase 2 slice: **defensive verbs**, building on these action/targeting/telegraph
+contracts. Equipment and mini-boss remain later Phase 2 work.
 
 ## Phase 3 — Living World Production Slice
 
