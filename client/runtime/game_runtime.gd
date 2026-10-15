@@ -13,6 +13,8 @@ var persistence: SaveCoordinator
 var startup_error: Error = OK
 var startup_message: Label
 var save_controls: CanvasLayer
+var action_adapter := PlayerActionAdapter.new()
+var action_harness: Node3D
 
 func _ready() -> void:
 	var core_only := "--core-smoke" in OS.get_cmdline_user_args()
@@ -43,6 +45,20 @@ func _ready() -> void:
 
 func _activate_session() -> void:
 	startup_error = OK
+	action_adapter.executor = player_combat.actions
+	var avatar := world_scene.active_region.avatar
+	avatar.motor.movement_gate = player_combat.actions.movement_allowed
+	avatar.motor.turning_gate = player_combat.actions.turning_allowed
+	if OS.is_debug_build() and (DisplayServer.get_name() != "headless" or "--combat-actions-acceptance" in OS.get_cmdline_user_args()):
+		if is_instance_valid(action_harness):
+			action_harness.free()
+		action_harness = preload("res://runtime/combat_action_harness.gd").new()
+		action_harness.combat = combat.service
+		action_harness.player = player.state
+		add_child(action_harness)
+		persistence.transient_entity_ids.assign([action_harness.target.entity_id])
+		player_combat.actions.position_of = action_harness.position_of
+		action_adapter.default_target = action_harness.target_id
 	set_process(true)
 	get_tree().auto_accept_quit = false
 	if is_instance_valid(startup_message):
@@ -54,6 +70,7 @@ func _activate_session() -> void:
 		var combat_controls := preload("res://runtime/combat_debug_controls.gd").new()
 		combat_controls.combat = combat.service
 		combat_controls.state = player_combat.state
+		combat_controls.actions = player_combat.actions
 		add_child(combat_controls)
 
 # Public application API for later UI/gameplay/lifecycle adapters.
@@ -88,9 +105,31 @@ func development_state() -> Dictionary:
 		result.merge(persistence.development_state(), true)
 	if player_combat.state != null:
 		result["combat"] = player_combat.development_state()
+		result["actions"] = player_combat.actions.development_state()
+	if is_instance_valid(action_harness):
+		result["action_target"] = action_harness.development_state()
 	return result
 
+func _process(delta: float) -> void:
+	if registry.state != CoreModuleRegistry.State.RUNNING:
+		return
+	var previous := core.clock.tick
+	var steps := core.clock.advance(delta)
+	if steps == 0:
+		return
+	# Replay each newly advanced Core tick so effects and facts share exact ticks.
+	core.clock.tick = previous
+	for index in range(steps):
+		core.clock.tick += 1
+		core.scheduler.run_due(core.clock.tick)
+		if player_combat.actions != null and persistence != null and persistence.ready:
+			player_combat.actions.advance()
+			if world_scene.active_region != null:
+				action_adapter.consume(world_scene.active_region.avatar.intent)
+
 func _exit_tree() -> void:
+	if is_instance_valid(action_harness):
+		action_harness.free()
 	if is_instance_valid(world_scene):
 		world_scene.close_region()
 	super._exit_tree()

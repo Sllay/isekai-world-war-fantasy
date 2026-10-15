@@ -1,6 +1,8 @@
 class_name SaveCoordinator
 extends RefCounted
 
+# Application-owned development fixtures are excluded without mutating live IDs.
+var transient_entity_ids: Array[String] = []
 var slot: LocalSaveSlot
 var registry: CoreModuleRegistry
 var store: CoreSaveStore
@@ -35,6 +37,8 @@ func capture_snapshot() -> Dictionary:
 	var snapshot := store.capture(registry, scene.directory.world.world_id, scene.directory.world.world_seed)
 	if not snapshot.is_empty():
 		snapshot.game_version = SaveIntegrity.GAME_VERSION
+		for id in transient_entity_ids:
+			snapshot.sections["core.runtime"].state.entities.ids.erase(id)
 	return snapshot
 
 func save_game() -> Error:

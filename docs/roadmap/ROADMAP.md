@@ -70,8 +70,13 @@ combatants, typed attributes and source modifiers, damage/healing transactions,
 relationship policy, typed facts, defeat boundary and disk-backed Player combat
 persistence. See `docs/architecture/COMBAT_FOUNDATION.md` and ADR-0013.
 This completes only the foundation slice; Android combat acceptance is pending.
-Next slice: Player combat intent and modular action/ability execution. Enemy AI,
-telegraphs, defensive verbs, mini-boss and equipment remain future Phase 2 work.
+Slice 2 — **Player Combat Actions and Modular Ability Execution implemented**:
+semantic keyboard/controller/touch slots, typed data-defined strike/self-heal,
+Core-tick action execution, targeting/effect contracts, cancellation/interruption,
+movement gates, typed facts/cue hooks and persisted cooldowns. See
+`docs/architecture/COMBAT_ACTIONS.md` and ADR-0014. Automated and live MCP acceptance
+passed; BK Android acceptance remains pending. Enemy AI, telegraphs, defensive
+verbs, mini-boss and equipment remain future Phase 2 work.
 
 ## Phase 3 — Living World Production Slice
 

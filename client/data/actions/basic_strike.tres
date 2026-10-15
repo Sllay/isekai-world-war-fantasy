@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="ActionDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://foundation/actions/action_definition.gd" id="1"]
+[ext_resource type="Script" path="res://foundation/actions/action_effect.gd" id="2"]
+
+[sub_resource type="Resource" id="Damage"]
+script = ExtResource("2")
+amount = 12
+parryable = true
+
+[resource]
+script = ExtResource("1")
+action_id = "combat.action.basic_strike"
+cast_ticks = 4
+recovery_ticks = 6
+cooldown_ticks = 16
+target_mode = 1
+max_range = 2.5
+effects = Array[ExtResource("2")]([SubResource("Damage")])
+tags = Array[String](["combat.tag.melee"])
+windup_cue_id = "combat.cue.strike_windup"
+commit_cue_id = "combat.cue.strike_commit"
+recovery_cue_id = "combat.cue.strike_recovery"

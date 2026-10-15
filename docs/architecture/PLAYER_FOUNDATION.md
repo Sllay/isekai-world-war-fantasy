@@ -60,3 +60,9 @@ jump. Keep the left finger held while rotating or jumping with another finger.
 Desktop: WASD/arrows, Space, Q/E or right-mouse drag. Controller: left stick,
 A/cross (Godot A), right stick. Actual Android feel/performance requires BK's
 physical-device check.
+
+Phase 2 Slice 2 extends PlayerIntent with semantic primary/secondary/cancel
+one-shots and stable-ID/world-space target values. PlayerInput maps F/H/X,
+controller RB/LB/B and direct multi-finger touch action rectangles to those same
+slots. The Player action adapter maps slots to content; motor movement/turn gates
+remain generic callables. See [combat action contracts](COMBAT_ACTIONS.md).
