@@ -41,7 +41,7 @@ func run() -> void:
 	check(PlayerPresentation.resolve_view(Vector3.FORWARD, 0).direction == "back", "back view")
 	check(PlayerPresentation.resolve_view(Vector3.FORWARD, PI).direction == "front", "camera relative front")
 	check(PlayerPresentation.resolve_view(Vector3.LEFT, 0).mirrored, "opposite side mirror")
-	var host := RuntimePlayerHost.new()
+	var host := preload("res://tests/player_physics_fixture.gd").new()
 	host.state = player.state
 	player.state.position = Vector3(0, 1, 0)
 	player.state.velocity = Vector3.ZERO
