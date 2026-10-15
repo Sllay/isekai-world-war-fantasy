@@ -5,6 +5,8 @@ const WORLD_SCENE = preload("res://world/world.tscn")
 var player := PlayerModule.new()
 var world := WorldModule.new(WORLD_CONTENT)
 var regions := RegionModule.new()
+var combat := CombatModule.new()
+var player_combat := PlayerCombatModule.new()
 var world_scene: WorldScene
 var save_slot := LocalSaveSlot.new()
 var persistence: SaveCoordinator
@@ -15,7 +17,7 @@ var save_controls: CanvasLayer
 func _ready() -> void:
 	var core_only := "--core-smoke" in OS.get_cmdline_user_args()
 	if not core_only:
-		for module in [player, world, regions]:
+		for module in [player, world, regions, combat, player_combat]:
 			var error := registry.add(module)
 			if error != OK:
 				push_error("Production module registration failed: %s" % error)
@@ -49,6 +51,10 @@ func _activate_session() -> void:
 		save_controls = preload("res://runtime/persistence/save_controls.gd").new()
 		save_controls.save_action = save_game
 		add_child(save_controls)
+		var combat_controls := preload("res://runtime/combat_debug_controls.gd").new()
+		combat_controls.combat = combat.service
+		combat_controls.state = player_combat.state
+		add_child(combat_controls)
 
 # Public application API for later UI/gameplay/lifecycle adapters.
 func save_game() -> Error:
@@ -80,6 +86,8 @@ func development_state() -> Dictionary:
 	var result := world_scene.development_state() if is_instance_valid(world_scene) else {}
 	if persistence != null:
 		result.merge(persistence.development_state(), true)
+	if player_combat.state != null:
+		result["combat"] = player_combat.development_state()
 	return result
 
 func _exit_tree() -> void:

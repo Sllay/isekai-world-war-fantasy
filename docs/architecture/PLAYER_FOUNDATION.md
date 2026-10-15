@@ -48,6 +48,10 @@ Player's module dependencies or persistent state. See
 `PlayerAvatar.development_state()` exposes the original Player diagnostics;
 `WorldScene.development_state()` adds World/Region context.
 
+Phase 2 attaches `foundation.combatant` through a separate Player Combat adapter;
+movement/input/camera and Player state ownership remain unchanged. See
+[Combat foundation](COMBAT_FOUNDATION.md).
+
 Run `bash tools/dev/test_core.sh` then `bash tools/dev/test_player.sh`.
 Android validation: run the project main scene, drag anywhere in the left 45%
 for movement (70px full deflection), drag horizontally on the right to rotate,

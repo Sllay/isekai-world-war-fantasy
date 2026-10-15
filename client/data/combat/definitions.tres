@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CombatContent" load_steps=2 format=3]
+[ext_resource type="Script" path="res://foundation/combat/combat_content.gd" id="1"]
+[resource]
+script = ExtResource("1")
+tokens = Array[Dictionary]([
+    {"id":"combat.damage.physical","kind":"damage"},
+    {"id":"combat.resource.energy","kind":"resource"},
+    {"id":"combat.attribute.max_health","kind":"attribute","value":0},
+    {"id":"combat.attribute.max_resource","kind":"attribute","value":1},
+    {"id":"combat.attribute.damage_scale","kind":"attribute","value":2},
+    {"id":"combat.attribute.heal_scale","kind":"attribute","value":3},
+    {"id":"combat.modifier.add","kind":"operator","value":0},
+    {"id":"combat.modifier.scale","kind":"operator","value":1}
+  ])
+profiles = Array[Dictionary]([
+    {"id":"combat.profile.standard","version":1,"max_health":100,"max_resource":50,"resource_id":"combat.resource.energy","damage_scale":10000,"heal_scale":10000}
+  ])

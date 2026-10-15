@@ -31,12 +31,18 @@ func startup() -> Error:
 	startup_mode = "resume"
 	return _resume_read(loaded)
 
+func capture_snapshot() -> Dictionary:
+	var snapshot := store.capture(registry, scene.directory.world.world_id, scene.directory.world.world_seed)
+	if not snapshot.is_empty():
+		snapshot.game_version = SaveIntegrity.GAME_VERSION
+	return snapshot
+
 func save_game() -> Error:
 	if not ready or writes_blocked or scene.active_region == null:
 		return _save_failure("SAVE_BLOCKED", ERR_UNCONFIGURED)
 	# Main-thread synchronous capture has no await: physics, clock and modules
 	# cannot advance between capture, validation and the atomic replacement.
-	var snapshot := store.capture(registry, scene.directory.world.world_id, scene.directory.world.world_seed)
+	var snapshot := capture_snapshot()
 	var staged := integrity.prepare(snapshot)
 	if staged.is_empty():
 		return _save_failure("SAVE_INVALID", ERR_INVALID_DATA, integrity.reason)
@@ -61,7 +67,7 @@ func _resume_read(loaded: Dictionary) -> Error:
 	if staged.is_empty():
 		return _resume_failure("SAVE_INVALID", integrity.reason)
 	# No residency changes until *all* schema and cross-section checks pass.
-	var previous := store.capture(registry, scene.directory.world.world_id, scene.directory.world.world_seed)
+	var previous := capture_snapshot()
 	var was_resident := scene.active_region != null
 	scene.close_region()
 	var error := store.restore(registry, staged)
