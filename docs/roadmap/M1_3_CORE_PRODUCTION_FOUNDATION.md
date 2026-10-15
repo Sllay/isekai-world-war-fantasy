@@ -65,6 +65,8 @@ The M1.2 billboard placeholder is not the final presentation contract.
 
 Character presentation must support the future modular vector rig and directional visual states without coupling movement logic to a specific sprite implementation.
 
+Slice 2 implementation: `client/foundation/player/` and `client/runtime/`. Contracts and Android controls: `docs/architecture/PLAYER_FOUNDATION.md`; decision: ADR-0010. Run Core and Player test scripts. Live MCP acceptance remains blocked by the host bridge connection; Android acceptance awaits BK.
+
 ## Slice 3 — Production world/region shell
 
 Create the first real world shell rather than another test map:
