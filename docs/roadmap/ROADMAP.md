@@ -19,10 +19,10 @@ From M1.3 onward:
 
 - **M1.1 — Technical Foundation Research:** Completed (2026-10-13).
 - **M1.2 — Project Bootstrap & Client/World Proof:** Completed (2026-10-13).
-- **M1.3 — Core Production Foundation:** Implementation complete; Android save/resume acceptance pending. See `M1_3_CORE_PRODUCTION_FOUNDATION.md`.
-- **Next production milestone:** Combat Production Slice (Phase 2), after device acceptance/review.
+- **M1.3 — Core Production Foundation:** Completed and accepted on Android (2026-10-15). See `M1_3_CORE_PRODUCTION_FOUNDATION.md`.
+- **Next production milestone:** Combat Production Slice (Phase 2).
 
-The selected foundation is Godot 4.7.2/GDScript for the client, with the established mobile/Codespace/Codex/MCP workflow. Candidate technologies not yet exercised by production systems remain subject to evidence when their milestone arrives.
+The selected foundation is Godot 4.7.2/GDScript for the client, with the established mobile/Codespaces/Codex/MCP workflow. Candidate technologies not yet exercised by production systems remain subject to evidence when their milestone arrives.
 
 ## Phase 0 — Pre-production
 
