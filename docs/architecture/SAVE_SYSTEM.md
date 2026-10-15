@@ -1,6 +1,6 @@
 # Production local save / resume
 
-- **Status:** Implemented — M1.3 Slice 4; Android acceptance pending
+- **Status:** Implemented — M1.3 accepted; Phase 2 combat integration added
 - **Updated:** 2026-10-15
 
 ## Ownership
@@ -53,6 +53,7 @@ metadata, and these versioned module sections:
 | `foundation.player` v1 | Stable entity ID, world-space position, velocity and horizontal facing |
 | `foundation.world` v1 | World ID, seed, schema version and current Region ID |
 | `foundation.regions` v1 | Region records: Region ID, World membership, schema version and last entry ID |
+| `foundation.player_combat` v1 | Player foreign key, combat profile/version, current health/resource, lifecycle and stable-source modifiers |
 
 Ground contact, pending input, Nodes, cameras, fallback visuals, Region residency,
 callbacks and presentation defaults are transient. Region collision and entries
@@ -70,9 +71,17 @@ requires exact game/module versions; future compatible releases must explicitly
 adjust that policy alongside schema migrations. Generic one-step section and
 format migration hooks remain in Core and are exercised by Core tests.
 
+Phase 2 application game version is `0.2.0`. SaveCoordinator stamps the application
+version on generic Core captures. The exact four-module M1.3 `0.1.0` snapshot can
+upgrade in memory by initializing only the new combat section; all state is then
+fully validated. Read never rewrites the slot. Current-version missing combat data
+rejects, and Player combat's entity ID must match Player/Core. See
+[Combat persistence contracts](COMBAT_FOUNDATION.md). Generic format version is
+still 1; Core has no combat or application upgrade policy.
+
 ## Startup and resume
 
-1. Boot configured Core, Player, World and Region modules; create the World scene
+1. Boot configured Core, Player, World, Region, Combat and Player Combat modules; create the World scene
    without loading Region residency.
 2. Read the selected slot. `NO_SAVE` alone starts a new game using its entry.
 3. Existing saves must pass all generic and application integrity checks before

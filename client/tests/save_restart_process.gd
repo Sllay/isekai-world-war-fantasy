@@ -46,16 +46,16 @@ func run() -> void:
 		check(runtime.save_game() == OK, "first process writes actual slot")
 		var snapshot: Dictionary = runtime.core.saves.read_snapshot(slot_path)
 		var file := FileAccess.open(proof_path, FileAccess.WRITE)
-		file.store_string(JSON.stringify(snapshot))
+		file.store_string(FileAccess.get_file_as_string(slot_path))
 		file.close()
 		check(snapshot.sections["core.runtime"].state.clock.tick > 0, "time advanced before save")
 	else:
 		var expected: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(proof_path))
 		check(runtime.persistence.startup_mode == "resume", "separate process selects resume")
-		var captured: Dictionary = runtime.core.saves.capture(runtime.registry, runtime.world.state.world_id, runtime.world.state.world_seed)
+		var captured: Dictionary = runtime.persistence.capture_snapshot()
 		# JSON has one numeric type; normalize integer/float representations on
 		# both sides before comparing every canonical field.
-		check(JSON.parse_string(JSON.stringify(captured)) == expected, "fresh process restores exact canonical snapshot before any frames")
+		check(JSON.parse_string(JSON.stringify(captured, "", true, true)) == expected, "fresh process restores exact canonical snapshot before any frames")
 		var expected_player: Dictionary = expected.sections["foundation.player"].state
 		check(runtime.player.state.entity_id == expected_player.entity_id, "stable Player ID across OS processes")
 		check(runtime.player.state.position == Vector3(expected_player.position[0], expected_player.position[1], expected_player.position[2]), "position restored on ridge rather than entry")

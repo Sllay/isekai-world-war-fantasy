@@ -65,6 +65,14 @@ The existing M1.2 visual proof is evidence. Individual pieces may be reused only
 - one modular mini-boss;
 - minimum production equipment path.
 
+Slice 1 — **Production Combat Foundation implemented**: generic stable-ID
+combatants, typed attributes and source modifiers, damage/healing transactions,
+relationship policy, typed facts, defeat boundary and disk-backed Player combat
+persistence. See `docs/architecture/COMBAT_FOUNDATION.md` and ADR-0013.
+This completes only the foundation slice; Android combat acceptance is pending.
+Next slice: Player combat intent and modular action/ability execution. Enemy AI,
+telegraphs, defensive verbs, mini-boss and equipment remain future Phase 2 work.
+
 ## Phase 3 — Living World Production Slice
 
 - region/chunk state;

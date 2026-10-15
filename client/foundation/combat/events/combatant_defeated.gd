@@ -1,0 +1,2 @@
+class_name CombatantDefeated
+extends CombatEvent
