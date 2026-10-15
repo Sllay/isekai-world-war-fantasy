@@ -38,14 +38,15 @@ These are extension boundaries, not a completed animation or equipment system.
 The current adapter uses engine primitives solely to observe movement; no
 character asset is produced by this slice.
 
-`RuntimePlayerHost` is composition plus a bounded floor, step and slope. It
-has no world/region identity, persistence or spawning framework. Slice 3 replaces
-this host with Region-owned placement/collision and composes the same motor,
-intent, camera and presentation using the existing module state. Physical state
-positions are in the physics space of the motor's parent; hosts must use an
-identity world transform (or explicitly convert coordinates at their boundary).
-`development_state()` exposes ID, position, velocity, grounded, movement intent,
-presentation direction/mirroring and camera yaw without a permanent debug UI.
+Slice 3 replaces `RuntimePlayerHost` with Region-owned placement and collision.
+`PlayerAvatar` retains only reusable motor/input/camera/presentation composition;
+the previous floor fixture now lives under tests. Physical Player positions use
+world-space coordinates with identity actor parents. Region supplies the borrowed
+`foundation.location` capability through the existing container, without changing
+Player's module dependencies or persistent state. See
+[World/Region contracts](WORLD_REGION_FOUNDATION.md) for spawning and resume.
+`PlayerAvatar.development_state()` exposes the original Player diagnostics;
+`WorldScene.development_state()` adds World/Region context.
 
 Run `bash tools/dev/test_core.sh` then `bash tools/dev/test_player.sh`.
 Android validation: run the project main scene, drag anywhere in the left 45%

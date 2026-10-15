@@ -81,6 +81,8 @@ Create the first real world shell rather than another test map:
 
 This becomes the home for later combat, living-world and survival slices.
 
+Slice 3 implementation: `client/foundation/world/` owns World/Region contracts and save sections; `client/world/` supplies production residency, Region-owned player spawning and the first terrain scene. See `docs/architecture/WORLD_REGION_FOUNDATION.md` and ADR-0011. Run Core, Player and World test scripts. Live MCP acceptance is blocked by the bridge connection; Android validation awaits BK.
+
 ## Slice 4 — Save / resume loop
 
 Prove the real game state can survive restart:
