@@ -62,7 +62,7 @@ not a seed generator or a streaming implementation. The two entries are
 No decorative or character art is generated. Surface edges are finite, without
 respawn/void recovery; those policies need a later gameplay decision.
 
-## Persistence handoff to Slice 4
+## Persistence integration
 
 World and Region modules each own version-1 Core save sections. World persists
 ID, seed, schema version and current region. Region persists its complete known
@@ -71,13 +71,14 @@ Definitions supply static geometry, origin, entries and metadata; they are conte
 not inferred from saved presentation Nodes. State validators reject unknown regions,
 wrong world membership, unsupported schema and unknown entries without mutation.
 
-Slice 4 can stop residency, restore the Core/Player/World/Region sections, then
-call `WorldScene.open_current(true)` to attach the restored Player without applying
+The application SaveCoordinator stops residency, restores Core/Player/World/Region sections, then
+calls `WorldScene.open_current(true)` to attach the restored Player without applying
 entry defaults or resetting velocity. Restore keeps World/Region service objects
 stable. Worlds must be configured with the matching content/ID before validation.
-Current sections do not restore resident Nodes themselves; the orchestration,
-file-selection UX, migrations and atomic cross-section checks (including top-level
-world metadata and Core entity membership) belong to Slice 4. No second clock or
+Sections do not restore resident Nodes themselves; the coordinator owns disk I/O,
+startup policy, full prevalidation and reattachment. SaveIntegrity checks top-level
+World metadata and Core entity membership before mutation. See
+[SAVE_SYSTEM.md](SAVE_SYSTEM.md) and ADR-0012. No second clock or
 persisted clock copy exists; Region reads the borrowed Core tick.
 
 ## Diagnostics and validation
@@ -94,7 +95,7 @@ bash tools/dev/test_player.sh
 bash tools/dev/test_world.sh
 ```
 
-Validated suites: Core 51 checks, Player 23 checks, World/Region 50 checks, all with
+Validated suites: Core 55 checks, Player 23 checks, World/Region 50 checks, all with
 zero failures. World tests cover identity, invalid/duplicate definitions, lifecycle, ownership,
 clock sharing, entry placement, local/chunk addressing, real terrain collision,
 keyboard ramp traversal, camera rotation, persistence validation/restore, resume,
@@ -117,7 +118,8 @@ physical Android acceptance result.
 4. Tap the upper-right circle (80px from right, 90px from top) to jump; retain the
    movement finger to jump while moving. Confirm landing on floor/ramp/ridge.
 5. Stop and rerun twice; confirm clean loading and the initial arrival entry.
-   Restart persistence is intentionally Slice 4, so each run starts fresh.
+   With Slice 4, a saved slot resumes its checkpoint; see SAVE_SYSTEM.md for the
+   Android save/terminate/resume acceptance steps.
 
 Desktop equivalents: WASD/arrows, Space, Q/E or right-mouse drag. Controller:
 left stick, A/cross, right stick. Report real-device control/visual results;

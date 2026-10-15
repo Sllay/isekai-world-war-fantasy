@@ -22,6 +22,8 @@ static func valid(value: Dictionary) -> bool:
 		for number in vector:
 			if not (number is float or number is int) or not is_finite(float(number)):
 				return false
+		if not Vector3(vector[0], vector[1], vector[2]).is_finite():
+			return false
 	var direction := Vector3(value.facing[0], value.facing[1], value.facing[2])
 	return absf(direction.y) < 0.001 and absf(direction.length() - 1.0) < 0.001
 

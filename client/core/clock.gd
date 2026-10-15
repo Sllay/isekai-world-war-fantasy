@@ -11,8 +11,12 @@ var _remainder: float = 0.0
 func advance(delta: float) -> int:
 	if paused or not is_finite(delta) or delta < 0.0 or not is_finite(time_scale) or time_scale < 0.0 or not is_finite(step_seconds) or step_seconds <= 0.0 or max_steps_per_frame < 1:
 		return 0
-	_remainder += delta * time_scale
-	var steps := mini(int(_remainder / step_seconds), max_steps_per_frame)
+	var accumulated := _remainder + delta * time_scale
+	if not is_finite(accumulated):
+		return 0
+	_remainder = accumulated
+	# Clamp before integer conversion, including very large restored backlogs.
+	var steps := int(minf(_remainder / step_seconds, float(max_steps_per_frame)))
 	_remainder -= steps * step_seconds
 	tick += steps
 	return steps
@@ -23,7 +27,7 @@ func capture() -> Dictionary:
 func validate(value: Dictionary) -> Error:
 	if not value.get("tick") is float and not value.get("tick") is int:
 		return ERR_INVALID_DATA
-	if value.tick < 0 or value.tick != int(value.tick):
+	if not is_finite(float(value.tick)) or value.tick < 0 or value.tick > 9007199254740991.0 or value.tick != int(value.tick):
 		return ERR_INVALID_DATA
 	var remainder: Variant = value.get("remainder")
 	if not (remainder is float or remainder is int) or not is_finite(float(remainder)) or remainder < 0:

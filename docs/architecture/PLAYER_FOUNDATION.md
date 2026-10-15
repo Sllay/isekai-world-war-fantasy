@@ -11,8 +11,8 @@ later systems can attach capabilities without inspecting physical/visual Nodes.
 The entity ID is allocated by Core. Module-owned section version 1 persists ID,
 position, velocity and horizontal facing as JSON values. Ground contact and
 pending input are transient and reset on restore. Save files must retain the
-matching Core entity section; cross-section referential validation is deferred
-to the save/resume slice.
+matching Core entity section; application `SaveIntegrity` validates that reference
+before save or resume. See [save/resume contracts](SAVE_SYSTEM.md).
 
 `PlayerIntent` carries movement, one-shot jump and incremental camera rotation.
 Only `PlayerInput` reads hardware events. Left touch and right touch track
