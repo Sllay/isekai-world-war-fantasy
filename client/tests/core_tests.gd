@@ -178,6 +178,11 @@ func test_time() -> void:
 	clock.paused = false
 	clock.step_seconds = 0.0
 	check(clock.advance(1.0) == 0, "invalid clock configuration rejected")
+	var backlog := CoreClock.new()
+	var backlog_state := backlog.capture()
+	backlog_state.remainder = 1e100
+	backlog.restore(backlog_state)
+	check(backlog.advance(0.01) == backlog.max_steps_per_frame and backlog.tick == 4, "large restored backlog clamps before integer conversion")
 	var scheduler := CoreTickScheduler.new()
 	scheduler.max_callbacks_per_frame = 2
 	var seen: Array[int] = []
@@ -213,6 +218,9 @@ func test_save() -> void:
 	check(registry.boot() == OK, "fresh runtime boot")
 	check(store.restore(registry, loaded) == OK and runtime.entities.contains(id) and runtime.clock.tick == 2, "stable identity and clock survive disk restart")
 	loaded.sections["test.state"] = {"version": 1, "state": {"old_value": 42}}
+	var prepared := store.prepare_restore(registry, loaded)
+	check(not prepared.is_empty() and prepared.sections["test.state"].version == module.state_version and module.value != 42, "prepare migrates without mutating live module")
+	check(loaded.sections["test.state"].version == 1 and loaded.sections["test.state"].state.has("old_value"), "prepare does not mutate source snapshot")
 	check(store.restore(registry, loaded) == OK and module.value == 42, "module section migration")
 	loaded.sections["core.runtime"].state.clock.tick = 88
 	loaded.sections["test.state"].state = {"old_value": "bad"}
@@ -224,5 +232,7 @@ func test_save() -> void:
 	check(store.write_snapshot(path, {"large_integer": 9223372036854775807}) != OK, "lossy JSON integers rejected")
 	loaded.format_version = 999
 	check(store.restore(registry, loaded) != OK, "future format rejected")
+	var fraction := 0.12345678901234566
+	check(store.write_snapshot(path, {"fraction": fraction}) == OK and store.read_snapshot(path).fraction == fraction, "disk JSON preserves fractional clock precision")
 	registry.shutdown()
 	DirAccess.remove_absolute(path)
