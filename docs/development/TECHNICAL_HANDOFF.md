@@ -61,28 +61,28 @@ Use the shortest entry that preserves the useful fact.
 - **Status:** RESOLVED
 - **Branch / slice:** `phase2/enemy-telegraphs` / Phase 2 Slice 3
 - **Developer note:** The bounded MCP recovery procedure was followed. The official launcher reported healthy, but both permitted MCP read retries returned `Not connected`. Recovery was stopped and the editor log inspected as required.
-- **Impact:** Automated/headless coverage passed, but live telegraph readability, live interaction, and Android/device behavior are not proven by MCP.
+- **Impact:** Automated/headless coverage passed, but live telegraph readability, live interaction, and Android/device behavior were not proven by MCP.
 - **Evidence:** `docs/architecture/ENEMY_TARGETING_TELEGRAPHS.md`; automated result recorded there as 598 checks / 0 failures.
 - **Needs Technical Design:** Confirm Android acceptance should remain the merge gate for this slice.
-- **Resolution:** Technical Design confirms Android acceptance remains the merge gate. The implementation can proceed to device testing, but must not be merged solely on headless evidence.
+- **Resolution:** BK completed Android acceptance for the device-observable behavior: telegraph readability/reaction, chase/disengage, enemy combat/defeat/save behavior, and Delete Save all worked. Natural void/fall-through could not be reproduced, so that recovery path remains automated/headless validated only.
 
 ### 2026-10-15 — Enemy movement boundary is intentionally minimal
 - **Status:** INFO
 - **Branch / slice:** `phase2/enemy-telegraphs` / Phase 2 Slice 3
 - **Developer note:** The first enemy uses a direct CharacterBody3D movement adapter on the open Home Valley terrain. Combat decisions call a movement port; no general navigation/pathfinding framework was introduced.
-- **Impact:** This is sufficient for the current open-terrain encounter. Complex obstacles/terrain will require a navigation implementation behind the existing movement boundary rather than changes to CombatService or ActionExecutor.
+- **Impact:** BK confirmed the enemy follows and disengages correctly but the motion is visibly simple. That is accepted for this slice. Complex obstacles/terrain require navigation behind the existing movement boundary rather than changes to CombatService or ActionExecutor.
 - **Evidence:** `client/gameplay/enemies/enemy_controller.gd`, `client/gameplay/enemies/enemy_body.gd`.
 - **Needs Technical Design:** No.
 - **Resolution:** Future navigation work should preserve the movement-port boundary.
 
 ### 2026-10-15 — Melee telegraph circle is a warning range, not AoE authority
-- **Status:** INFO
+- **Status:** RESOLVED
 - **Branch / slice:** `phase2/enemy-telegraphs` / Phase 2 Slice 3
 - **Developer note:** The current orange/gold circle presents the melee strike's range during windup. It does not damage every entity inside the circle and does not authorize a hit.
 - **Impact:** The selected entity still has to be valid/in range when ActionExecutor commits; leaving range during windup cancels the hit. Future cone/line/ground-area actions may use different telegraph definitions without changing damage authority.
 - **Evidence:** `client/foundation/telegraphs/telegraph_tracker.gd`, `client/foundation/telegraphs/telegraph_renderer.gd`, `docs/architecture/ENEMY_TARGETING_TELEGRAPHS.md`.
 - **Needs Technical Design:** No.
-- **Resolution:** Preserve the rule that telegraphs visualize canonical action intent but never become gameplay authority.
+- **Resolution:** BK confirmed on Android that the telegraph is clearly visible and leaving the area during windup avoids the hit. Preserve the rule that telegraphs visualize canonical action intent but never become gameplay authority.
 
 ### 2026-10-15 — First enemy instance is intentionally single-content scope
 - **Status:** INFO
@@ -92,3 +92,12 @@ Use the shortest entry that preserves the useful fact.
 - **Evidence:** `client/gameplay/enemies/enemy_module.gd`, `client/foundation/world/region_actor_state.gd`.
 - **Needs Technical Design:** No.
 - **Resolution:** Accepted for Slice 3. Revisit spawning/collection ownership only when the next content scale requires more than this one production actor.
+
+### 2026-10-15 — Dynamic vertical terrain recovery requested
+- **Status:** INFO
+- **Branch / slice:** `phase2/enemy-telegraphs` / future world/resilience refinement
+- **Developer note:** BK identified a collision-failure case that may not look like a normal void fall: the Player can potentially tunnel through valid terrain and end up far below a surface that still exists directly above the same X/Z position.
+- **Impact:** Future Region recovery should attempt a validated vertical surface query near the current horizontal position before falling back to the existing last-safe/default-entry recovery. This must be Region/World-owned and must account for caves, bridges and multi-level terrain so it does not blindly teleport to the wrong floor.
+- **Evidence:** `docs/architecture/ENEMY_TARGETING_TELEGRAPHS.md`, Safe transform and void recovery.
+- **Needs Technical Design:** No immediate blocker.
+- **Resolution:** Direction accepted and documented; implementation is deferred until terrain/surface querying is mature enough to choose a trustworthy walkable surface.
