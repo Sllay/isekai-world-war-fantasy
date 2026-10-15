@@ -1,0 +1,2 @@
+class_name ActionCommitted
+extends ActionEvent

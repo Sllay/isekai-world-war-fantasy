@@ -2,22 +2,29 @@ class_name CombatModule
 extends CoreModule
 
 var service := CombatService.new()
+var actions := ActionCatalog.new()
 var definitions: Dictionary
+var action_content: ActionContent
 
-func _init(content: Dictionary = {}) -> void:
+func _init(content: Dictionary = {}, action_data: ActionContent = null) -> void:
+	action_content = preload("res://data/actions/definitions.tres") if action_data == null else action_data
 	id = "foundation.combat"
 	requires.assign(["core.runtime"])
-	provides.assign(["foundation.combat"])
-	published_events.assign(["combat.damage_applied", "combat.healing_applied", "combat.health_changed", "combat.combatant_defeated"])
+	provides.assign(["foundation.combat", "foundation.actions"])
+	published_events.assign(["combat.damage_applied", "combat.healing_applied", "combat.health_changed", "combat.combatant_defeated", "combat.action_started", "combat.action_committed", "combat.action_cancelled", "combat.action_completed"])
 	definitions = CombatDefinitions.defaults() if content.is_empty() else content.duplicate(true)
 	for group in ["tokens", "profiles"]:
 		if definitions.get(group) is Array:
 			for definition in definitions[group]:
 				if definition is Dictionary and definition.get("id") is String:
 					data_ids.append(definition.id)
+	for definition in action_content.actions:
+		if definition != null:
+			data_ids.append(definition.action_id)
 
 func register(services: CoreServices) -> Error:
-	return services.provide("foundation.combat", service)
+	var error := services.provide("foundation.combat", service)
+	return services.provide("foundation.actions", actions) if error == OK else error
 
 func initialize(services: CoreServices) -> Error:
 	service.entities = services.resolve("core.entities") as CoreEntityIds
@@ -39,7 +46,13 @@ func initialize(services: CoreServices) -> Error:
 	for profile in definitions.profiles:
 		if data.lookup(profile.resource_id).get("kind") != "resource":
 			return ERR_INVALID_DATA
-	for event_type in [DamageApplied, HealingApplied, HealthChanged, CombatantDefeated]:
+	if data.define_family("combat.action", ActionCatalog.valid_metadata) != OK:
+		return ERR_INVALID_DATA
+	actions.data = data
+	for definition in action_content.actions:
+		if actions.register(definition) != OK:
+			return ERR_INVALID_DATA
+	for event_type in [DamageApplied, HealingApplied, HealthChanged, CombatantDefeated, ActionStarted, ActionCommitted, ActionCancelled, ActionCompleted]:
 		if service.events.define(event_type) != OK:
 			return ERR_INVALID_DATA
 	return OK

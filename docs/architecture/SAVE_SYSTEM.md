@@ -53,7 +53,7 @@ metadata, and these versioned module sections:
 | `foundation.player` v1 | Stable entity ID, world-space position, velocity and horizontal facing |
 | `foundation.world` v1 | World ID, seed, schema version and current Region ID |
 | `foundation.regions` v1 | Region records: Region ID, World membership, schema version and last entry ID |
-| `foundation.player_combat` v1 | Player foreign key, combat profile/version, current health/resource, lifecycle and stable-source modifiers |
+| `foundation.player_combat` v2 | Player foreign key, combat profile/version, current health/resource, lifecycle, stable-source modifiers and remaining action cooldown ticks |
 
 Ground contact, pending input, Nodes, cameras, fallback visuals, Region residency,
 callbacks and presentation defaults are transient. Region collision and entries
@@ -172,3 +172,9 @@ acceptance; no Codespace frame-rate/mobile performance claim is made.
    it for diagnosis and restore a known-valid copy before restarting.
 
 Desktop controls remain WASD/arrows, Space, Q/E/right-mouse drag; K saves.
+
+Slice 2 adds action schema v1 inside Player Combat section v2. Section v1 migrates
+explicitly with empty cooldowns; missing action data in v2 rejects. Active casts,
+recovery and input never resume. Committed effects/resource remain canonical;
+cooldowns retain remaining simulation ticks without offline expiry. See
+[combat action contracts](COMBAT_ACTIONS.md).

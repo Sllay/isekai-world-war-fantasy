@@ -168,3 +168,8 @@ For BK:
 
 Next: semantic Player combat actions and modular ability/action execution, then
 production enemy behavior, telegraphs and the remaining Phase 2 combat content.
+
+Slice 2 composes typed actions above these unchanged transactions. Player Combat
+now owns section v2 with action schema v1 cooldowns, explicitly migrated from this
+slice's v1. See [Combat Actions](COMBAT_ACTIONS.md) and ADR-0014 for execution,
+input, cancellation, persistence and the replacement device acceptance steps.
