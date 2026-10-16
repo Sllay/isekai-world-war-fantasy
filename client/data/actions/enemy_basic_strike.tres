@@ -11,6 +11,7 @@ action_id = "combat.action.enemy.basic_strike"
 cast_ticks = 24
 recovery_ticks = 14
 cooldown_ticks = 40
+interrupt_lockout_ticks = 14
 cast_while_moving = false
 turn_while_casting = false
 target_mode = 1
