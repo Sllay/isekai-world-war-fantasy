@@ -20,6 +20,7 @@ var runtime: ActionRuntime
 var _busy := false
 var _committed := false
 var _processed_tick := -1
+var _interrupt_lockout_until := 0
 
 func _init(service: CombatService = null, definitions: ActionCatalog = null, owner := "") -> void:
 	combat = service
@@ -28,6 +29,9 @@ func _init(service: CombatService = null, definitions: ActionCatalog = null, own
 
 func remaining_cooldown(action_id: String) -> int:
 	return maxi(0, _cooldowns.get(action_id, 0) - combat.clock.tick)
+
+func remaining_interrupt_lockout() -> int:
+	return maxi(0, _interrupt_lockout_until - combat.clock.tick)
 
 # Availability is per-action and separate from active execution. Later charges
 # can replace this query/commit policy without adding phases to execution.
@@ -68,6 +72,8 @@ func _validate(definition: ActionDefinition, chosen: String, starting: bool) -> 
 		return "UNKNOWN_ACTION"
 	if starting and phase not in [Phase.IDLE, Phase.CANCELLED]:
 		return "ACTION_ACTIVE"
+	if starting and remaining_interrupt_lockout() > 0:
+		return "INTERRUPT_LOCKOUT"
 	if starting and remaining_cooldown(definition.action_id) > 0:
 		return "COOLDOWN"
 	if definition.resource_cost > 0 and (owner.resource_id != definition.resource_id or owner.resource < definition.resource_cost):
@@ -147,6 +153,7 @@ func reset_transient() -> void:
 	var owner := combat.combatant(owner_id)
 	if owner != null:
 		owner.defense.clear()
+	_interrupt_lockout_until = 0
 
 func cancel() -> String:
 	return _request_cancel(false)
@@ -163,7 +170,11 @@ func _request_cancel(external: bool) -> String:
 	if not (current.interruptible if external else current.cancellable):
 		return "NOT_INTERRUPTIBLE" if external else "NOT_CANCELLABLE"
 	_busy = true
-	_cancel("INTERRUPTED" if external else "VOLUNTARY", combat.clock.tick)
+	var lockout_ticks := current.interrupt_lockout_ticks if external else 0
+	var tick := combat.clock.tick
+	_cancel("INTERRUPTED" if external else "VOLUNTARY", tick)
+	if lockout_ticks > 0:
+		_interrupt_lockout_until = tick + lockout_ticks
 	_busy = false
 	return "CANCELLED"
 
@@ -210,8 +221,9 @@ func valid_snapshot(value: Dictionary) -> bool:
 	return true
 
 func restore(value: Dictionary) -> void:
-	# Active casts/recovery and input never resume. Committed cost/effects remain
-	# in Combatant state; persisted remaining cooldown prevents reload bypass.
+	# Active casts/recovery, external-interrupt lockout and input never resume.
+	# Committed cost/effects remain in Combatant state; persisted remaining
+	# cooldown prevents reload bypass.
 	var owner := combat.combatant(owner_id)
 	if owner != null:
 		owner.defense.clear()
@@ -223,6 +235,7 @@ func restore(value: Dictionary) -> void:
 	_committed = false
 	_busy = false
 	_processed_tick = combat.clock.tick
+	_interrupt_lockout_until = 0
 	last_result = "RESTORED"
 	last_activation_result = "NONE"
 	effect_results.clear()
@@ -234,4 +247,4 @@ func development_state() -> Dictionary:
 	var cooldowns: Dictionary = {}
 	for id in catalog.ids():
 		cooldowns[id] = remaining_cooldown(id)
-	return {"action_id": current.action_id if current != null else "", "phase": Phase.keys()[phase], "remaining_ticks": maxi(0, deadline - combat.clock.tick) if current != null else 0, "cooldowns": cooldowns, "last_result": last_result, "last_activation_result": last_activation_result, "target_id": target_id, "effect_codes": effect_results.map(func(result: CombatResult) -> String: return result.code)}
+	return {"action_id": current.action_id if current != null else "", "phase": Phase.keys()[phase], "remaining_ticks": maxi(0, deadline - combat.clock.tick) if current != null else 0, "interrupt_lockout_ticks": remaining_interrupt_lockout(), "cooldowns": cooldowns, "last_result": last_result, "last_activation_result": last_activation_result, "target_id": target_id, "effect_codes": effect_results.map(func(result: CombatResult) -> String: return result.code)}
