@@ -9,6 +9,7 @@ var movement_modifiers: Array[Callable] = []
 var movement_yaw := 0.0
 var movement_gate: Callable
 var turning_gate: Callable
+var _pending_displacement := Vector3.ZERO
 
 func _ready() -> void:
 	var collision := CollisionShape3D.new()
@@ -30,6 +31,9 @@ func _physics_process(delta: float) -> void:
 	# State is authoritative, including after snapshot restore/teleport.
 	position = state.position
 	velocity = state.velocity
+	if not _pending_displacement.is_zero_approx():
+		move_and_collide(_pending_displacement)
+		_pending_displacement = Vector3.ZERO
 	var allowed := not movement_gate.is_valid() or bool(movement_gate.call())
 	var axis := intent.movement.limit_length() if allowed else Vector2.ZERO
 	if not allowed:
@@ -57,3 +61,17 @@ func _physics_process(delta: float) -> void:
 	state.grounded = is_on_floor()
 	if direction.length_squared() > 0.001 and (not turning_gate.is_valid() or bool(turning_gate.call())):
 		state.facing = direction.normalized()
+
+func intent_direction() -> Vector3:
+	var axis := intent.movement.limit_length()
+	var direction := Vector3(axis.x, 0, axis.y).rotated(Vector3.UP, movement_yaw)
+	return direction.normalized() if direction.length_squared() > 0.01 else state.facing
+
+func dodge(direction: Vector3, distance: float) -> void:
+	if direction.is_finite() and direction.length_squared() > 0.001:
+		_pending_displacement += Vector3(direction.x, 0, direction.z).normalized() * distance
+
+func clear_unsafe_motion() -> void:
+	_pending_displacement = Vector3.ZERO
+	intent.movement = Vector2.ZERO
+	intent.jump = false

@@ -9,6 +9,9 @@ var diagnostics: CoreDiagnostics
 var target_policy := CombatTargetPolicy.new()
 var _combatants: Dictionary[String, Combatant] = {}
 var _transaction_active := false
+# Optional transient generic spatial ports; no scene or actor type dependency.
+var position_of: Callable
+var facing_of: Callable
 
 func register(entity_id: String, profile_id: String) -> Combatant:
 	var profile := data.lookup(profile_id)
@@ -21,6 +24,8 @@ func register(entity_id: String, profile_id: String) -> Combatant:
 func unregister(entity_id: String) -> Error:
 	if _transaction_active:
 		return ERR_BUSY
+	if _combatants.has(entity_id):
+		_combatants[entity_id].defense.clear()
 	return OK if _combatants.erase(entity_id) else ERR_DOES_NOT_EXIST
 
 func combatant(entity_id: String) -> Combatant:
@@ -87,9 +92,19 @@ func _apply(request: CombatRequest, healing: bool) -> CombatResult:
 	var scale := source.attributes.value(CombatModifier.Stat.HEAL_SCALE if healing else CombatModifier.Stat.DAMAGE_SCALE)
 	@warning_ignore("integer_division")
 	result.evaluated = mini(result.requested * scale / CombatNumbers.SCALE, CombatNumbers.MAX_UNITS)
+	result.action_id = request.action_id
+	result.resolved_damage = result.evaluated
+	if not healing:
+		var resolution := DefenseResolver.resolve(target.defense, request as DamageRequest, result.evaluated, clock.tick, target.resource, target.resource_id, position_of, facing_of)
+		result.outcome = resolution.outcome
+		result.resolved_damage = resolution.amount
+		result.prevented = result.evaluated - result.resolved_damage
+		target.resource -= int(resolution.cost)
+		if resolution.break_guard:
+			target.defense.guard = false
 	result.health_before = target.health
-	result.actual = mini(result.evaluated, target.max_health() - target.health if healing else target.health)
-	result.overage = result.evaluated - result.actual
+	result.actual = mini(result.resolved_damage, target.max_health() - target.health if healing else target.health)
+	result.overage = result.resolved_damage - result.actual
 	result.health_after = target.health + (result.actual if healing else -result.actual)
 	result.defeated = result.health_after == 0
 	result.accepted = true
@@ -99,12 +114,27 @@ func _apply(request: CombatRequest, healing: bool) -> CombatResult:
 	target.health = result.health_after
 	if result.defeated:
 		target.lifecycle = Combatant.Lifecycle.DEFEATED
-	if result.actual == 0:
+		target.defense.clear()
+	if result.actual == 0 and (healing or result.evaluated == 0):
 		_transaction_active = false
 		return result
 	_transaction_active = true
 	var tick := clock.tick
 	var facts: Array[CombatEvent] = []
+	if not healing:
+		target.defense.last_result = result.outcome
+		target.defense.last_prevented = result.prevented
+		target.defense.last_applied = result.actual
+		var defense_fact := DefenseResolved.new()
+		defense_fact.outcome = result.outcome
+		defense_fact.raw = result.requested
+		defense_fact.evaluated = result.evaluated
+		defense_fact.applied = result.actual
+		defense_fact.prevented = result.prevented
+		defense_fact.action_id = request.action_id
+		defense_fact.interrupt_relevant = (request as DamageRequest).interrupt_relevant
+		_stamp(defense_fact, result, tick)
+		facts.append(defense_fact)
 	if healing:
 		var fact := HealingApplied.new()
 		fact.actual = result.actual
@@ -112,7 +142,7 @@ func _apply(request: CombatRequest, healing: bool) -> CombatResult:
 		fact.action_id = request.action_id
 		_stamp(fact, result, tick)
 		facts.append(fact)
-	else:
+	elif result.actual > 0:
 		var fact := DamageApplied.new()
 		var hit := request as DamageRequest
 		fact.actual = result.actual
@@ -132,7 +162,8 @@ func _apply(request: CombatRequest, healing: bool) -> CombatResult:
 	changed.max_before = target.max_health()
 	changed.max_after = target.max_health()
 	_stamp(changed, result, tick)
-	facts.append(changed)
+	if result.actual > 0:
+		facts.append(changed)
 	if result.defeated:
 		var defeated := CombatantDefeated.new()
 		_stamp(defeated, result, tick)
@@ -206,3 +237,21 @@ func spend_resource(entity_id: String, amount: float) -> Error:
 		return ERR_INVALID_PARAMETER
 	state.resource -= int(amount)
 	return OK
+
+func begin_defense(id: String, verb: String, ticks: int) -> Error:
+	var state := combatant(id)
+	if _transaction_active or state == null or state.lifecycle != Combatant.Lifecycle.ALIVE or state.defense.policy == null or not state.defense.policy.valid():
+		return ERR_UNAVAILABLE
+	if ticks < 0 or ticks > 1200 or (verb in ["DODGE", "PARRY"] and ticks == 0):
+		return ERR_INVALID_PARAMETER
+	match verb:
+		"DODGE": state.defense.dodge_until = clock.tick + ticks
+		"PARRY": state.defense.parry_until = clock.tick + ticks
+		"GUARD": state.defense.guard = true
+		_: return ERR_INVALID_PARAMETER
+	return OK
+
+func end_guard(id: String) -> void:
+	var state := combatant(id)
+	if not _transaction_active and state != null:
+		state.defense.guard = false

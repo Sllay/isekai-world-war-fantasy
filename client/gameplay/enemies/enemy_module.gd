@@ -63,7 +63,7 @@ func bind_residency() -> void:
 	if record.lifecycle != RegionState.Lifecycle.LOADED:
 		return
 	disposition.groups[actor.entity_id] = "disposition.hostile"
-	targeting.register(actor.entity_id, func() -> Variant: return actor.position if record.lifecycle == RegionState.Lifecycle.LOADED else null)
+	targeting.register(actor.entity_id, func() -> Variant: return actor.position if record.lifecycle == RegionState.Lifecycle.LOADED else null, func() -> Vector3: return actor.facing)
 	_registered_id = actor.entity_id
 	actor.actions.position_of = targeting.position_of
 

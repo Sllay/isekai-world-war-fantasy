@@ -41,4 +41,6 @@ func _array(value: Vector3) -> Array:
 	return [value.x, value.y, value.z]
 
 func residency_lost() -> void:
-	actions.cancel()
+	actions.reset_transient()
+	if actions.runtime != null:
+		actions.runtime.unregister(entity_id)

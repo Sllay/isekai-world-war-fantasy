@@ -23,6 +23,8 @@ func initialize(services: CoreServices) -> Error:
 	state = service.register(player.entity_id, PROFILE_ID)
 	if state == null:
 		return ERR_INVALID_DATA
+	state.defense.policy = preload("res://data/combat/player_defense.tres")
+	capabilities.attach("foundation.defense", state.defense)
 	actions = ActionExecutor.new(service, services.resolve("foundation.actions") as ActionCatalog, player.entity_id)
 	var error := capabilities.attach("foundation.actions", actions)
 	return capabilities.attach("foundation.combatant", state) if error == OK else error
@@ -47,6 +49,7 @@ func restore_state(value: Dictionary) -> void:
 
 func dispose() -> void:
 	if capabilities != null:
+		capabilities.detach("foundation.defense")
 		capabilities.detach("foundation.combatant")
 		capabilities.detach("foundation.actions")
 	if state != null:
@@ -54,7 +57,7 @@ func dispose() -> void:
 
 func development_state() -> Dictionary:
 	var modifiers := state.attributes.capture_modifiers()
-	return {"health": state.health, "max_health": state.max_health(), "resource": state.resource, "max_resource": state.max_resource(), "resource_id": state.resource_id, "combat_state": Combatant.Lifecycle.keys()[state.lifecycle], "modifier_count": modifiers.size(), "modifier_ids": modifiers.map(func(value: Dictionary) -> String: return value.source_id)}
+	return {"health": state.health, "max_health": state.max_health(), "resource": state.resource, "max_resource": state.max_resource(), "resource_id": state.resource_id, "combat_state": Combatant.Lifecycle.keys()[state.lifecycle], "defense": state.defense.development_state(service.clock.tick), "modifier_count": modifiers.size(), "modifier_ids": modifiers.map(func(value: Dictionary) -> String: return value.source_id)}
 
 # Slice 1 never had actions/cooldowns. Only its explicit section v1 migrates.
 func migrate_state(from_version: int, value: Dictionary) -> Variant:

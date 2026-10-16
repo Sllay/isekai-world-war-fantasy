@@ -14,3 +14,7 @@ var overage := 0
 var health_before := 0
 var health_after := 0
 var defeated := false
+var outcome := "HIT"
+var prevented := 0
+var resolved_damage := 0
+var action_id := ""

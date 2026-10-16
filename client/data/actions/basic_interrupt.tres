@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ActionDefinition" load_steps=4 format=3]
+[ext_resource type="Script" path="res://foundation/actions/action_definition.gd" id="1"]
+[ext_resource type="Script" path="res://foundation/actions/action_effect.gd" id="2"]
+[sub_resource type="Resource" id="Effect"]
+script = ExtResource("2")
+kind = 5
+window_ticks = 0
+movement_distance = 0
+[resource]
+script = ExtResource("1")
+action_id = "combat.action.basic_interrupt"
+cast_ticks = 2
+recovery_ticks = 4
+cooldown_ticks = 30
+resource_cost = 4
+target_mode = 1
+max_range = 3.0
+effects = Array[ExtResource("2")]([SubResource("Effect")])

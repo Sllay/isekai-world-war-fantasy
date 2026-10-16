@@ -58,7 +58,7 @@ func prepare(snapshot: Dictionary) -> Dictionary:
 	var player_state: Dictionary = staged.sections["foundation.player"].state
 	var region := content.region(world.current_region_id)
 	var position := Vector3(player_state.position[0], player_state.position[1], player_state.position[2])
-	if not region.safe_position(position):
+	if not region.safe_position(position) or region.below_surface(position):
 		var safe: Dictionary = regions[world.current_region_id].get("last_safe", {})
 		player_state.position = safe.position.duplicate() if not safe.is_empty() else [region.to_world_position(region.entries[region.default_entry]).x, region.to_world_position(region.entries[region.default_entry]).y, region.to_world_position(region.entries[region.default_entry]).z]
 		player_state.velocity = [0, 0, 0]

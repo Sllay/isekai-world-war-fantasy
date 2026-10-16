@@ -201,3 +201,10 @@ deletion. The current contracts supersede earlier slice-specific fixture,
 version/residency and void-policy descriptions where applicable. See
 [Enemy, targeting and telegraph contracts](ENEMY_TARGETING_TELEGRAPHS.md) and
 [ADR-0015](../adr/ADR-0015-region-actor-state-and-recovery.md).
+
+## Slice 4 extension
+
+[Defensive verbs and vertical recovery](DEFENSIVE_VERBS_AND_RECOVERY.md) documents
+the authoritative defense flow, transient action registry, current persistence
+policy, Region surface-query/fallback contracts and Android acceptance. Its Slice 4
+contracts supersede earlier deferred defense/vertical-recovery descriptions.

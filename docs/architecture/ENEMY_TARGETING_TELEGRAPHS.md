@@ -161,7 +161,10 @@ are repaired in staged application validation using last-safe/default entry;
 nonfinite/gross malformed data still rejects. No fall damage, checkpoint, death
 or revive gameplay is implied.
 
-### Future vertical terrain recovery refinement
+### Vertical terrain recovery refinement (implemented in Slice 4)
+
+The following motivation is retained as Slice 3 history. The current implementation
+and validation contract is [Defensive verbs and recovery](DEFENSIVE_VERBS_AND_RECOVERY.md).
 
 Android acceptance could not naturally reproduce a terrain fall-through, but BK
 identified an additional resilience case that must be preserved for future world

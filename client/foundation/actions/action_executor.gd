@@ -16,6 +16,7 @@ var last_result := "NONE"
 var last_activation_result := "NONE"
 var effect_results: Array[CombatResult] = []
 var _cooldowns: Dictionary[String, int] = {}
+var runtime: ActionRuntime
 var _busy := false
 var _committed := false
 var _processed_tick := -1
@@ -114,7 +115,7 @@ func advance() -> void:
 				phase = Phase.COMMIT
 				if current.cooldown_ticks > 0:
 					_cooldowns[current.action_id] = tick + current.cooldown_ticks
-				effect_results = ActionEffectRunner.execute(combat, current, owner_id, target_id, execution_id)
+				effect_results = ActionEffectRunner.execute(combat, current, owner_id, target_id, execution_id, runtime)
 				last_result = "COMMITTED"
 				_emit(ActionCommitted.new(), tick)
 				phase = Phase.RECOVERY
@@ -125,6 +126,27 @@ func advance() -> void:
 		_emit(ActionCompleted.new(), tick)
 		current = null
 	_busy = false
+	if runtime != null:
+		runtime.flush()
+
+# A parry reaction may cancel the just-committed attack's remaining recovery.
+# It cannot undo/retry effects or cancel a later action with a different ID.
+func interrupt_committed(correlation: String) -> String:
+	if _busy or execution_id != correlation or phase != Phase.RECOVERY or current == null:
+		return "NOT_CANCELLABLE_PHASE"
+	if not current.interruptible:
+		return "NOT_INTERRUPTIBLE"
+	_busy = true
+	_cancel("PARRIED", combat.clock.tick)
+	_busy = false
+	return "CANCELLED"
+
+func reset_transient() -> void:
+	if phase in [Phase.CASTING, Phase.RECOVERY]:
+		_cancel("RESIDENCY_LOST", combat.clock.tick)
+	var owner := combat.combatant(owner_id)
+	if owner != null:
+		owner.defense.clear()
 
 func cancel() -> String:
 	return _request_cancel(false)
@@ -190,6 +212,9 @@ func valid_snapshot(value: Dictionary) -> bool:
 func restore(value: Dictionary) -> void:
 	# Active casts/recovery and input never resume. Committed cost/effects remain
 	# in Combatant state; persisted remaining cooldown prevents reload bypass.
+	var owner := combat.combatant(owner_id)
+	if owner != null:
+		owner.defense.clear()
 	phase = Phase.IDLE
 	current = null
 	target_id = ""

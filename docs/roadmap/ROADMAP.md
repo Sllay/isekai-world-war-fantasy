@@ -90,8 +90,15 @@ recovery for collision-tunneling cases is documented as a future Region/World
 resilience refinement rather than being hard-coded before multi-level terrain
 surface policy exists. No final enemy art or combat HUD is claimed.
 
-Next Phase 2 slice: **defensive verbs**, building on these action/targeting/telegraph
-contracts. Equipment and mini-boss remain later Phase 2 work.
+Slice 4 — **Production Defensive Verbs + Dynamic Vertical Terrain Recovery implemented; Android acceptance pending**:
+
+- Tick-based Dodge, held Block, precise Parry and targeted Interrupt reuse the production action/combat/targeting boundaries.
+- CombatService resolves one authoritative defense outcome before health mutation; cooldown/resource persistence remains canonical.
+- Region surface queries recover tunneling at local X/Z with walkability/clearance validation and last-safe/entry fallback.
+- Debug Android controls include deterministic underfloor injection through the real recovery observation path.
+- Contracts, test evidence and BK acceptance: [Defensive verbs and recovery](../architecture/DEFENSIVE_VERBS_AND_RECOVERY.md).
+
+Equipment and mini-boss remain later Phase 2 work.
 
 ## Phase 3 — Living World Production Slice
 

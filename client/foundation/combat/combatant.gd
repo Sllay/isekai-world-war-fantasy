@@ -10,6 +10,7 @@ var attributes: CombatAttributes
 var health: int
 var resource: int
 var lifecycle := Lifecycle.ALIVE
+var defense := DefenseState.new()
 
 func _init(stable_id: String, profile: Dictionary) -> void:
 	entity_id = stable_id
@@ -43,6 +44,7 @@ static func valid(data: Dictionary, profile: Dictionary) -> bool:
 	return (data.lifecycle == Lifecycle.DEFEATED) == (data.health == 0)
 
 func restore(data: Dictionary, profile: Dictionary) -> void:
+	defense.clear()
 	attributes = CombatAttributes.new(profile)
 	for modifier in data.modifiers:
 		attributes.add(CombatModifier.from_state(modifier))

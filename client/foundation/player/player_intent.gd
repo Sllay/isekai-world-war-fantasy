@@ -31,3 +31,18 @@ func consume_camera() -> float:
 	return result
 
 var select_target := false
+var dodge := false
+var guard_started := false
+var guard_ended := false
+var parry := false
+var interrupt := false
+var test_underfloor := false
+
+func consume_defenses() -> Dictionary:
+	var result := {"dodge": dodge, "guard_started": guard_started, "guard_ended": guard_ended, "parry": parry, "interrupt": interrupt}
+	dodge = false
+	guard_started = false
+	guard_ended = false
+	parry = false
+	interrupt = false
+	return result

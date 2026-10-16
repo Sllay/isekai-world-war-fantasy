@@ -100,4 +100,20 @@ Use the shortest entry that preserves the useful fact.
 - **Impact:** Future Region recovery should attempt a validated vertical surface query near the current horizontal position before falling back to the existing last-safe/default-entry recovery. This must be Region/World-owned and must account for caves, bridges and multi-level terrain so it does not blindly teleport to the wrong floor.
 - **Evidence:** `docs/architecture/ENEMY_TARGETING_TELEGRAPHS.md`, Safe transform and void recovery.
 - **Needs Technical Design:** No immediate blocker.
-- **Resolution:** Direction accepted and documented; implementation is deferred until terrain/surface querying is mature enough to choose a trustworthy walkable surface.
+- **Resolution:** Implemented by Phase 2 Slice 4 through the transient Region surface port, current Home Valley adapter and conservative clearance/fallback validation; see `docs/architecture/DEFENSIVE_VERBS_AND_RECOVERY.md`.
+
+### 2026-10-16 — Slice 4 MCP bridge unavailable; Android acceptance pending
+- **Status:** INFO
+- **Branch / slice:** `phase2/defensive-verbs` / Phase 2 Slice 4
+- **Developer note:** Interrupted-session history confirms the official launcher was already run and one MCP read retry failed. This continuation used only the remaining read retry, which again returned `Not connected to Godot` / unreachable `ws://127.0.0.1:6550`. The two-retry allowance is exhausted. The existing editor log reported a listening bridge and TCP connections awaiting WebSocket handshake. No reconnect loop or ad-hoc launch was used; the official stop script restored launcher-only project settings afterward.
+- **Impact:** Live editor/runtime MCP defense and recovery acceptance remains unverified. All eight deterministic/headless suites pass: 694 checks, zero failures, including actual enemy/action/combat, collision-swept dodge, production physics recovery callbacks, movement/camera/jump, and separate-process disk resume. Android telegraph/parry readability, multitouch ergonomics, lifecycle and performance still require BK's device checks.
+- **Evidence:** `docs/architecture/DEFENSIVE_VERBS_AND_RECOVERY.md`; `tools/dev/test_defensive_verbs.sh`; local `.codex-local/godot-editor.log` (not committed).
+- **Needs Technical Design:** No implementation blocker; review BK's acceptance before merge.
+
+### 2026-10-16 — Recovery and parry invariants for later content
+- **Status:** INFO
+- **Branch / slice:** `phase2/defensive-verbs` / Phase 2 Slice 4
+- **Developer note:** Home Valley uses its authored single-sheet terrain profile plus real capsule clearance only for suspicious positions. The transient surface port delegates local/layer selection; future caves/bridges must supply that policy rather than selecting global maximum Y. Teleport does not promote last-safe until normal ground confirmation. Save capture substitutes a validated safe transform without moving the live Player.
+- **Impact:** Preserve these boundaries when adding terrain/equipment/bosses. Parry cancels only the matching committed attack's remaining recovery through a queued typed fact; it adds no stun/poise and never refunds or retries committed effects. A committed interrupt attempt against an idle/noninterruptible phase consumes its authored cost/cooldown and reports a typed failure.
+- **Evidence:** ADR-0016; `client/foundation/actions/action_runtime.gd`; `client/foundation/world/region_recovery.gd`.
+- **Needs Technical Design:** No.

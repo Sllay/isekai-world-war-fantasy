@@ -34,6 +34,8 @@ func run() -> void:
 			action.advance()
 		check(actor.combatant.health == 88, "damaged enemy checkpoint")
 		actor.actions.restore({"cooldowns": {actor.archetype.action_id: 17}})
+		# This accepted process case exercises the optional-port fallback path.
+		recovery.surface_query = null
 		player.position.y = -100
 		player.velocity.y = -40
 		recovery.observe()
@@ -80,6 +82,12 @@ func run() -> void:
 		player.velocity.y = -50
 		for i in 3: await physics_frame
 		check(player.position.y > -1 and player.velocity.y > -2, "real Region physics callback recovers void crossing")
+		# Dynamic recovery deliberately places feet above the surface. Wait for
+		# real contact before issuing the existing grounded-only jump command.
+		for i in 20:
+			if player.grounded:
+				break
+			await physics_frame
 		var start := player.position
 		avatar.intent.movement = Vector2.RIGHT
 		avatar.intent.camera_delta = 0.5

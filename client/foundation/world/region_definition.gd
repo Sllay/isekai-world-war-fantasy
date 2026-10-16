@@ -9,6 +9,9 @@ extends Resource
 @export var entries: Dictionary[String, Vector3] = {}
 # Region-local resilience constraints, independent of Player gameplay.
 @export var recovery_y := -12.0
+@export var penetration_depth := 0.75
+@export var recovery_surface_offset := 0.12
+@export var recovery_walkable_dot := 0.70
 @export var safety_bounds := Rect2() # empty means no authored horizontal bound
 @export var safety_surface := PackedVector2Array() # (z, y), same authored terrain profile
 @export var actor_spawns: Dictionary[String, Vector3] = {}
@@ -18,6 +21,8 @@ extends Resource
 
 func valid() -> bool:
 	if not CoreIds.valid(region_id) or schema_version != 1 or not origin.is_finite() or not is_finite(chunk_size) or chunk_size <= 0 or scene == null or not scene.can_instantiate():
+		return false
+	if not is_finite(penetration_depth) or penetration_depth <= 0 or not is_finite(recovery_surface_offset) or recovery_surface_offset <= 0 or not is_finite(recovery_walkable_dot) or recovery_walkable_dot <= 0 or recovery_walkable_dot > 1:
 		return false
 	if not is_finite(recovery_y) or not safety_bounds.position.is_finite() or not safety_bounds.size.is_finite() or safety_bounds.size.x < 0 or safety_bounds.size.y < 0:
 		return false
@@ -69,3 +74,27 @@ func approved_surface(value: Vector3) -> bool:
 			var y := lerpf(a.y, b.y, (local.z - a.x) / (b.x - a.x))
 			return local.y >= y - 0.05 and local.y <= y + 0.25
 	return false
+
+# Cheap profile interpolation for the current Region's authored expected surface.
+# This is an observation hint, not permission to teleport without the query port.
+func surface_height(value: Vector3) -> Variant:
+	var local := to_local_position(value)
+	for i in range(safety_surface.size() - 1):
+		var a := safety_surface[i]
+		var b := safety_surface[i + 1]
+		if local.z <= a.x and local.z >= b.x:
+			return origin.y + lerpf(a.y, b.y, (local.z - a.x) / (b.x - a.x))
+	return null
+
+func surface_normal(value: Vector3) -> Vector3:
+	var local := to_local_position(value)
+	for i in range(safety_surface.size() - 1):
+		var a := safety_surface[i]
+		var b := safety_surface[i + 1]
+		if local.z <= a.x and local.z >= b.x:
+			return Vector3(0, 1, -(b.y - a.y) / (b.x - a.x)).normalized()
+	return Vector3.ZERO
+
+func below_surface(value: Vector3) -> bool:
+	var height: Variant = surface_height(value)
+	return height != null and value.y < float(height) - penetration_depth

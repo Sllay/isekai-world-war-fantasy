@@ -6,8 +6,27 @@ var primary_id := "combat.action.basic_strike"
 var secondary_id := "combat.action.basic_heal"
 var executor: ActionExecutor
 var default_target: Callable
+var move_dodge: Callable
+var dodge_direction: Callable
 
 func consume(intent: PlayerIntent) -> void:
+	var defenses := intent.consume_defenses()
+	if defenses.guard_ended:
+		executor.combat.end_guard(executor.owner_id)
+	if defenses.guard_started and not defenses.guard_ended:
+		executor.activate("combat.action.basic_guard")
+	if defenses.dodge:
+		var code := executor.activate("combat.action.basic_dodge")
+		if code == "STARTED" and move_dodge.is_valid() and dodge_direction.is_valid():
+			var definition := executor.catalog.lookup("combat.action.basic_dodge")
+			move_dodge.call(dodge_direction.call(), definition.effects[0].movement_distance)
+	if defenses.parry:
+		executor.activate("combat.action.basic_parry")
+	if defenses.interrupt:
+		var chosen := intent.target_entity_id
+		if chosen.is_empty() and default_target.is_valid():
+			chosen = default_target.call()
+		executor.activate("combat.action.basic_interrupt", ActionTarget.new(chosen))
 	var commands := intent.consume_actions()
 	if commands.z != 0:
 		executor.cancel()

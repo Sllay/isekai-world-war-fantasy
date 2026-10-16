@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="DefensePolicy" load_steps=2 format=3]
+[ext_resource type="Script" path="res://foundation/combat/defense_policy.gd" id="1"]
+[resource]
+script = ExtResource("1")
+block_mitigation_bps = 7500
+block_resource_cost = 2
+block_arc_degrees = 120.0
+parry_arc_degrees = 120.0

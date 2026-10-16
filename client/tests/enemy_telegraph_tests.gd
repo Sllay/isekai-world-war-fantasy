@@ -209,6 +209,9 @@ func run() -> void:
 	check(runtime.persistence.integrity.prepare(malformed_previous).is_empty(), "malformed previous release rejected without script failure")
 	# Recovery contract is authored by Region, including approved spawn contacts.
 	var recovery: RegionRecovery = record.recovery
+	# Preserve the accepted last-safe/entry fallback assertions with the optional
+	# surface port absent. Slice 4 separately tests dynamic local recovery.
+	recovery.surface_query = null
 	player.position = Vector3(2, 0, 8)
 	player.grounded = true
 	recovery.observe()

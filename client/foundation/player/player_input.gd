@@ -8,6 +8,7 @@ var camera_touch := -1
 var move_origin := Vector2.ZERO
 var touch_axis := Vector2.ZERO
 var mouse_rotating := false
+var guard_touch := -1
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -25,11 +26,11 @@ func _ready() -> void:
 	label.position = Vector2(20, 20)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(label)
-	for slot in [0, 1, 2, 3]:
+	for slot in range(9 if OS.is_debug_build() else 4):
 		var button := Button.new()
-		button.text = ["Strike (F)", "Heal (H)", "Cancel (X)", "Target (T)"][slot]
+		button.text = ["Strike (F)", "Heal (H)", "Cancel (X)", "Target (T)", "Dodge (R)", "Block (G hold)", "Parry (V)", "Interrupt (I)", "Test Underfloor"][slot]
 		button.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-		button.position = Vector2(-150, (-295 if slot == 3 else -230 + slot * 65))
+		button.position = _slot_position(slot)
 		button.size = Vector2(135, 55)
 		# Touch is read directly, so a second finger can act while moving.
 		button.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -45,6 +46,9 @@ func _draw() -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if not event.pressed:
+			if event.index == guard_touch:
+				guard_touch = -1
+				intent.guard_ended = true
 			if event.index == move_touch:
 				move_touch = -1
 				touch_axis = Vector2.ZERO
@@ -52,13 +56,16 @@ func _input(event: InputEvent) -> void:
 				camera_touch = -1
 		elif OS.is_debug_build() and Rect2(Vector2(size.x - 435, 20), Vector2(285, 55)).has_point(event.position):
 			return
+		elif _action_slot(event.position) >= 0:
+			var slot := _action_slot(event.position)
+			request_action(slot)
+			if slot == 5:
+				guard_touch = event.index
 		elif event.position.x < size.x * 0.45 and move_touch == -1:
 			move_touch = event.index
 			move_origin = event.position
 		elif event.position.distance_to(Vector2(size.x - 80, 90)) < 60:
 			intent.jump = true
-		elif _action_slot(event.position) >= 0:
-			request_action(_action_slot(event.position))
 		elif camera_touch == -1:
 			camera_touch = event.index
 	elif event is InputEventScreenDrag:
@@ -66,6 +73,8 @@ func _input(event: InputEvent) -> void:
 			touch_axis = ((event.position - move_origin) / 70.0).limit_length()
 		elif event.index == camera_touch:
 			intent.camera_delta -= event.relative.x * tuning.touch_radians_per_pixel
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed and event.device != InputEvent.DEVICE_ID_EMULATION:
+		intent.guard_ended = true
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed and event.device != InputEvent.DEVICE_ID_EMULATION:
 		var slot := _action_slot(event.position)
 		if slot >= 0:
@@ -74,6 +83,11 @@ func _input(event: InputEvent) -> void:
 		mouse_rotating = event.pressed
 	elif event is InputEventMouseMotion and mouse_rotating:
 		intent.camera_delta -= event.relative.x * tuning.mouse_radians_per_pixel
+	elif OS.is_debug_build() and event is InputEventKey and event.physical_keycode in [KEY_R, KEY_G, KEY_V, KEY_I] and not event.echo:
+		if event.physical_keycode == KEY_G and not event.pressed:
+			intent.guard_ended = true
+		elif event.pressed:
+			request_action([KEY_R, KEY_G, KEY_V, KEY_I].find(event.physical_keycode) + 4)
 	elif event is InputEventKey and event.physical_keycode == KEY_T and event.pressed and not event.echo:
 		intent.select_target = true
 	elif event.is_action_pressed("player_primary") and not event.is_echo():
@@ -100,6 +114,10 @@ func _notification(what: int) -> void:
 		intent.camera_delta = 0
 		intent.consume_actions()
 		intent.select_target = false
+		intent.consume_defenses()
+		intent.guard_ended = true
+		guard_touch = -1
+		intent.test_underfloor = false
 
 func _physics_process(delta: float) -> void:
 	var axis := Input.get_vector("player_left", "player_right", "player_forward", "player_back")
@@ -123,9 +141,19 @@ func request_action(slot: int) -> void:
 		1: intent.secondary_action = true
 		2: intent.cancel_action = true
 		3: intent.select_target = true
+		4: intent.dodge = true
+		5: intent.guard_started = true
+		6: intent.parry = true
+		7: intent.interrupt = true
+		8: intent.test_underfloor = OS.is_debug_build()
 
 func _action_slot(point: Vector2) -> int:
-	for slot in range(4):
-		if Rect2(Vector2(size.x - 150, size.y + (-295 if slot == 3 else -230 + slot * 65)), Vector2(135, 55)).has_point(point):
+	for slot in range(9 if OS.is_debug_build() else 4):
+		if Rect2(size + _slot_position(slot), Vector2(135, 55)).has_point(point):
 			return slot
 	return -1
+
+func _slot_position(slot: int) -> Vector2:
+	if slot < 4:
+		return Vector2(-150, -295 if slot == 3 else -230 + slot * 65)
+	return Vector2(-295, -360 + (slot - 4) * 65)

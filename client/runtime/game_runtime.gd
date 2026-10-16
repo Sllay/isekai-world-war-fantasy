@@ -62,7 +62,12 @@ func _activate_session() -> void:
 	targeting.service.disposition.groups.clear()
 	targeting.service.disposition.hostile_groups = {"disposition.traveler": ["disposition.hostile"], "disposition.hostile": ["disposition.traveler"]}
 	targeting.service.disposition.groups[player.state.entity_id] = "disposition.traveler"
-	targeting.service.register(player.state.entity_id, _player_target_position)
+	targeting.service.register(player.state.entity_id, _player_target_position, func() -> Vector3: return player.state.facing)
+	combat.service.position_of = targeting.service.position_of
+	combat.service.facing_of = targeting.service.facing_of
+	combat.action_runtime.clear()
+	combat.action_runtime.register(player_combat.actions)
+	combat.action_runtime.register(enemies.actor.actions)
 	enemies.bind_residency()
 	telegraphs.clear()
 	player_combat.actions.position_of = enemies.targeting.position_of
@@ -76,7 +81,10 @@ func _activate_session() -> void:
 		renderer.tracker = telegraphs
 		renderer.targeting = enemies.targeting
 		world_scene.active_region.add_child(renderer)
+	world_scene.active_region.residency_lost = func() -> void: combat.action_runtime.unregister(player.state.entity_id)
 	var avatar := world_scene.active_region.avatar
+	action_adapter.move_dodge = avatar.motor.dodge
+	action_adapter.dodge_direction = avatar.motor.intent_direction
 	avatar.intent.select_target = false
 	avatar.motor.movement_gate = player_combat.actions.movement_allowed
 	avatar.motor.turning_gate = player_combat.actions.turning_allowed
@@ -107,6 +115,9 @@ func _create_save_controls() -> void:
 		controls.state = player_combat.state
 		controls.actions = player_combat.actions
 		controls.enemy_summary = func() -> String: return "Skirmisher HP %d  %s  Target: %s" % [enemies.actor.combatant.health, EnemyController.State.keys()[enemies.controller.state], "Skirmisher" if not current_player_target().is_empty() else "none (Target/T)"]
+		controls.recovery_summary = func() -> String:
+			var recovery := world_scene.active_region.record.recovery
+			return "Recovery %s (%d)  Interrupt %s" % [recovery.last_method, recovery.recovery_count, combat.action_runtime.last_result]
 		add_child(controls)
 
 func _player_target_position() -> Variant:
@@ -163,6 +174,8 @@ func development_state() -> Dictionary:
 		var recovery := world_scene.active_region.record.recovery
 		result["last_safe"] = recovery.last_safe.duplicate(true)
 		result["void_recoveries"] = recovery.recovery_count
+		result["recovery"] = recovery.development_state()
+		result["interrupt_result"] = combat.action_runtime.last_result
 	if player_combat.state != null:
 		result["combat"] = player_combat.development_state()
 		result["actions"] = player_combat.actions.development_state()
@@ -191,6 +204,9 @@ func _process(delta: float) -> void:
 				world_scene.active_region.avatar.intent.select_target = false
 			if world_scene.active_region != null:
 				action_adapter.consume(world_scene.active_region.avatar.intent)
+				if world_scene.active_region.avatar.intent.test_underfloor:
+					world_scene.active_region.avatar.intent.test_underfloor = false
+					world_scene.active_region.test_underfloor()
 
 func _exit_tree() -> void:
 	telegraphs.dispose()

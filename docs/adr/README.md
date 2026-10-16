@@ -28,3 +28,5 @@ ADRs registram decisões arquiteturais importantes para preservar contexto hist�
 Os ADRs 0004–0008 foram selecionados pelo fechamento da pesquisa M1.1. Eles não devem ser promovidos para `Accepted` antes dos experimentos correspondentes do M1 produzirem medições/evidências.
 
 Novas decisões devem usar sequência numérica e explicar contexto, decisão, consequências, alternativas relevantes e, quando aplicável, critérios objetivos de aceitação.
+
+- [ADR-0016 — Defense resolution and surface recovery](ADR-0016-defense-resolution-and-surface-recovery.md)

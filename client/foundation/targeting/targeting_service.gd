@@ -5,16 +5,23 @@ var combat: CombatService
 var disposition := DispositionPolicy.new()
 # Runtime position ports are never captured. Canonical selections contain IDs only.
 var _positions: Dictionary[String, Callable] = {}
+var _facings: Dictionary[String, Callable] = {}
 var _current: Dictionary[String, String] = {}
 
-func register(id: String, provider: Callable) -> Error:
+func register(id: String, provider: Callable, facing: Callable = Callable()) -> Error:
 	if combat.combatant(id) == null or not provider.is_valid() or _positions.has(id):
 		return ERR_INVALID_PARAMETER
 	_positions[id] = provider
+	if facing.is_valid():
+		_facings[id] = facing
 	return OK
 
 func unregister(id: String) -> void:
 	_positions.erase(id)
+	_facings.erase(id)
+	var state := combat.combatant(id)
+	if state != null:
+		state.defense.clear()
 	_current.erase(id)
 	for owner in _current.keys():
 		if _current[owner] == id:
@@ -25,6 +32,12 @@ func position_of(id: String) -> Variant:
 		return null
 	var value: Variant = _positions[id].call()
 	return value if value is Vector3 and value.is_finite() else null
+
+func facing_of(id: String) -> Variant:
+	if position_of(id) == null or not _facings.has(id):
+		return null
+	var value: Variant = _facings[id].call()
+	return value if value is Vector3 and value.is_finite() and absf(value.y) < 0.001 and value.length_squared() > 0.001 else null
 
 func valid_hostile(owner: String, target: String, max_range: float) -> bool:
 	var a := combat.combatant(owner)
@@ -71,5 +84,10 @@ func cycle(owner: String, max_range: float) -> String:
 	return candidates[next]
 
 func clear() -> void:
+	for id in _positions:
+		var state := combat.combatant(id)
+		if state != null:
+			state.defense.clear()
 	_positions.clear()
+	_facings.clear()
 	_current.clear()
