@@ -6,6 +6,7 @@ enum TargetMode { SELF, ENTITY, DIRECTION, POINT }
 @export_range(0, 1200) var cast_ticks: int = 0
 @export_range(0, 1200) var recovery_ticks: int = 0
 @export_range(0, 72000) var cooldown_ticks: int = 0
+@export_range(0, 1200) var interrupt_lockout_ticks: int = 0
 @export_range(0, 1000000000) var resource_cost: int = 0
 @export var resource_id := "combat.resource.energy"
 @export var interruptible := true
@@ -24,7 +25,7 @@ enum TargetMode { SELF, ENTITY, DIRECTION, POINT }
 func valid(data: CoreDataRegistry) -> bool:
 	if not CoreIds.valid(action_id) or not action_id.begins_with("combat.action."):
 		return false
-	if cast_ticks < 0 or cast_ticks > 1200 or recovery_ticks < 0 or recovery_ticks > 1200 or cooldown_ticks < 0 or cooldown_ticks > 72000 or resource_cost < 0 or resource_cost > CombatNumbers.MAX_UNITS:
+	if cast_ticks < 0 or cast_ticks > 1200 or recovery_ticks < 0 or recovery_ticks > 1200 or cooldown_ticks < 0 or cooldown_ticks > 72000 or interrupt_lockout_ticks < 0 or interrupt_lockout_ticks > 1200 or resource_cost < 0 or resource_cost > CombatNumbers.MAX_UNITS:
 		return false
 	if data.lookup(resource_id).get("kind") != "resource" or target_mode not in [TargetMode.SELF, TargetMode.ENTITY] or not is_finite(max_range) or max_range < 0 or max_range > 10000:
 		return false
