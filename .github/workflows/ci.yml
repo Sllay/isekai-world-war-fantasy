@@ -1,0 +1,77 @@
+name: Godot CI
+
+on:
+  push:
+    branches:
+      - main
+      - "phase*/**"
+      - "infra/**"
+      - "feature/**"
+  pull_request:
+
+concurrency:
+  group: godot-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  GODOT_VERSION: "4.7.2"
+  GODOT_SHA256: "cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4"
+
+jobs:
+  validate:
+    name: Parse + deterministic suites
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install runtime dependencies
+        run: |
+          sudo apt-get update -y
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            ca-certificates curl unzip ripgrep \
+            libx11-6 libxcursor1 libxinerama1 libxrandr2 libxi6 \
+            libxkbcommon0 libxkbcommon-x11-0 libdbus-1-3 \
+            libgl1 libgl1-mesa-dri libfontconfig1 libasound2t64
+
+      - name: Install exact Godot
+        run: |
+          set -euo pipefail
+          tag="${GODOT_VERSION}-stable"
+          zip="Godot_v${tag}_linux.x86_64.zip"
+          url="https://github.com/godotengine/godot-builds/releases/download/${tag}/${zip}"
+          curl -L --fail --retry 3 --retry-delay 2 "$url" -o /tmp/godot.zip
+          printf '%s  %s\n' "$GODOT_SHA256" /tmp/godot.zip | sha256sum -c -
+          rm -rf /tmp/godot-extract
+          mkdir -p /tmp/godot-extract
+          unzip -q /tmp/godot.zip -d /tmp/godot-extract
+          godot_bin="$(find /tmp/godot-extract -maxdepth 1 -type f -name 'Godot_v*-stable_linux.*' | head -n 1)"
+          test -n "$godot_bin"
+          sudo install -m 0755 "$godot_bin" /usr/local/bin/godot
+          godot --version
+
+      - name: Import and parse project
+        run: bash tools/dev/devctl.sh godot-check
+
+      - name: Run deterministic test suites
+        run: bash tools/dev/devctl.sh test all
+
+      - name: CI summary
+        if: always()
+        run: |
+          {
+            echo "## Isekai World War Fantasy — Godot CI"
+            echo
+            echo "- Godot: ${GODOT_VERSION}"
+            echo "- Ref: \`${GITHUB_REF}\`"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Validation: project parse + existing deterministic suites"
+            echo "- Live MCP and Android feel/performance are intentionally outside CI."
+          } >> "$GITHUB_STEP_SUMMARY"
