@@ -36,10 +36,33 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-            ca-certificates curl unzip ripgrep \
+            ca-certificates curl unzip ripgrep python3-yaml \
             libx11-6 libxcursor1 libxinerama1 libxrandr2 libxi6 \
             libxkbcommon0 libxkbcommon-x11-0 libdbus-1-3 \
             libgl1 libgl1-mesa-dri libfontconfig1 libasound2t64
+
+      - name: Validate development tooling/config syntax
+        run: |
+          set -euo pipefail
+          bash -n tools/dev/bootstrap_codespace.sh
+          bash -n tools/dev/devctl.sh
+          bash -n tools/dev/ensure_godot_mcp_editor.sh
+          bash -n tools/dev/start_godot_mcp_editor.sh
+          bash -n tools/dev/stop_godot_mcp_editor.sh
+          python3 - <<'PY'
+          import pathlib
+          import tomllib
+          import yaml
+
+          with pathlib.Path('.codex/config.toml').open('rb') as fh:
+              tomllib.load(fh)
+          with pathlib.Path('.serena/project.yml').open('r', encoding='utf-8') as fh:
+              data = yaml.safe_load(fh)
+          assert data['project_name'] == 'isekai-world-war-fantasy'
+          assert data['language_servers'] == ['gdscript']
+          assert data['ls_workspace_folders'] == ['client']
+          print('Agent tooling/config syntax OK')
+          PY
 
       - name: Install exact Godot
         run: |
@@ -72,6 +95,6 @@ jobs:
             echo "- Godot: ${GODOT_VERSION}"
             echo "- Ref: \`${GITHUB_REF}\`"
             echo "- Commit: \`${GITHUB_SHA}\`"
-            echo "- Validation: project parse + existing deterministic suites"
+            echo "- Validation: agent config syntax + project parse + deterministic suites"
             echo "- Live MCP and Android feel/performance are intentionally outside CI."
           } >> "$GITHUB_STEP_SUMMARY"
