@@ -1,77 +1,162 @@
-# Production player foundation
+# Production Player Foundation
 
-Slice 2 composes `foundation.player` with `core.runtime` in
-`client/runtime/game_runtime.gd`. Core remains independently bootable with
-`--core-smoke`; no player rules or input dependencies are added to Core.
+## Current authority interpretation
 
-The module declares its Core dependency and provides `foundation.player`
-(`PlayerState`) and `foundation.player_capabilities` (`EntityComponents`).
-The latter exposes `foundation.movement` and remains stable across restores so
-later systems can attach capabilities without inspecting physical/visual Nodes.
-The entity ID is allocated by Core. Module-owned section version 1 persists ID,
-position, velocity and horizontal facing as JSON values. Ground contact and
-pending input are transient and reset on restore. Save files must retain the
-matching Core entity section; application `SaveIntegrity` validates that reference
-before save or resume. See [save/resume contracts](SAVE_SYSTEM.md).
+The existing Player foundation was implemented before the external AuthorityHost existed and therefore currently runs locally in Godot. Its semantic input/motor/presentation separation remains useful, but **local physical state must not be mistaken for production multiplayer authority**.
 
-`PlayerIntent` carries movement, one-shot jump and incremental camera rotation.
-Only `PlayerInput` reads hardware events. Left touch and right touch track
-independent finger IDs. Keyboard, first connected controller and touch feed the
-same intent. Release and focus loss clear touch ownership. The motor consumes
-intent in fixed physics steps, uses CharacterBody3D floor/slope collision, and
-writes physical results to PlayerState. Rendering never supplies canonical state.
-Movement is camera-relative; modifiers can supply finite nonnegative speed
-multipliers without referencing equipment, classes or combat.
+ADR-0016 and `SERVER_AUTHORITY.md` now define the production boundary:
 
-`default_tuning.tres` uses exported `PlayerTuning` defaults for movement, floor
-snap/angle, camera distance/inclination, smoothing and device sensitivity.
-Touch defaults to 0.012 radians/pixel (about 69 degrees per 100 pixels), mouse
-0.008, and controller/Q/E 3.5 radians/second. Camera inclination and distance
-have bounded operating ranges for future zoom/occlusion work. Camera state is
-local presentation state, excluded from persistent physical state.
+- `PlayerInput` and raw hardware handling remain client-local;
+- `PlayerIntent` is the semantic command/input boundary;
+- camera/view mode remains client-local presentation state;
+- canonical network gameplay position/velocity/grounded/gameplay-facing state belongs to the AuthorityHost;
+- the local PlayerMotor/state may act as prediction/reconciliation mirror for the owning client;
+- remote actor movement is driven from authoritative snapshots/interpolation rather than local input;
+- a client cannot submit an unconstrained final transform and have it accepted as persistent truth;
+- losing network connection does not promote the production client to canonical movement authority.
 
-`PlayerPresentation.present` passes physical state and a resolved view to
-`apply_pose`. Views are front/back/side, with a horizontal-mirror flag for the
-opposite side. A future rig adapter owns modular parts, bones/IK, equipment and
-accessory layers, named held-item attachment Nodes and view-dependent ordering.
-These are extension boundaries, not a completed animation or equipment system.
-The current adapter uses engine primitives solely to observe movement; no
-character asset is produced by this slice.
+The local deterministic motor remains valuable for prediction, local-authority development and tests; it does not need to be discarded merely because ownership changes.
 
-Slice 3 replaces `RuntimePlayerHost` with Region-owned placement and collision.
-`PlayerAvatar` retains only reusable motor/input/camera/presentation composition;
-the previous floor fixture now lives under tests. Physical Player positions use
-world-space coordinates with identity actor parents. Region supplies the borrowed
-`foundation.location` capability through the existing container, without changing
-Player's module dependencies or persistent state. See
-[World/Region contracts](WORLD_REGION_FOUNDATION.md) for spawning and resume.
-`PlayerAvatar.development_state()` exposes the original Player diagnostics;
-`WorldScene.development_state()` adds World/Region context.
+## Module ownership
 
-Phase 2 attaches `foundation.combatant` through a separate Player Combat adapter;
-movement/input/camera and Player state ownership remain unchanged. See
-[Combat foundation](COMBAT_FOUNDATION.md).
+Historical Slice 2 composed `foundation.player` with `core.runtime` in `client/runtime/game_runtime.gd`. Core remains independently bootable with `--core-smoke`; no player rules or input dependencies are added to Core.
 
-Run `bash tools/dev/test_core.sh` then `bash tools/dev/test_player.sh`.
-Android validation: run the project main scene, drag anywhere in the left 45%
-for movement (70px full deflection), drag horizontally on the right to rotate,
-and tap the upper-right circle (80px from the right edge, 90px from the top) to
-jump. Keep the left finger held while rotating or jumping with another finger.
-Desktop: WASD/arrows, Space, Q/E or right-mouse drag. Controller: left stick,
-A/cross (Godot A), right stick. Actual Android feel/performance requires BK's
-physical-device check.
+The module declares its Core dependency and provides `foundation.player` (`PlayerState`) and `foundation.player_capabilities` (`EntityComponents`). The latter exposes `foundation.movement` and remains stable across restores so later systems can attach capabilities without inspecting physical/visual Nodes.
 
-Phase 2 Slice 2 extends PlayerIntent with semantic primary/secondary/cancel
-one-shots and stable-ID/world-space target values. PlayerInput maps F/H/X,
-controller RB/LB/B and direct multi-finger touch action rectangles to those same
-slots. The Player action adapter maps slots to content; motor movement/turn gates
-remain generic callables. See [combat action contracts](COMBAT_ACTIONS.md).
+The entity ID is allocated by Core. The historical local-save section persists ID, position, velocity and horizontal facing. Ground contact and pending input are transient and reset on restore. Save files retain the matching Core entity section; application SaveIntegrity validates that reference.
 
-## Region recovery and current target
+For an authoritative networked world, the server/AuthorityHost owns the canonical persistent Player state. A client snapshot/cache is not an alternate save source. LocalAuthorityHost development may continue using the same domain save contracts through authority ownership.
 
-Slice 3 extends the runtime with Region-owned enemy state, Foundation targeting,
-fact-driven telegraphs, safe-transform recovery and confirmed development save
-deletion. The current contracts supersede earlier slice-specific fixture,
-version/residency and void-policy descriptions where applicable. See
-[Enemy, targeting and telegraph contracts](ENEMY_TARGETING_TELEGRAPHS.md) and
-[ADR-0015](../adr/ADR-0015-region-actor-state-and-recovery.md).
+See `SAVE_SYSTEM.md` and `SERVER_AUTHORITY.md`.
+
+## Semantic input
+
+`PlayerIntent` carries semantic movement, one-shot jump, camera rotation and later combat/action intent fields. Only `PlayerInput` reads hardware events.
+
+Touch, keyboard and controller map into the same intent model. Input devices are presentation/control concerns, not canonical world state.
+
+For remote-authority networking, client commands should carry bounded/validated subsets of this semantic intent with sequence/tick metadata rather than serializing arbitrary PlayerState mutations.
+
+## Motor and prediction boundary
+
+Historically the motor consumes intent in fixed physics steps, uses CharacterBody3D floor/slope collision, and writes physical results to local PlayerState. Rendering never supplies physical state.
+
+For production networking this path is split conceptually:
+
+```text
+Input -> PlayerIntent -> command sequence -> AuthorityHost motor/validation -> canonical PlayerState
+                         \
+                          -> owning-client prediction motor -> predicted mirror
+```
+
+When prediction is enabled:
+
+1. client numbers/sends semantic movement inputs;
+2. client predicts locally using compatible movement rules;
+3. authority processes canonical movement in tick order;
+4. authority snapshot includes canonical state + acknowledged input sequence;
+5. client corrects to authority and replays still-unacknowledged inputs;
+6. presentation smooths small corrections without altering truth.
+
+Server validation can enforce movement/action gates, speed/acceleration bounds, collision/traversal state and impossible displacement.
+
+The exact external transport does not belong inside PlayerMotor.
+
+## Movement direction and gameplay facing
+
+Movement remains camera-relative at the input/view adapter level where appropriate.
+
+The client may translate a top-down or third-person camera orientation into a semantic movement/aim direction. The authority receives/validates the resulting gameplay intent; it does not need the entire camera presentation transform as canonical state.
+
+Distinguish:
+
+- **camera/view orientation** — local presentation;
+- **aim intent** — semantic gameplay request;
+- **gameplay facing/orientation** — authority-owned when it affects combat/interactions;
+- **render sprite/rig facing** — presentation derived from canonical/predicted gameplay state.
+
+This allows top-down and future third-person views without networking the camera itself or trusting camera transforms as combat authority.
+
+## Tuning
+
+`default_tuning.tres` uses exported `PlayerTuning` defaults for movement, floor snap/angle, camera distance/inclination, smoothing and device sensitivity.
+
+Historical defaults include touch/mouse/controller camera sensitivity and bounded camera inclination/distance. Those remain tuning data, not authority policy.
+
+Movement tuning used for authoritative simulation/prediction must be version-compatible between authority and client prediction. The server remains authoritative if they diverge.
+
+## Camera
+
+Camera state is local presentation state and excluded from persistent physical authority by default.
+
+Top-down and future third-person cameras are View Adapters defined by `VIEW_INTERACTION_PERCEPTION.md`. They may create semantic aim/interact/build intents, but Combat/Building/Interaction must not branch on a trusted `camera_mode` to decide canonical rules.
+
+Camera collision/occlusion/cutaway can differ by view without changing Player authority.
+
+## Presentation
+
+`PlayerPresentation.present` passes gameplay/predicted state and a resolved view to the visual adapter.
+
+The presentation layer owns:
+
+- modular character parts;
+- rig/bones/IK;
+- equipment/accessory visual layers;
+- held-item sockets;
+- view-dependent ordering;
+- animation blending;
+- interpolation/correction smoothing.
+
+Presentation state is never the source of canonical movement/combat values.
+
+## Region/world placement
+
+Historical Slice 3 replaced `RuntimePlayerHost` with Region-owned placement/collision. `PlayerAvatar` retains reusable motor/input/camera/presentation composition; World/Region handles entry placement and world context.
+
+Physical Player positions use world-space coordinates. Region supplies the borrowed `foundation.location` capability without making Player depend directly on Region internals.
+
+In the networked architecture:
+
+- AuthorityHost owns canonical world/region membership and gameplay transform;
+- client Region/Avatar presentation materializes the relevant authoritative state;
+- server-driven spawn/respawn/teleport/world transitions are explicit authoritative operations;
+- client prediction cannot permanently move itself between regions or through invalid geometry.
+
+See `WORLD_REGION_FOUNDATION.md`.
+
+## Combat integration
+
+Phase 2 attached `foundation.combatant` through a separate Player Combat adapter rather than coupling movement/input/camera to Combat.
+
+That separation is preserved.
+
+A1 adds an AuthorityGateway/Host seam so semantic Player action intent reaches host-owned ActionExecutor/CombatService state. The client can predict safe presentation but cannot submit final damage, health, cooldown or resource outcomes.
+
+See `COMBAT_FOUNDATION.md`, `COMBAT_ACTIONS.md` and the A1 mission.
+
+## Targeting / aim
+
+`PlayerIntent` supports semantic primary/secondary/cancel actions plus stable-ID/world-space target/aim values.
+
+Those values are **requests/hints**, not proof of a valid hit. Authority revalidates target identity, relationship, perception/LOS, range, action constraints and canonical spatial state before commit.
+
+## Recovery / respawn
+
+Region safe-transform/recovery behavior and current targeting were added in the historical enemy/telegraph work. Future death/respawn policy must be authority-owned because it changes canonical position/lifecycle and may interact with corpse/item custody.
+
+The client may request a valid respawn option; it does not choose arbitrary coordinates.
+
+## Validation
+
+Existing Core/Player/World tests remain regression coverage for deterministic local domain behavior.
+
+A1 authority integration extends validation with:
+
+- semantic movement command -> authority state;
+- forged final transform rejection/non-existence in client command protocol;
+- correction/reconciliation proof;
+- gameplay-facing/aim validation independent from camera presentation;
+- LocalAuthorityHost deterministic behavior;
+- no network-disconnect -> local canonical authority fallback.
+
+Android/device acceptance continues to validate control comfort, camera behavior and prediction/correction presentation when that layer exists; deterministic movement correctness should be automated where practical.
