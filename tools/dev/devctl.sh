@@ -127,15 +127,20 @@ godot_check() {
     fail "Godot executable '$godot_bin' not found"
     return 1
   fi
-  local log
+  local log rc=0
   log="$(mktemp)"
-  trap 'rm -f "$log"' RETURN
-  "$godot_bin" --headless --path client --editor --import --quit >"$log" 2>&1 || { cat "$log"; return 1; }
+  "$godot_bin" --headless --path client --editor --import --quit >"$log" 2>&1 || rc=$?
   cat "$log"
+  if (( rc != 0 )); then
+    rm -f "$log"
+    return "$rc"
+  fi
   if rg -q 'SCRIPT ERROR:|ERROR:|WARNING:.*leaked|resources still in use' "$log"; then
+    rm -f "$log"
     fail "Godot import/parse reported errors"
     return 1
   fi
+  rm -f "$log"
   ok "Godot import/parse clean"
 }
 
