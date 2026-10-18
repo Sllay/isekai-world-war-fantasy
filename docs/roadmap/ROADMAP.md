@@ -20,6 +20,26 @@ From M1.3 onward:
 - Engineering Complete and Player Complete are distinct states;
 - player-facing Macro Versions close only when their Mission Contract and Shippable Definition of Done pass.
 
+## Cross-cutting Online-first Authority
+
+**Server authority is not deferred to A7.**
+
+From A1 onward, every gameplay-critical Macro Version must establish the authority/command boundary for the state it introduces.
+
+Release clients request gameplay through semantic commands/intents; canonical persistent/competitive outcomes live behind the AuthorityHost boundary defined by `docs/architecture/SERVER_AUTHORITY.md` and ADR-0016.
+
+Development may use a LocalAuthorityHost/loopback adapter, but never an automatic client-authoritative fallback.
+
+Therefore:
+
+- A1 establishes the pattern for movement/combat/actions;
+- A2 keeps canonical world/environment mutations authority-owned;
+- A3 keeps inventory/item/equipment/crafting custody authority-owned;
+- A4 keeps NPC/Bot simulation and shared gameplay actions authority-owned;
+- A5 keeps progression/ability acquisition authoritative;
+- A6 keeps Building/economy/world transformations authoritative;
+- A7 productizes transport, sessions, private hosting and official operations rather than retrofitting authority into finished systems.
+
 ## Completed Foundation History
 
 - **M1.1 — Technical Foundation Research:** Completed (2026-10-13).
@@ -35,7 +55,7 @@ The previous Phase 2 slices are retained as engineering history and are now inpu
 - **Historical Slice 2 — Player Combat Actions:** implemented and Android-accepted. Semantic actions, strike/self-heal, action execution, targeting/effects, cancellation/interruption, movement gates, cues and persisted cooldowns.
 - **Historical Slice 3 — Enemy/Targeting/Telegraphs:** implemented and Android-accepted. Persistent melee enemy, autonomous controller, targeting/disposition, telegraphs, save reset and Region safe-transform recovery. Automated result recorded as 598 checks / 0 failures. No final combat HUD/art was claimed.
 
-These systems are not discarded or rewritten merely because planning changed.
+These systems are not discarded or rewritten merely because planning changed. Their deterministic logic is audited and moved behind the online-first authority boundary where required.
 
 ---
 
@@ -45,7 +65,7 @@ Goal: establish the representative end-to-end loop of the game with production-i
 
 ## Macro Version A1 — Combat & Player Gameplay
 
-**Status:** ACTIVE — completion/audit mission starts now.
+**Status:** ACTIVE — implementation mission currently held for final design-readiness closure.
 
 Player outcome: the player can enter the world, read a threat, fight it using a coherent mobile/desktop combat loop, spend/recover resources, defend, receive feedback, win/lose, and have the expected combat state persist.
 
@@ -63,9 +83,16 @@ This version groups related work instead of creating new isolated slices:
 - hit/damage/heal/defeat/resource/cooldown feedback;
 - representative animation/audio/visual presentation where already specified;
 - combat persistence/save-resume;
+- **AuthorityGateway/AuthorityHost boundary for movement and combat**;
+- client semantic commands rather than trusted final damage/position;
+- LocalAuthorityHost/loopback development path using the same command semantics;
+- adversarial tests for forged/duplicate/stale combat commands;
+- movement prediction/reconciliation boundary where required for the representative network proof;
 - integrated automated/runtime/device acceptance.
 
-Existing implementations must be audited/reused before new systems are introduced. The active mission is `docs/missions/COMBAT_A1_FOUNDATION_COMPLETION.md`.
+Existing implementations must be audited/reused before new systems are introduced. `CombatService`, `ActionExecutor`, `PlayerIntent` and the Player foundation are inputs to the authority integration, not discarded simply because they currently execute locally.
+
+The prepared mission is `docs/missions/COMBAT_A1_FOUNDATION_COMPLETION.md`, currently held until the remaining design-readiness blocker is closed.
 
 Content breadth intentionally remains small: this is not the stage for hundreds of weapons, enemies or skills.
 
@@ -82,7 +109,9 @@ Groups:
 - representative 3D environment assets/materials/textures;
 - gathering interaction hooks;
 - world persistence/region state;
-- mobile performance/culling/streaming appropriate to the representative region.
+- authority-owned persistent world mutations/terrain/resource commits;
+- mobile performance/culling/streaming appropriate to the representative region;
+- server simulation/streaming budgets appropriate to `private_4gb` where server-side work is introduced.
 
 ## Macro Version A3 — Inventory, Items & Survival
 
@@ -98,6 +127,7 @@ Groups:
 - consumables and survival-resource hooks;
 - representative crafting/station loop where required;
 - inventory/mobile UI;
+- authority-owned custody/equipment/crafting transactions;
 - save/resume.
 
 ## Macro Version A4 — Living NPCs & Player-like Bots
@@ -113,9 +143,11 @@ Groups:
 - relationships/reputation required by representative behavior;
 - player-like bots using shared public gameplay capabilities where viable;
 - important authored NPCs with deeper stable identities;
-- simulation LOD;
+- server-owned planner/simulation authority;
+- L0-L3 simulation fidelity;
 - persistence;
-- deterministic/scenario validation hooks.
+- deterministic/scenario validation hooks;
+- private-server NPC/Bot population/config hooks within validated budgets.
 
 Bots are not intended to deceive players about being human. The design goal is believable autonomous participation and companionship.
 
@@ -131,6 +163,7 @@ Groups:
 - ability progression;
 - equipment/stat interaction;
 - representative quest/reputation hooks;
+- authoritative progression/acquisition validation;
 - character creation/profile presentation required by the loop.
 
 ## Macro Version A6 — Building, Economy & World Transformation
@@ -144,22 +177,34 @@ Groups:
 - storage/stock;
 - economy ownership/exchange hooks;
 - contextual occlusion/presentation;
-- NPC interaction with the same economy where in scope.
+- NPC interaction with the same economy where in scope;
+- authority-owned placement/damage/repair/economy transactions;
+- private-server building/raid/rate settings within performance/integrity guardrails.
 
-## Macro Version A7 — Multiplayer / Server Foundation
+## Macro Version A7 — Multiplayer / Server Productization
 
-Player outcome: a development server can authoritatively host the representative loop and support the later official/private-server model.
+Player/operator outcome: the already-authoritative representative game can be reliably hosted, discovered, configured and operated as official or player-run servers.
 
 Groups:
 
-- protocol/shared schemas;
-- authoritative server state;
-- connection/session lifecycle;
-- player identity required for the current product stage;
-- persistence/server save boundaries;
-- private-server direction;
-- official-server hosting requirements measured rather than assumed;
-- representative bot/NPC server ownership.
+- external transport selected from proof evidence;
+- versioned wire schemas/protocol compatibility;
+- authentication and connection/session lifecycle;
+- server discovery/join flow;
+- reconnect/resync hardening;
+- private-server package/startup flow;
+- versioned `ServerRuleProfile` configuration;
+- custom NPC/Bot definition management;
+- safe special-NPC/content enable/disable/migrations;
+- admin permissions/audit tooling;
+- server health/capacity reporting;
+- private `private_4gb` deployment proof;
+- official-server deployment/backup/observability requirements;
+- abuse/security hardening;
+- load/latency/loss/scale validation;
+- update/save/protocol migration operations.
+
+A7 must **not** rewrite A1-A6 to become authoritative. It productizes an authority model already used by them.
 
 ## Macro Version A8 — Game Shell
 
@@ -189,10 +234,10 @@ Return through the same major domains and expand depth rather than rebuilding th
 - NPC/Bot+;
 - RPG/Class+;
 - Building+;
-- Networking+;
+- Networking/Server+;
 - Game Shell+.
 
-Examples include more classes, abilities, enemies, bosses, ecosystems, structures, professions, NPC behaviors and larger multiplayer scale.
+Examples include more classes, abilities, enemies, bosses, ecosystems, structures, professions, NPC behaviors, private-server customization and larger measured multiplayer scale.
 
 # Pass C — Polish / Release
 
@@ -202,9 +247,9 @@ Cross-system polish and release hardening:
 - animation/feedback polish;
 - UX/accessibility/input refinement;
 - balancing/content tuning;
-- performance and memory budgets;
+- client/server performance and memory budgets;
 - networking resilience;
-- save migrations;
+- save/protocol migrations;
 - onboarding;
 - device/platform validation;
 - production hosting/deployment decisions based on measurements.
