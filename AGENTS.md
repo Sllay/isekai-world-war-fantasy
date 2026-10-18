@@ -11,6 +11,7 @@ Keep this file small. Read only the documentation relevant to the task; do not p
 - Decisions: `docs/adr/`
 - Roadmap: `docs/roadmap/`
 - Development workflow: `docs/development/`
+- Design readiness audit: `docs/development/DESIGN_SCOPE_AUDIT.md`
 - Shippable gate: `docs/development/SHIPPABLE_DEFINITION_OF_DONE.md`
 - Mission contract: `docs/development/MISSION_CONTRACT.md`
 - Developer <-> Technical Design handoff: `docs/development/TECHNICAL_HANDOFF.md`
@@ -24,9 +25,12 @@ Keep this file small. Read only the documentation relevant to the task; do not p
 2. Read only its relevant design/architecture document and related ADRs.
 3. Check whether an existing module, contract, component, event or data definition already solves the problem.
 4. For non-trivial production work, read the active Mission Contract.
-5. Prefer the smallest correct change inside the active Macro Version.
+5. For a major player-facing domain, verify that its design contract is first-scope complete enough for implementation; use `DESIGN_SCOPE_AUDIT.md` as a readiness guide.
+6. Prefer the smallest correct change inside the active Macro Version.
 
 Do not read every project document for a local change.
+
+If an owning design document is intentionally incomplete, do not silently invent permanent product behavior. The Mission Contract must either bound the unresolved decision, declare a temporary proof, or route the decision back to Technical Design before it becomes architecture.
 
 For visual/vector asset work, read `docs/design/ART_DIRECTION.md` and `skills/vector-art/SKILL.md` before generating or integrating important assets.
 
