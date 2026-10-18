@@ -1,11 +1,13 @@
 # Mobile + Cloud Development Workflow
 
-- **Status:** Accepted workflow for early development
-- **Updated:** 2026-10-13
+- **Status:** Accepted production workflow
+- **Updated:** 2026-10-18
 
 ## Development Principle
 
-The game is developed **mobile-first** and validated on real Android hardware from the beginning.
+The game is mobile-first and validated on real Android hardware from the beginning, but BK is not the default runner for every micro-change.
+
+The development host should automatically prove deterministic behavior first. Android validation is concentrated on integrated Macro Version candidates and on questions that are genuinely device-specific or subjective.
 
 Mobile-first does not mean every compiler, database and server process must run on the phone. Workloads are split by what each environment is good at.
 
@@ -16,24 +18,28 @@ Mobile-first does not mean every compiler, database and server process must run 
 Primary responsibilities:
 
 - Godot Android Editor;
-- real-device gameplay execution;
-- touch/input validation;
+- integrated gameplay candidate execution;
+- touch/input comfort validation;
 - mobile GPU/CPU/memory observations;
-- UI/UX checks;
+- UI/UX/readability checks;
 - Compatibility-renderer validation;
-- quick GDScript/editor iteration when convenient.
+- subjective feel and device-specific acceptance.
 
-Godot's Android editor is capable of 2D and 3D development. Gradle-based Android builds can be performed from the Android editor with GABE on supported versions.
+The phone should not be used to manually prove facts that deterministic host tests can verify, such as exact health arithmetic, cooldown state transitions or parser correctness.
 
 ### Remote development host
 
 Primary responsibilities:
 
 - Codex execution environment;
+- Serena semantic GDScript navigation/editing;
 - Git/worktrees;
 - Node.js/MCP host;
-- Rust compilation and server tests;
-- headless/desktop Godot validation;
+- full Godot editor/runtime MCP;
+- lightweight GDScript LSP/DAP diagnostics;
+- Rust compilation and server tests when server work begins;
+- headless Godot validation;
+- deterministic gameplay/scenario tests;
 - long-running simulations;
 - database experiments;
 - profiling/CI-like tasks that would waste mobile battery/thermal budget.
@@ -45,14 +51,14 @@ Canonical collaboration/source-control layer:
 - source of truth for code/docs;
 - branches/PRs;
 - CI;
-- issues;
-- handoff between remote Codex and Android device.
+- issues/Mission handoff;
+- durable handoff between remote Codex and Android device.
+
+Git is the version/checkpoint layer; it should not force BK to manually validate every internal implementation checkpoint.
 
 ## Recommended Early Host: GitHub Codespaces
 
-Use Codespaces as the first zero-cost-capable dev host, not as the permanent game server.
-
-Personal GitHub plans currently include monthly Codespaces compute/storage quotas. The exact remaining allowance must be checked in GitHub because usage is account-specific.
+Use Codespaces as the current zero-cost-capable dev host, not as the permanent game server.
 
 Cost-control rules:
 
@@ -61,23 +67,24 @@ Cost-control rules:
 - short idle timeout;
 - no unnecessary prebuilds;
 - keep generated caches/builds disposable;
-- Git remains the durable source of truth.
+- Git remains durable source of truth.
+
+Codespaces is a development host, not the production hosting decision.
 
 ## Repository Layout
-
-Target monorepo boundary:
 
 ```text
 /
 ├── client/        # Godot project and presentation/client gameplay
-├── server/        # Rust authoritative simulation/server
+├── server/        # authoritative server work when introduced
 ├── shared/        # protocol/schema/shared IDs and generated contracts
 ├── data/          # data-driven game content definitions
-├── assets/        # source/shared game assets; client import policy defined later
+├── assets/        # source/shared assets + provenance
 ├── tests/         # cross-boundary/integration/fixtures
 ├── tools/         # setup, validation, generation, profiling helpers
 ├── docs/
 ├── skills/
+├── .serena/
 └── .codex/
 ```
 
@@ -94,15 +101,15 @@ Target monorepo boundary:
 - client-side effects;
 - client networking adapter.
 
-It does not own canonical economy/world truth.
+It does not own canonical server economy/world truth once authoritative server systems exist.
 
 ### Server rule
 
-`server/` owns canonical world consequences:
+`server/` owns canonical multiplayer consequences when that Macro Version is active:
 
-- world simulation;
+- world simulation authority;
 - entity/state authority;
-- economy;
+- economy authority;
 - item custody;
 - population/ecology;
 - battle strategic state;
@@ -111,59 +118,82 @@ It does not own canonical economy/world truth.
 
 ### Shared rule
 
-`shared/` contains contracts, not gameplay implementations.
+`shared/` contains contracts, not duplicate gameplay implementations.
 
-Examples:
-
-- network message schemas;
-- stable ID formats;
-- data schemas;
-- protocol versions;
-- generated bindings where needed.
-
-Avoid manually duplicating the same protocol definition in GDScript and Rust.
+Avoid manually duplicating the same protocol definition in GDScript and server code.
 
 ## Android File Workflow
 
 The Android device should work from a normal clone/export of the same repository revision used by the remote host.
 
-The exact Git client is a user/device preference. If Termux is used, keep secrets out of shared storage and be aware that Android shared storage has different Unix filesystem semantics.
+If Termux is used, keep secrets out of shared storage and remember that Android shared storage has different Unix filesystem semantics.
 
-Do not put server build outputs, Rust target directories, node_modules, databases or other heavy host-only caches into the phone's tracked project data.
+Do not put server build outputs, Rust target directories, node_modules, databases or heavy host-only caches into the phone's tracked project data.
 
-## Test Loop
+A future authenticated direct-device sync/bridge may reduce Git round trips, but it is an optimization, not a correctness dependency.
 
-For every mobile-sensitive feature:
+## Development / Validation Loop
 
-1. Codex implements/tests on its host.
-2. Commit/branch is pushed.
-3. Android checkout updates to that revision.
-4. Open/run in Godot Android Editor.
-5. Validate touch, visuals, performance and device-specific behavior.
-6. Record issue with reproduction details/metrics.
-7. Codex fixes against the same revision lineage.
+### During implementation
+
+Codex should iterate mostly on the host:
+
+```text
+Mission Contract
+ -> Serena symbol/reference navigation
+ -> edit
+ -> GDScript diagnostics
+ -> affected deterministic tests
+ -> Godot runtime MCP where required
+ -> fix
+ -> regression gate
+```
+
+Runtime-MCP failure after bounded recovery switches the task to DEGRADED mode instead of forcing an immediate BK test.
+
+### Android acceptance
+
+Sync/test on Android when one of these is true:
+
+- an integrated Macro Version candidate is ready;
+- touch/control feel changed materially;
+- visual/readability/animation feedback needs human judgement;
+- mobile renderer/performance/memory is the question;
+- a bug appears device-specific;
+- the Mission Contract explicitly names Android acceptance.
+
+Preferred candidate loop:
+
+1. Codex completes deterministic host validation.
+2. CI passes for the candidate branch/PR.
+3. Candidate revision is synchronized to Android.
+4. BK validates the short acceptance checklist for feel/visual/device behavior.
+5. Failures become concrete reproduction notes for the next Codex correction.
+
+Avoid asking BK to test one field/method/change at a time.
 
 ## Performance Rule
 
 Desktop/headless success is not proof of mobile performance.
 
-A performance claim affecting the client is not accepted until tested on a representative Android device using a release-like configuration.
+A client performance claim is not accepted until tested on representative Android hardware in a release-like configuration. Conversely, Android manual testing is not required merely to prove deterministic domain arithmetic already covered by automated tests.
 
 ## Server/Cloud Rule
 
-Heavy authoritative-server experiments may run in cloud/devbox environments from the start.
+Heavy authoritative-server experiments may run in cloud/devbox environments from the start of the relevant Macro Version.
 
-Do not choose permanent hosting during M1 solely because a provider has a free tier. Production hosting decisions come after measured CPU, RAM, bandwidth, persistence and concurrency requirements exist.
+Do not choose permanent hosting solely because a provider has a free tier. Production hosting decisions follow measured CPU, RAM, bandwidth, persistence and concurrency requirements.
 
 ## No-PC Requirement
 
-The workflow must remain usable without the user owning a conventional desktop PC.
+The workflow must remain usable without BK owning a conventional desktop PC.
 
 Therefore:
 
 - the Android phone can edit/run the Godot client;
-- the mobile ChatGPT/Codex experience can steer connected remote work;
+- ChatGPT/Codex mobile experiences can steer remote work;
 - cloud/devbox resources handle desktop/server toolchains;
-- GitHub synchronizes both sides.
+- Serena/LSP/runtime MCP provide agent-side code/engine intelligence;
+- GitHub synchronizes durable revisions and CI evidence.
 
-A future PC can improve convenience but must not be a prerequisite for the project to progress.
+A future PC can improve convenience but must not be a prerequisite for project progress.
