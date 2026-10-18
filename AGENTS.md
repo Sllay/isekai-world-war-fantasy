@@ -8,6 +8,8 @@ Keep this file small. Read only the documentation relevant to the task; do not p
 
 - Game vision: `docs/gdd/GDD.md`
 - Architecture: `docs/architecture/`
+- Server authority: `docs/architecture/SERVER_AUTHORITY.md`
+- Server configuration: `docs/design/SERVER_CONFIGURATION.md`
 - Decisions: `docs/adr/`
 - Roadmap: `docs/roadmap/`
 - Development workflow: `docs/development/`
@@ -24,9 +26,10 @@ Keep this file small. Read only the documentation relevant to the task; do not p
 1. Identify the subsystem being changed.
 2. Read only its relevant design/architecture document and related ADRs.
 3. Check whether an existing module, contract, component, event or data definition already solves the problem.
-4. For non-trivial production work, read the active Mission Contract.
-5. For a major player-facing domain, verify that its design contract is first-scope complete enough for implementation; use `DESIGN_SCOPE_AUDIT.md` as a readiness guide.
-6. Prefer the smallest correct change inside the active Macro Version.
+4. For gameplay-critical Player/Combat/World/Inventory/Building/NPC/Bot work, read `SERVER_AUTHORITY.md` and preserve its command/authority boundary.
+5. For non-trivial production work, read the active Mission Contract.
+6. For a major player-facing domain, verify that its design contract is first-scope complete enough for implementation; use `DESIGN_SCOPE_AUDIT.md` as a readiness guide.
+7. Prefer the smallest correct change inside the active Macro Version.
 
 Do not read every project document for a local change.
 
@@ -49,6 +52,31 @@ Rules:
 - Use foundation just-in-time: build the infrastructure required by the active Macro Version, then finish the player-facing loop before moving on.
 - Preserve completed historical slice records for traceability; do not continue the old micro-slice workflow for new work.
 - A Macro Version may have several implementation groups, but BK should normally validate the integrated candidate rather than every micro-change.
+
+## Online-first authority rule
+
+The product is online-first in **authority** from A1 onward. A7 is not the milestone where gameplay suddenly becomes server-aware.
+
+For gameplay-critical systems:
+
+- the production client sends semantic intent/commands, not trusted final outcomes;
+- canonical damage/healing, health/resources, cooldowns, inventory/custody, money/XP, Building commits, persistent world mutations and authoritative gameplay transforms belong behind the AuthorityHost boundary;
+- a client may predict presentation/movement, but prediction never becomes persistent truth merely because it ran locally;
+- camera/view/UI/VFX/SFX can remain local unless a mechanic explicitly derives a validated gameplay intent from them;
+- a disconnected production client must never fall back to trusting local damage/position/inventory state;
+- development without a remote server uses `LocalAuthorityHost`/loopback command semantics, not an offline gameplay bypass;
+- unit tests may directly instantiate domain services only inside explicit test harnesses;
+- official and private servers share the same trust/authority invariants; private configuration changes rules/content/budgets, not who is trusted.
+
+When adding a gameplay feature, define:
+
+1. client/user/AI intent entering the system;
+2. authority-owned canonical state;
+3. validation before commit;
+4. authoritative fact/snapshot returned;
+5. presentation/prediction-only state.
+
+Do not add a client-only gameplay mutation with a note saying “make authoritative in A7 later.”
 
 ## Completion states
 
@@ -81,9 +109,10 @@ M1.1/M1.2 resolved the major stack/tooling/2.5D uncertainties. From M1.3 onward,
 - New content should be data-driven when behavior is reusable.
 - Do not create duplicate systems such as `CombatSystem2` or `NewInventoryManager`.
 - Optional systems must degrade cleanly when unavailable.
-- Mobile/Web constraints are first-class requirements.
+- Mobile/Web and low-resource private-server constraints are first-class requirements.
 - Canonical server state must never be reconstructed from presentation defaults.
 - Do not reorganize many files merely because a new tool is available; refactor only for a concrete architectural or product reason.
+- Profile before replacing a simple deterministic scheduler/data structure with a more complex optimization.
 
 ## Agent budget policy
 
@@ -175,8 +204,10 @@ Before finishing a Macro Version or material implementation group, add/update a 
 - Identify the owning module.
 - Define the player-visible outcome when applicable.
 - Define inputs, outputs, data and events.
+- Define the authority boundary for gameplay-critical state.
 - Keep cross-module integration minimal.
 - Add isolated tests where practical.
+- Add adversarial/forged-command tests when network authority is involved.
 - Add/update integration/scenario coverage for systemic behavior when appropriate.
 - Add/update a test world for visual/systemic behavior where appropriate.
 - Update only affected documentation.
