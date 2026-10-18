@@ -1,5 +1,7 @@
 # Milestones
 
+This file preserves high-level milestone gates. Product development after the completed technical foundation is organized by Macro Versions, not isolated slices.
+
 ## M0 — Repository Foundation
 
 Exit criteria:
@@ -10,68 +12,104 @@ Exit criteria:
 - agent rules exist;
 - roadmap exists.
 
-## M1 — Technical Proof
+## M1 — Technical Foundation
 
 Exit criteria:
 - stack/engine chosen from evidence;
-- Web/mobile prototype runs on target phone/browser;
+- mobile Godot proof runs on target device;
 - camera/2.5D spatial model validated;
-- basic asset/character rig pipeline validated;
-- performance baseline recorded;
-- persistent simulation scheduler shown feasible;
-- active <-> aggregate simulation transition demonstrated;
-- minimal authoritative networking flow demonstrated;
-- basic persistence/restart restoration demonstrated;
-- M1 experiment evidence and unresolved risks documented.
+- base asset/character rig direction validated enough to proceed;
+- production modular Core/Player/World/Save foundations established;
+- development/Codex/MCP workflow established;
+- unresolved technical risks documented.
 
-Detailed plan: `docs/roadmap/M1_TECHNICAL_PROOF.md`.
+Status: completed through M1.3. Historical M1 proof/foundation documents remain authoritative records for their decisions.
 
-## M2 — Modular Core
+## Pass A — Playable Game
 
-Exit criteria:
-- modules load by manifest;
-- dependency validation works;
-- Event Bus works;
-- data registry works;
-- debug/module inspector exists in minimal form;
-- automated tests cover core contracts.
-
-## M3 — Combat Slice
+### A1 — Combat & Player Gameplay
 
 Exit criteria:
-- player + enemy combat loop playable;
-- modular abilities demonstrated;
-- equipment can alter ability behavior;
-- one multi-pattern boss encounter playable.
+- representative player + enemy combat loop is Player Complete for the A1 scope;
+- health/resources/damage/healing/defeat are integrated;
+- modular abilities/cooldowns/resource costs work;
+- targeting/telegraphs/defensive verbs work;
+- minimum equipment hook/path required by combat works;
+- required mobile controls/HUD/feedback exist;
+- expected combat state persists;
+- automated/runtime/device acceptance gates pass.
 
-## M4 — World Simulation Slice
-
-Exit criteria:
-- two factions simulate a conflict without player input;
-- player intervention changes outcome;
-- near/far simulation modes demonstrated;
-- state persists through save/load.
-
-## M5 — Survival/Building Slice
+### A2 — World & Exploration
 
 Exit criteria:
-- gather -> craft -> build loop playable;
-- modular room/wall/floor system validated;
-- occlusion works without leaking hidden information.
+- representative region is explorable as a real game environment;
+- world/terrain/height/2.5D traversal behavior works;
+- representative props/resources/biome rules exist;
+- world state/persistence works;
+- environment presentation is representative rather than debug-only;
+- mobile performance is measured for the scope.
 
-## M6 — Emergent World Slice
-
-Exit criteria:
-- reputation/lealdade;
-- systemic quests;
-- basic dynamic economy;
-- creature ecology;
-- at least two distinct taming methods.
-
-## M7 — Chapter 1 Alpha
+### A3 — Inventory, Items & Survival
 
 Exit criteria:
-- representative region of the first kingdom;
-- all core loops integrated;
-- mobile performance target defined and met for alpha scope;
-- save/network strategy validated for intended play mode.
+- gather/loot -> custody/inventory -> equip/use/consume loop works;
+- representative item condition/stack/survival rules required by scope work;
+- mobile inventory interaction is usable;
+- expected item state persists.
+
+### A4 — Living NPCs & Player-like Bots
+
+Exit criteria:
+- autonomous NPCs/bots perform contextual actions without player scripting;
+- perception/knowledge/memory/personality boundaries exist for the representative scope;
+- player-like bots reuse public gameplay capabilities where viable;
+- important characters can persist divergent server histories;
+- simulation LOD/persistence supports the representative population;
+- deterministic/scenario validation exists for core behavior.
+
+### A5 — RPG Identity
+
+Exit criteria:
+- representative race/class/progression choices materially affect gameplay;
+- class/race traits, abilities and equipment integration work;
+- representative character identity/profile flow is usable.
+
+### A6 — Building, Economy & World Transformation
+
+Exit criteria:
+- representative gather/produce/build/store/exchange loop works;
+- world changes persist;
+- NPC/system interaction with the representative economy works where in scope.
+
+### A7 — Multiplayer / Server Foundation
+
+Exit criteria:
+- authoritative development server hosts the representative gameplay loop;
+- session/protocol/persistence boundaries work;
+- private/official server direction is supported by measured architecture rather than placeholders;
+- bots/NPCs have correct authoritative ownership.
+
+### A8 — Game Shell
+
+Exit criteria:
+- main menu/settings/join flow required by the current network model work;
+- PC input remapping/mobile HUD customization/controller support are implemented to accepted scope;
+- product-level onboarding/error states exist;
+- an integrated playable build can be entered and configured without development-only steps.
+
+## Pass B — Feature Depth
+
+Return through the same domains and expand content/depth without rebuilding their foundations.
+
+Exit criteria are defined per Macro Version+ mission: more classes, abilities, enemies, bosses, ecosystems, professions, structures, NPC behaviors, economy depth and multiplayer scale.
+
+## Pass C — Polish / Release
+
+Exit criteria:
+- visual/audio/animation/UX cohesion;
+- performance and memory budgets met on target devices;
+- balancing/content tuning;
+- save migration and networking resilience;
+- accessibility/input refinement;
+- production hosting/deployment choices backed by measurements;
+- release candidate passes cross-system regression and device acceptance.
