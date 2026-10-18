@@ -1,208 +1,253 @@
 # Codex + Godot MCP Workflow
 
-- **Status:** Initial development policy
-- **Updated:** 2026-10-13
+- **Status:** Active production workflow
+- **Updated:** 2026-10-18
 
 ## Purpose
 
-Define how Codex works on this project without wasting context, spawning unnecessary agents, or coupling the project to one workstation.
+Define how Codex works on this project with low human interruption, bounded context, resilient Godot tooling and explicit fallback modes.
 
-## Core Model
+The goal is not merely to make Codex capable of editing Godot files. The goal is to let Codex complete a coherent Mission Contract, prove deterministic facts automatically, and ask BK primarily for design/feel/device-specific acceptance.
 
-The project uses three distinct roles:
+## Core roles
 
 1. **Repository / source of truth** — GitHub.
-2. **Development host** — a machine/devbox where Codex, Node.js, Git and engine tooling can run.
-3. **Mobile Godot device** — primary visual/runtime test device during early development.
+2. **Development host** — Codespace/devbox where Codex, Serena, Node.js, Git and Godot tooling run.
+3. **Godot semantic layer** — Serena connected to Godot's built-in GDScript LSP.
+4. **Godot diagnostics layer** — `minimal-godot-mcp` connected to LSP/DAP.
+5. **Godot runtime/editor layer** — `@satelliteoflove/godot-mcp` + editor addon.
+6. **Mobile Godot device** — authoritative acceptance for touch/UX/mobile performance.
 
-The ChatGPT/Codex mobile app is treated primarily as the control plane for Codex work running on a connected host. Project files, tools and permissions remain on that host. Mobile Godot uses the same Git repository and validates real device behavior.
+## Tool layers
 
-## Why This Split
+### Serena
 
-Trying to make the phone simultaneously be:
+Pinned bootstrap package: `serena-agent==2.0.0`.
 
-- the Godot editor,
-- the Codex execution host,
-- the MCP stdio host,
-- Rust server compiler,
-- database host,
-- benchmark machine,
+Project config: `.serena/project.yml`.
 
-would add fragile Android/Termux assumptions before the game exists.
+Use Serena for:
 
-The phone remains extremely important: it is the real mobile target and should be tested from the beginning. Heavy compilation and server experiments can run elsewhere.
+- symbol discovery;
+- definitions/references;
+- narrow code retrieval;
+- semantic/surgical edits;
+- avoiding repeated broad reads of large GDScript files.
 
-## Primary Godot MCP Candidate
+Serena's GDScript backend connects to Godot's built-in LSP. The editor must be running with LSP enabled; the project uses port `6008`.
 
-Use:
+Serena is not a replacement for runtime validation, architecture docs or tests.
+
+### Lightweight diagnostics MCP
+
+Pinned package:
+
+`@ryanmazzolini/minimal-godot-mcp@0.1.6`
+
+Use it for:
+
+- fast per-file GDScript diagnostics;
+- workspace diagnostic scans;
+- debug-session console output through DAP.
+
+It complements the full runtime MCP and does not install a Godot addon.
+
+### Full runtime/editor MCP
+
+Pinned package:
 
 `@satelliteoflove/godot-mcp@4.1.11`
 
-Reasons for the initial choice:
-
-- Godot 4.5+ support, compatible with the 4.7 line;
-- 21 top-level tools rather than hundreds of exposed schemas;
-- structured runtime state reduces screenshot/vision usage;
-- deterministic freeze/step/step-until playtesting;
-- real input injection;
-- profiler access;
-- editor/runtime inspection and screenshots when needed;
-- MIT licensed;
-- file edits are intentionally left to normal repository tools rather than duplicated in MCP.
-
-This is a candidate dependency. Pin the tested version and upgrade deliberately.
-
-## Host Requirements
-
-The development host needs, at minimum:
-
-- Git;
-- Node.js 20+;
-- Codex local/remote execution environment;
-- Godot 4.7.x editor binary when using live Godot MCP features;
-- repository checkout.
-
-Later server work adds Rust/Cargo, SQLite/PostgreSQL tooling and related profilers.
-
-## MCP Installation Pattern
-
-Preferred command on a development host:
-
-```bash
-npx -y @satelliteoflove/godot-mcp@4.1.11 --install-addon /workspace/isekai-world-war-fantasy/client
-```
-
-The exact checkout path is host-specific.
-
-Then enable **Godot MCP** in Godot Project Settings > Plugins.
-
-The MCP process itself can be started by Codex through project/user configuration when Node.js is available.
-
-## MCP Usage Rules
-
-Use MCP for engine-aware work that normal file editing cannot prove cheaply:
+Use it for engine-aware work that files/LSP cannot prove cheaply:
 
 - scene/editor inspection;
 - run/stop/restart;
 - runtime state;
 - deterministic playtesting;
 - input injection;
-- animation/scene effective state;
+- animation/effective scene state;
 - profiling;
-- screenshots for visual validation;
-- version-matched Godot documentation.
+- screenshots when pixels matter.
 
-Do not use MCP merely to edit a text file that Codex can edit directly.
+Do not use runtime MCP merely to edit a normal text file.
 
-### Observation priority
+## Operational modes
+
+The project must continue useful work when one integration is unavailable.
+
+### FULL
+
+Available:
+
+- repository editing;
+- Serena semantic tools;
+- GDScript diagnostics/DAP;
+- full Godot runtime/editor MCP;
+- headless tests.
+
+Use this for normal gameplay implementation and runtime verification.
+
+### DEGRADED
+
+Typical case: full runtime MCP is not connected, but repository/Godot LSP/headless execution remain available.
+
+Continue with:
+
+- Serena symbol/reference work where LSP is healthy;
+- lightweight diagnostics;
+- headless/runtime CLI tests;
+- deterministic unit/integration suites;
+- documentation/data work.
+
+Do not stop the entire mission because the live editor bridge is down. Record only the remaining live/visual validation gap.
+
+### STATIC
+
+Use when no live editor/LSP is available.
+
+Continue only work safely supported by:
+
+- repository inspection/search;
+- deterministic non-live checks;
+- docs/data/schema work;
+- already-established architecture.
+
+Do not claim live runtime behavior from STATIC mode.
+
+## Observation priority
 
 Prefer:
 
-1. structured runtime/editor state;
-2. narrow logs/metrics;
-3. screenshot only when pixels matter.
+1. Serena/symbol state for code navigation;
+2. GDScript diagnostics and narrow logs;
+3. structured runtime/editor state;
+4. screenshots only when pixels/readability matter.
 
-This policy reduces token/context consumption.
+This reduces token/context consumption.
 
-## Agent Policy
+## MCP recovery policy
 
-Default: **one main Codex agent**.
+For the full runtime/editor MCP only:
 
-Subagents are reserved for independent workstreams.
+1. Run `bash tools/dev/ensure_godot_mcp_editor.sh` once.
+2. Retry the failed MCP read.
+3. Wait briefly and retry at most one additional time.
+4. After two failed runtime-MCP retries, stop reconnect loops.
+5. Inspect `.codex-local/godot-editor.log` once.
+6. Switch to DEGRADED mode and continue all deterministic work.
+7. Record the precise unverified behavior in the task report/handoff.
+
+Never create ad-hoc `nohup`, `xvfb-run` or competing Godot bridge processes when project launchers exist.
+
+## Standard host bootstrap
+
+The Codespace/devbox uses Node.js 22+ and Godot 4.7.2.
+
+Run:
+
+```bash
+bash tools/dev/bootstrap_codespace.sh
+```
+
+The bootstrap installs/validates:
+
+- Godot 4.7.2;
+- Codex CLI;
+- uv;
+- Serena;
+- full runtime MCP package/addon;
+- lightweight diagnostics MCP availability.
+
+Then:
+
+```bash
+bash tools/dev/start_godot_mcp_editor.sh
+bash tools/dev/devctl.sh health
+node tools/dev/mcp_smoke_test.mjs
+codex mcp list
+```
+
+The runtime smoke test should execute before a Codex session occupies the single full-MCP editor connection.
+
+## Unified developer command
+
+Use:
+
+```bash
+bash tools/dev/devctl.sh health
+bash tools/dev/devctl.sh godot-check
+bash tools/dev/devctl.sh test affected
+bash tools/dev/devctl.sh test all
+bash tools/dev/devctl.sh mcp-status
+bash tools/dev/devctl.sh report
+```
+
+`test affected` is intentionally conservative in Block 1. Unknown impact runs broader tests. A symbol/dependency impact resolver belongs to Block 2.
+
+## Agent policy
+
+Default: one primary Codex agent.
+
+Subagents are reserved for genuinely independent workstreams. A single live Godot editor must have one active full-MCP operator at a time.
 
 Normal limits:
 
 - routine coding: zero subagents;
 - complex investigation: one subagent if clearly useful;
-- genuinely parallel technical task: maximum two concurrent subagents;
-- larger fan-out requires explicit user direction.
+- genuinely parallel independent task: maximum two concurrent subagents;
+- larger fan-out requires explicit direction.
 
-Subagents must not recursively create teams for routine work.
+Parallel code work should prefer worktrees/branches. Do not let multiple agents control the same editor bridge.
 
-A single live Godot editor should have one active MCP operator at a time. Other agents can work on isolated files/tests/worktrees without controlling that same editor session.
+## Mission execution loop
 
-## Worktree Strategy
+For non-trivial work:
 
-Parallel Codex work should prefer Git worktrees/branches rather than multiple agents editing the same checkout.
+1. Read the active Mission Contract.
+2. Use Serena to find owning symbols/contracts and references before broad file reads.
+3. Inspect only relevant design/architecture/ADR material.
+4. Implement a coherent group of the active Macro Version.
+5. Run affected deterministic tests.
+6. Use lightweight diagnostics for changed GDScript.
+7. Use full runtime MCP for the behavior that actually requires live engine proof.
+8. Fix failures without asking BK to perform deterministic micro-QA.
+9. Run broader regression tests based on risk/impact.
+10. Report `Engineering Complete` vs `Player Complete` precisely.
+11. Ask BK only for remaining subjective/device-specific acceptance.
 
-Suggested pattern:
+## Mobile development loop
 
-- main task: current feature branch/worktree;
-- independent research/test: separate temporary worktree;
-- merge only after tests/review.
-
-Do not use parallelism merely because it exists.
-
-## Mobile Development Loop
+The phone remains the authoritative device target, but BK should validate integrated candidates rather than every tiny patch.
 
 ```text
 Codex host
-  edit / validate / headless test
+  semantic navigation / edit
+        |
+        v
+LSP + deterministic tests
+        |
+        v
+Godot runtime MCP verification
+        |
+        v
+integrated Macro Version candidate
         |
         v
 Git branch / commit
         |
         v
-GitHub
+Android checkout / Godot Editor
         |
         v
-Android phone checkout
-        |
-        v
-Godot Android Editor
-        |
-        v
-real-device run + profiler/debug observations
-        |
-        v
-issue/log/result returned to repo/Codex
+BK feel / touch / visual / device acceptance
 ```
 
-The mobile result is authoritative for mobile-specific performance/UX questions.
-
-## Direct Phone MCP
-
-Running a Godot MCP bridge directly against the Android editor may be investigated later, but it is **not a bootstrap dependency**.
-
-Reasons:
-
-- the selected MCP server expects a Node.js stdio host;
-- Codex Remote is designed around work running on a connected development host;
-- Android app sandbox/storage and localhost bridging add platform-specific failure modes;
-- direct phone MCP does not remove the need for a server/compiler host later.
-
-If direct-phone MCP is tested, it must be treated as an optional convenience path. Failure of that path must never block development.
-
-## Cloud Development Host
-
-For zero-cost early work, GitHub Codespaces is the preferred first devbox candidate because personal GitHub accounts include a monthly free quota.
-
-Rules:
-
-- use the smallest machine that satisfies the task;
-- stop the codespace immediately when work ends;
-- lower idle timeout;
-- avoid prebuilds unless measurements justify them;
-- do not treat Codespaces as the permanent game server.
-
-Codespaces is a development host, not the production hosting decision.
+The current Git sync path remains accepted until a safer direct-device bridge is proven. A future direct phone bridge may shorten the hot loop but is not required for correctness.
 
 ## Security
 
-- Never commit API keys, personal tokens or tunnel credentials.
-- Keep MCP/editor bridges on localhost/private networks unless a deliberate authenticated tunnel is configured.
-- Do not expose the Godot editor bridge directly to the public internet.
-- Write actions remain reviewable; high-impact repository/engine operations should not be globally auto-approved.
-
-## Acceptance Criteria for Bootstrap
-
-Before M1.2 gameplay work begins:
-
-- repository layout separates client/server/shared concerns;
-- Codex project instructions are concise;
-- agent/subagent limits are documented;
-- Godot MCP candidate/version is pinned;
-- a development host can clone the repo and start the MCP server;
-- the Godot client can be opened on Android;
-- the same Git commit can be tested on host and phone;
-- no workflow depends on a paid always-on service.
+- Never commit keys, personal tokens or tunnel credentials.
+- Keep MCP/LSP/editor bridges on localhost/private networks.
+- Do not expose ports `6550`, `6008` or DAP publicly.
+- High-impact actions remain reviewable.
+- Third-party agent tools are development dependencies, not runtime game dependencies.
