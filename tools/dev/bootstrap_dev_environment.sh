@@ -47,8 +47,8 @@ case "$ARCH" in
     ;;
 esac
 
-if command -v godot >/dev/null 2>&1 && godot --version | grep -q "^${GODOT_VERSION}"; then
-  log "Godot ${GODOT_VERSION} already installed."
+if [[ -x /usr/local/bin/godot ]] && /usr/local/bin/godot --version | grep -q "^${GODOT_VERSION}"; then
+  log "Godot ${GODOT_VERSION} already installed at /usr/local/bin/godot."
 else
   log "Installing exact Godot ${GODOT_VERSION} (${GODOT_ARCH})..."
   TMP_DIR="$(mktemp -d)"
@@ -65,6 +65,8 @@ else
   trap - EXIT
 fi
 
+export PATH="/usr/local/bin:$PATH"
+
 if ! command -v node >/dev/null 2>&1; then
   echo "Node.js 22+ is required. Configure Node in the host/environment before this bootstrap." >&2
   exit 1
@@ -80,6 +82,14 @@ if [[ "$INSTALL_CODEX_CLI" == "1" ]]; then
   npm install -g @openai/codex@latest
 fi
 
+log "Installing pinned Godot MCP servers globally for offline task startup..."
+# Codex Cloud task sandboxes may not have network access. Install the MCP
+# executables during environment preparation so runtime startup never depends
+# on npx fetching packages from the registry.
+run_root env PATH="$PATH" npm install -g "$MCP_PACKAGE" "$DIAGNOSTICS_MCP_PACKAGE"
+command -v godot-mcp >/dev/null 2>&1 || { echo "godot-mcp executable missing after install." >&2; exit 1; }
+command -v minimal-godot-mcp >/dev/null 2>&1 || { echo "minimal-godot-mcp executable missing after install." >&2; exit 1; }
+
 log "Installing uv + pinned Serena semantic tooling..."
 if ! command -v uv >/dev/null 2>&1; then
   curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -93,27 +103,21 @@ else
 fi
 SERENA_BIN="$(command -v serena || true)"
 [[ -n "$SERENA_BIN" ]] || { echo "Serena installed but executable was not found." >&2; exit 1; }
-# Cloud install and task-start shells are separate lifecycles. Make the launcher
-# available from a stable system PATH instead of depending on setup-shell exports.
 run_root ln -sf "$SERENA_BIN" /usr/local/bin/serena
 
-log "Validating pinned Godot MCP packages..."
-npx -y "$MCP_PACKAGE" --version
-npm view "$DIAGNOSTICS_MCP_PACKAGE" version >/dev/null
-
 log "Installing pinned runtime MCP addon locally into client/ (ignored by Git)..."
-npx -y "$MCP_PACKAGE" --install-addon "$ROOT_DIR/client" --force
+godot-mcp --install-addon "$ROOT_DIR/client" --force
 mkdir -p "$ROOT_DIR/.codex-local"
 
 log "Environment versions"
 printf 'Host: %s\n' "$HOST_KIND"
-printf 'Godot: '; godot --version
+printf 'Godot: '; /usr/local/bin/godot --version
 printf 'Node: '; node --version
 printf 'npm: '; npm --version
 if command -v codex >/dev/null 2>&1; then printf 'Codex: '; codex --version || true; fi
 printf 'Serena: '; /usr/local/bin/serena --version || true
-printf 'Godot runtime MCP: '; npx -y "$MCP_PACKAGE" --version
-printf 'Godot diagnostics MCP: '; npm view "$DIAGNOSTICS_MCP_PACKAGE" version
+printf 'Godot runtime MCP: '; godot-mcp --version || true
+printf 'Godot diagnostics MCP: '; npm list -g --depth=0 "$DIAGNOSTICS_MCP_PACKAGE" 2>/dev/null | tail -n 1 || true
 
 cat <<'EOF'
 
