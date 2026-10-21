@@ -1,0 +1,203 @@
+[gd_resource type="Resource" script_class="ResourceCatalog" load_steps=31 format=3]
+
+[ext_resource type="Script" path="res://gameplay/resources/resource_catalog.gd" id="1"]
+[ext_resource type="Script" path="res://gameplay/resources/resource_definition.gd" id="2"]
+[ext_resource type="Script" path="res://gameplay/resources/resource_node_definition.gd" id="3"]
+[ext_resource type="Script" path="res://gameplay/resources/loot_profile.gd" id="4"]
+[ext_resource type="Script" path="res://gameplay/resources/recipe_definition.gd" id="5"]
+[ext_resource type="Script" path="res://gameplay/resources/recipe_input.gd" id="6"]
+
+[sub_resource type="Resource" id="WoodLoot"]
+script = ExtResource("4")
+profile_id = "loot.resource.wood_common"
+guaranteed = Array[Dictionary]([{"definition_id": "item.wood.common", "minimum": 2, "maximum": 2}])
+
+[sub_resource type="Resource" id="MountainLoot"]
+script = ExtResource("4")
+profile_id = "loot.resource.wood_mountain"
+guaranteed = Array[Dictionary]([{"definition_id": "item.wood.mountain", "minimum": 2, "maximum": 2}])
+
+[sub_resource type="Resource" id="StoneLoot"]
+script = ExtResource("4")
+profile_id = "loot.resource.stone"
+guaranteed = Array[Dictionary]([{"definition_id": "item.stone.common", "minimum": 2, "maximum": 2}])
+
+[sub_resource type="Resource" id="OreLoot"]
+script = ExtResource("4")
+profile_id = "loot.resource.iron_ore"
+guaranteed = Array[Dictionary]([{"definition_id": "item.ore.iron", "minimum": 2, "maximum": 2}])
+
+[sub_resource type="Resource" id="CarriedLoot"]
+script = ExtResource("4")
+profile_id = "loot.actor.skirmisher_initial"
+guaranteed = Array[Dictionary]([{"definition_id": "item.weapon.sword", "minimum": 1, "maximum": 1}, {"definition_id": "item.currency.coin", "minimum": 2, "maximum": 5}])
+weighted = Array[Dictionary]([{"definition_id": "item.stone.common", "minimum": 1, "maximum": 2, "weight": 3}, {"definition_id": "item.consumable.healing_balm", "minimum": 1, "maximum": 1, "weight": 1}])
+rolls = 1
+
+[sub_resource type="Resource" id="TreeProfile"]
+script = ExtResource("2")
+profile_id = "resource.profile.common_tree"
+display_name = "Common tree"
+kind = "tree"
+loot_profile_id = "loot.resource.wood_common"
+tool_tag = "tool.axe"
+minimum_tool_power = 1
+reserves = 3
+work_ticks = 12
+regeneration_ticks = 300
+interaction_range = 3.0
+
+[sub_resource type="Resource" id="MountainProfile"]
+script = ExtResource("2")
+profile_id = "resource.profile.mountain_tree"
+display_name = "Mountain wood"
+kind = "tree"
+loot_profile_id = "loot.resource.wood_mountain"
+tool_tag = "tool.axe"
+minimum_tool_power = 2
+reserves = 3
+work_ticks = 16
+regeneration_ticks = 300
+interaction_range = 3.0
+
+[sub_resource type="Resource" id="StoneProfile"]
+script = ExtResource("2")
+profile_id = "resource.profile.stone"
+display_name = "Stone deposit"
+kind = "stone"
+loot_profile_id = "loot.resource.stone"
+tool_tag = "tool.pickaxe"
+minimum_tool_power = 1
+reserves = 4
+work_ticks = 16
+regeneration_ticks = 0
+interaction_range = 3.0
+
+[sub_resource type="Resource" id="OreProfile"]
+script = ExtResource("2")
+profile_id = "resource.profile.iron_ore"
+display_name = "Iron deposit"
+kind = "ore"
+loot_profile_id = "loot.resource.iron_ore"
+tool_tag = "tool.pickaxe"
+minimum_tool_power = 2
+reserves = 4
+work_ticks = 20
+regeneration_ticks = 0
+interaction_range = 3.0
+
+[sub_resource type="Resource" id="Tree"]
+script = ExtResource("3")
+node_id = "resource.node.common_tree"
+profile_id = "resource.profile.common_tree"
+region_id = "region.home_valley"
+position = Vector3(-4, 0, 5)
+
+[sub_resource type="Resource" id="MountainTree"]
+script = ExtResource("3")
+node_id = "resource.node.mountain_tree"
+profile_id = "resource.profile.mountain_tree"
+region_id = "region.home_valley"
+position = Vector3(-5, 0, 1)
+
+[sub_resource type="Resource" id="Stone"]
+script = ExtResource("3")
+node_id = "resource.node.stone"
+profile_id = "resource.profile.stone"
+region_id = "region.home_valley"
+position = Vector3(-8, 0, 5)
+
+[sub_resource type="Resource" id="Ore"]
+script = ExtResource("3")
+node_id = "resource.node.iron_ore"
+profile_id = "resource.profile.iron_ore"
+region_id = "region.home_valley"
+position = Vector3(-11, 0, 6)
+
+[sub_resource type="Resource" id="BalmWood"]
+script = ExtResource("6")
+slot_id = "ingredient.wood"
+family_tag = "material.family.wood"
+quantity = 2
+
+[sub_resource type="Resource" id="BalmStone"]
+script = ExtResource("6")
+slot_id = "ingredient.stone"
+definition_id = "item.stone.common"
+quantity = 1
+
+[sub_resource type="Resource" id="SmeltOre"]
+script = ExtResource("6")
+slot_id = "ingredient.ore"
+definition_id = "item.ore.iron"
+quantity = 2
+
+[sub_resource type="Resource" id="AxeWood"]
+script = ExtResource("6")
+slot_id = "ingredient.wood"
+family_tag = "material.family.wood"
+quantity = 2
+
+[sub_resource type="Resource" id="AxeStone"]
+script = ExtResource("6")
+slot_id = "ingredient.stone"
+definition_id = "item.stone.common"
+quantity = 2
+
+[sub_resource type="Resource" id="SwordMetal"]
+script = ExtResource("6")
+slot_id = "ingredient.metal"
+definition_id = "item.component.iron_ingot"
+quantity = 1
+
+[sub_resource type="Resource" id="SwordWood"]
+script = ExtResource("6")
+slot_id = "ingredient.wood"
+family_tag = "material.family.wood"
+quantity = 1
+
+[sub_resource type="Resource" id="BalmRecipe"]
+script = ExtResource("5")
+recipe_id = "recipe.healing_balm"
+display_name = "Healing balm"
+inputs = Array[ExtResource("6")]([SubResource("BalmWood"), SubResource("BalmStone")])
+output_definition_id = "item.consumable.healing_balm"
+output_quantity = 1
+work_ticks = 12
+
+[sub_resource type="Resource" id="SmeltRecipe"]
+script = ExtResource("5")
+recipe_id = "recipe.iron_ingot"
+display_name = "Smelt iron"
+inputs = Array[ExtResource("6")]([SubResource("SmeltOre")])
+output_definition_id = "item.component.iron_ingot"
+output_quantity = 1
+work_ticks = 20
+station_tag = "station.forge"
+
+[sub_resource type="Resource" id="AxeRecipe"]
+script = ExtResource("5")
+recipe_id = "recipe.camp_axe"
+display_name = "Camp axe"
+inputs = Array[ExtResource("6")]([SubResource("AxeWood"), SubResource("AxeStone")])
+output_definition_id = "item.tool.axe"
+output_quantity = 1
+work_ticks = 16
+
+[sub_resource type="Resource" id="SwordRecipe"]
+script = ExtResource("5")
+recipe_id = "recipe.tempered_sword"
+display_name = "Tempered sword"
+inputs = Array[ExtResource("6")]([SubResource("SwordMetal"), SubResource("SwordWood")])
+output_definition_id = "item.weapon.tempered_sword"
+output_quantity = 1
+work_ticks = 24
+station_tag = "station.forge"
+requires_knowledge = true
+
+[resource]
+script = ExtResource("1")
+node_profiles = Array[ExtResource("2")]([SubResource("TreeProfile"), SubResource("MountainProfile"), SubResource("StoneProfile"), SubResource("OreProfile")])
+nodes = Array[ExtResource("3")]([SubResource("Tree"), SubResource("MountainTree"), SubResource("Stone"), SubResource("Ore")])
+loot_profiles = Array[ExtResource("4")]([SubResource("WoodLoot"), SubResource("MountainLoot"), SubResource("StoneLoot"), SubResource("OreLoot"), SubResource("CarriedLoot")])
+recipes = Array[ExtResource("5")]([SubResource("BalmRecipe"), SubResource("SmeltRecipe"), SubResource("AxeRecipe"), SubResource("SwordRecipe")])

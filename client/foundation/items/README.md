@@ -1,0 +1,9 @@
+# Items and inventory foundation
+
+`ItemDefinition` resources describe reusable content; `ItemCatalog` copies definitions on registration and lookup. `InventoryService` owns bounded, value-only containers and entries. IDs, current quantities, custody, legal ownership, condition, material composition and provenance are canonical state. Snapshots never expose mutable ledger state.
+
+`transact` stages the entire bounded ledger, validates all operations and capacities, then commits once. A rejection preserves quantities, IDs, allocator and revisions. Compatible existing stacks fill in stable ID order. Fixed slots and integer gram capacity are independent; dynamic allocation has a finite implementation ceiling. Transfers validate source-holder permission and preserve legal ownership; the host separately authorizes world loot/trade policy. Full unmerged transfers retain instance identity. Absorbed fungible lots retire their ID.
+
+`EquipmentState` stores references to inventory instances and checks slot compatibility and current holder ownership. The owning authority rejects inventory mutations affecting equipped references, stages equipment changes, and applies existing CombatModifier/ActionLoadout contracts. This foundation does not calculate combat outcomes. `LearnedSkillSet` separately persists learned sources and temporary equipment grants and validates loadout eligibility against the real ActionCatalog.
+
+P2 content is deliberately stable and non-perishable, including healing balm. Condition/composition/provenance are serialized and unlike metadata cannot merge. Perishable cohorts, lazy decay, transformations, preservation, bag category compression, synthesis, final inventory UI, economy prices/wallets and learning progression are outside this implementation. A single entry condition must never be presented as the completed mixed-condition decay design.

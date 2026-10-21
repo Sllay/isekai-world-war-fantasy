@@ -1,0 +1,137 @@
+[gd_resource type="Resource" script_class="ItemContent" load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://foundation/items/item_content.gd" id="1"]
+[ext_resource type="Script" path="res://foundation/items/item_definition.gd" id="2"]
+
+[sub_resource type="Resource" id="Sword"]
+script = ExtResource("2")
+item_id = "item.weapon.sword"
+display_name = "One-handed Sword"
+category = "item.category.weapon"
+material_id = "material.metal.iron"
+tags = Array[String](["weapon.onehanded", "material.family.metal"])
+unit_mass_grams = 1400
+equipment_slot = "weapon"
+
+[sub_resource type="Resource" id="Axe"]
+script = ExtResource("2")
+item_id = "item.tool.axe"
+display_name = "Woodcutting Axe"
+category = "item.category.tool"
+material_id = "material.metal.iron"
+unit_mass_grams = 1800
+equipment_slot = "tool"
+tool_tags = Array[String](["tool.axe"])
+tool_capability = "tool.axe"
+tool_power = 1
+
+[sub_resource type="Resource" id="Pickaxe"]
+script = ExtResource("2")
+item_id = "item.tool.pickaxe"
+display_name = "Mining Pickaxe"
+category = "item.category.tool"
+material_id = "material.metal.iron"
+unit_mass_grams = 2200
+equipment_slot = "tool"
+tool_tags = Array[String](["tool.pickaxe"])
+tool_capability = "tool.pickaxe"
+tool_power = 2
+
+[sub_resource type="Resource" id="Wood"]
+script = ExtResource("2")
+item_id = "item.wood.common"
+display_name = "Common Wood"
+material_id = "material.wood.common"
+tags = Array[String](["material.family.wood", "resource.wood"])
+max_stack = 20
+unit_mass_grams = 500
+
+[sub_resource type="Resource" id="MountainWood"]
+script = ExtResource("2")
+item_id = "item.wood.mountain"
+display_name = "Mountain Wood"
+material_id = "material.wood.mountain"
+tags = Array[String](["material.family.wood", "resource.wood"])
+max_stack = 20
+unit_mass_grams = 600
+
+[sub_resource type="Resource" id="Stone"]
+script = ExtResource("2")
+item_id = "item.stone.common"
+display_name = "Stone"
+material_id = "material.stone.common"
+tags = Array[String](["material.family.stone", "resource.stone"])
+max_stack = 20
+unit_mass_grams = 800
+
+[sub_resource type="Resource" id="Ore"]
+script = ExtResource("2")
+item_id = "item.ore.iron"
+display_name = "Iron Ore"
+material_id = "material.ore.iron"
+tags = Array[String](["material.family.ore", "resource.ore"])
+max_stack = 20
+unit_mass_grams = 1000
+
+[sub_resource type="Resource" id="Balm"]
+script = ExtResource("2")
+item_id = "item.consumable.healing_balm"
+display_name = "Stable Healing Balm"
+category = "item.category.consumable"
+tags = Array[String](["consumable.healing"])
+max_stack = 10
+unit_mass_grams = 100
+consume_heal = 15
+
+[sub_resource type="Resource" id="Ingot"]
+script = ExtResource("2")
+item_id = "item.component.iron_ingot"
+display_name = "Iron Ingot"
+material_id = "material.metal.iron"
+tags = Array[String](["material.family.metal", "resource.component"])
+max_stack = 20
+unit_mass_grams = 700
+
+[sub_resource type="Resource" id="Coin"]
+script = ExtResource("2")
+item_id = "item.currency.coin"
+display_name = "Coin"
+category = "item.category.currency"
+max_stack = 1000
+unit_mass_grams = 5
+
+[sub_resource type="Resource" id="TemperedSword"]
+script = ExtResource("2")
+item_id = "item.weapon.tempered_sword"
+display_name = "Tempered Sword"
+category = "item.category.weapon"
+material_id = "material.metal.iron"
+tags = Array[String](["weapon.onehanded", "material.family.metal"])
+unit_mass_grams = 1400
+equipment_slot = "weapon"
+damage_bonus = 2000
+
+[sub_resource type="Resource" id="TemperedAxe"]
+script = ExtResource("2")
+item_id = "item.tool.tempered_axe"
+display_name = "Tempered Axe"
+category = "item.category.tool"
+material_id = "material.metal.iron"
+unit_mass_grams = 1800
+equipment_slot = "tool"
+tool_tags = Array[String](["tool.axe"])
+tool_capability = "tool.axe"
+tool_power = 2
+
+[sub_resource type="Resource" id="Armor"]
+script = ExtResource("2")
+item_id = "item.armor.leather"
+display_name = "Leather Armor"
+category = "item.category.armor"
+material_id = "material.leather.common"
+unit_mass_grams = 3000
+equipment_slot = "armor"
+
+[resource]
+script = ExtResource("1")
+items = Array[ExtResource("2")]([SubResource("Sword"), SubResource("Axe"), SubResource("Pickaxe"), SubResource("Wood"), SubResource("MountainWood"), SubResource("Stone"), SubResource("Ore"), SubResource("Balm"), SubResource("Ingot"), SubResource("Coin"), SubResource("TemperedSword"), SubResource("TemperedAxe"), SubResource("Armor")])
