@@ -13,8 +13,8 @@ approvals_reviewer = "auto_review"
 [sandbox_workspace_write]
 network_access = true
 
-# Semantic code navigation/editing. Serena is installed by the project bootstrap.
-# It uses .serena/project.yml and Godot's built-in GDScript LSP.
+# Semantic code navigation/editing. Serena is installed by the project bootstrap
+# and exposed on a stable /usr/local/bin launcher for Cloud task lifecycles.
 [mcp_servers.serena]
 enabled = true
 command = "serena"
@@ -23,22 +23,23 @@ startup_timeout_sec = 30
 tool_timeout_sec = 120
 default_tools_approval_mode = "auto"
 
-# Lightweight GDScript diagnostics + DAP console. This complements the runtime
-# editor bridge below and can remain useful when the full bridge is unavailable.
+# Lightweight GDScript diagnostics + DAP console. The binary is installed during
+# environment preparation; do not rely on npx/network during the task lifecycle.
 [mcp_servers.godot_diagnostics]
 enabled = true
-command = "npx"
-args = ["-y", "@ryanmazzolini/minimal-godot-mcp@0.1.6"]
+command = "minimal-godot-mcp"
+args = []
 env = { GODOT_WORKSPACE_PATH = "client", GODOT_LSP_PORT = "6008", GODOT_DAP_PORT = "6006" }
 default_tools_approval_mode = "auto"
 startup_timeout_sec = 30
 tool_timeout_sec = 120
 
-# Full Godot editor/runtime control.
+# Full Godot editor/runtime control. The pinned binary is preinstalled during
+# environment preparation so the server can start with task network disabled.
 [mcp_servers.godot]
 enabled = true
-command = "npx"
-args = ["-y", "@satelliteoflove/godot-mcp@4.1.11"]
+command = "godot-mcp"
+args = []
 env = { GODOT_HOST = "127.0.0.1", GODOT_PORT = "6550", GODOT_MCP_USAGE_LOG = "0" }
 default_tools_approval_mode = "auto"
 startup_timeout_sec = 30
