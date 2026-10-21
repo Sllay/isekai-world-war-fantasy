@@ -1,4 +1,24 @@
-# Production combat foundation — Phase 2 Slice 1
+# Production combat foundation — Phase 2 historical foundation, current A1 contract
+
+## Current authority interpretation
+
+This document originally established deterministic combat domain logic before the external server implementation existed. Its numeric, transaction, event, persistence and capability contracts remain valid.
+
+**ADR-0016 and `SERVER_AUTHORITY.md` now define who may own/commit those contracts in production network runtime.**
+
+`CombatService`, `ActionExecutor` and their request/result/fact contracts are reusable domain logic. They are not permission for a release client to authoritatively mutate persistent multiplayer state.
+
+In online runtime:
+
+- a client requests semantic actions/intents through the AuthorityGateway boundary;
+- the AuthorityHost authenticates/validates the command and owns canonical Combatant/Action state;
+- authoritative domain logic derives damage/healing/resource/cooldown/defeat outcomes;
+- clients consume facts/snapshots for reconciliation/presentation;
+- client prediction/VFX never becomes canonical merely because it ran first;
+- a disconnected release client cannot switch to trusted local combat state;
+- development local play uses LocalAuthorityHost/loopback semantics, not a client-side damage bypass.
+
+The sections below describe the underlying combat domain foundation retained by A1.
 
 ## Ownership
 
@@ -11,8 +31,10 @@ Owners persist their own combatants; the generic registry is transient.
 `foundation.player_combat` requires Core, Player and Combat. It attaches the
 capability through Player's existing component container, owns its versioned
 save section and rebinds the same object after Player/Core restoration. No Player
-movement/input/camera code or World/Region/Core code changes in this slice.
+movement/input/camera code or World/Region/Core code changes in the historical slice.
 The application composes six modules and exposes a `combat` diagnostic object.
+
+When used in network production, the owner adapter is authority-side/canonical; a client mirror is presentation/prediction state only.
 
 ## Attributes and contributions
 
@@ -49,9 +71,9 @@ increases do not heal/refill; decreases clamp current values. Maximum-health
 changes publish one HealthChanged fact, including old/new maximum. Reducing a
 maximum cannot implicitly defeat or revive an actor.
 
-Contributions in this slice are canonical, indefinite stat state and are saved.
+Contributions in this foundation are canonical, indefinite stat state and are saved.
 No temporary-effect callbacks, expiration rules, buff catalog or equipment logic
-exists. Future source owners must reconcile their contributions by stable ID;
+exists in the original foundation. Future source owners must reconcile their contributions by stable ID;
 timed effects must own semantic expiration separately. Scheduler owners can use
 explicit HealingRequest or `restore_resource` for regeneration; no per-frame
 combat math or implicit class regeneration runs here. `spend_resource` rejects
@@ -59,13 +81,12 @@ underflow; restoration reports actual refill and clamps to the current maximum.
 
 ## Transactions and relationship policy
 
-DamageRequest and HealingRequest are separate one-use commands. Both carry stable
+DamageRequest and HealingRequest are separate one-use **domain commands**. Both carry stable
 source/target IDs, a tracing transaction ID, whole-unit amount, optional action ID
 and namespaced tags. Damage also carries a registered damage type, blockable,
 dodgeable, parryable and interrupt-relevance flags, friendly-fire/self/neutral
 permissions, optional impact position and an informational relationship hint.
-Those execution flags reserve later action/mitigation integration; no dodge,
-block, parry, interrupt or armor execution occurs in this slice.
+Those execution flags reserve later action/mitigation integration.
 
 CombatService validates request numbers/metadata, Core identity, available combat
 capabilities and canonical alive state. Fractional, negative, NaN, infinite or
@@ -84,12 +105,22 @@ Default healing permits self/allies, optionally neutral, and rejects enemies.
 Unavailable actors are invalid. Relationship hints never establish authority.
 There is no Player-vs-everything branch or faction implementation.
 
-Requests are authoritative application commands, not trusted network packets.
-Accepted command objects are consumed, including zero/no-op requests; retrying
+### Network ingress is not DamageRequest
+
+`DamageRequest` / `HealingRequest` are authoritative **application/domain commands**, not trusted network packets.
+
+A normal human client should not send `DamageRequest(amount=...)` and have it accepted merely because its fields validate.
+
+The AuthorityHost first receives a higher-level semantic command such as `activate action X toward target/direction Y`. The authority authenticates peer -> actor, checks sequence/timing/rate, validates canonical action/equipment/state/range/aim/relationship/cost/cooldown, and then derives the internal effect requests from authority-known data.
+
+A trusted server-owned NPC/Bot/action system may produce the same internal domain commands after its own canonical validation path.
+
+Accepted internal command objects are consumed, including zero/no-op requests; retrying
 that object rejects. Their transaction IDs are correlation metadata, **not durable
-network idempotency keys**. Future authority adapters must authenticate commands
-and deduplicate network retries before invoking this local service. No unbounded
-request history, replay system or multiplayer protocol is introduced here.
+network idempotency keys**. Authority adapters must authenticate commands and
+deduplicate/reject network retries/replays before invoking domain commits. Do not
+keep an unbounded request history; use bounded sequence/idempotency windows appropriate
+to the transport/transaction type.
 
 ## Facts and lifecycle
 
@@ -125,60 +156,31 @@ resource channel identity comes from the profile. Its validator checks numeric
 bounds, unique valid modifier IDs, derived caps and lifecycle/health consistency.
 Application SaveIntegrity additionally matches its entity ID to Player/Core.
 
-Application save game version is now `0.2.0`; format version remains 1. The
-coordinator stamps that application version without changing generic Core.
-Only the exact four-module `0.1.0` M1.3 save is upgraded: append Combat module
-metadata and initialized Player combat state, then validate the entire upgraded
-snapshot before mutation. Existing identity, movement, World/Region and clock
-state are retained. Read/upgrade never writes the original file; explicit save
-persists the upgraded representation. Missing combat data in a new-version save
-is corruption and cannot silently reset health. Unknown legacy shapes reject.
+Application save game version was `0.2.0` at the historical Combat foundation point; format version remained 1. Later versions may migrate this state explicitly. Missing canonical combat data must never silently reset damaged health simply because a client mirror lacks it.
 
-## Validation and BK Android acceptance
+For networked worlds, authoritative/server persistence is the source of canonical persistent combat state. Client caches/snapshots are not an alternate save authority.
 
-Run Core, Player, World and Save/Resume scripts, then `bash tools/dev/test_combat.sh`.
-Validated counts: Core 55, Player 23, World 50, save/resume 90 plus process
-save/resume/exit 5/11/4; Combat 86, combat persistence 20, combat process save/resume
-4/9. All 357 checks pass.
+## Historical validation record
 
-Combat tests run with Core alone, test transactions/events/modifiers/policies, and
-exercise Player integration, corruption and explicit M1.3 upgrade. Separate OS
-processes prove a disk checkpoint retains damaged health, spent resource, derived
-maxima, persistent modifier IDs, lifecycle and stable Player identity; transactions
-remain functional after restoration. All test files use private temporary slots.
+The original foundation validated Core, Player, World, Save/Resume and Combat suites including transaction/event/modifier/policy, persistence and process save/resume checks. Later historical combat action/enemy slices expanded that coverage to the recorded 598 automated checks before the Macro Version workflow replaced slice delivery.
 
-The MCP launcher reported a listening bridge, but both permitted reads failed.
-Logs were inspected and recovery stopped; live MCP assertions remain blocked.
-No new assets, enemy actors or performance claims are introduced.
+Those tests remain useful regression coverage but do not by themselves prove network authority.
 
-For BK:
+## A1 authority validation extension
 
-1. Pull `phase2/combat-foundation`, open `client/project.godot`, and run the main
-   scene. An M1.3 slot retains its location/identity and starts the new combat
-   attributes at 100 health and 50 resource. An existing Phase 2 slot resumes its
-   previous combat state.
-2. Debug builds show HP/current max, resource/current max and lifecycle. Tap
-   **Damage 10** once: health should fall by 10. These development buttons invoke
-   real production transactions; no attack controls are implemented.
-3. Tap **Save (K)**, confirm Saved, terminate the game, and run again. Confirm the
-   reduced health and stable identity/location persist. Tap **Heal 10** to recover,
-   clamped to maximum. Save and restart once more.
-4. Confirm left-touch movement, right-drag camera and upper-right jump still work.
-   The death boundary is covered automatically; no revive UI is part of this slice.
+A1 must add integration/adversarial evidence defined by `SERVER_AUTHORITY.md` and `docs/missions/COMBAT_A1_FOUNDATION_COMPLETION.md`, including:
 
-Next: semantic Player combat actions and modular ability/action execution, then
-production enemy behavior, telegraphs and the remaining Phase 2 combat content.
+- semantic client command -> authority validation -> canonical CombatService result;
+- no client-facing arbitrary final damage/health/resource commit;
+- duplicate/replay handling at authority ingress;
+- local loopback authority equivalence for deterministic scenarios;
+- movement/position authority seam consistent with future prediction/reconciliation;
+- no `server disconnected -> trust local combat` production fallback.
 
-Slice 2 composes typed actions above these unchanged transactions. Player Combat
-now owns section v2 with action schema v1 cooldowns, explicitly migrated from this
-slice's v1. See [Combat Actions](COMBAT_ACTIONS.md) and ADR-0014 for execution,
-input, cancellation, persistence and the replacement device acceptance steps.
+## Historical progression
 
-## Production enemy integration
+Slice 2 composed typed actions above these transactions. Player Combat moved to section v2 with action schema v1 cooldowns. See [Combat Actions](COMBAT_ACTIONS.md) and ADR-0014.
 
-Slice 3 extends the runtime with Region-owned enemy state, Foundation targeting,
-fact-driven telegraphs, safe-transform recovery and confirmed development save
-deletion. The current contracts supersede earlier slice-specific fixture,
-version/residency and void-policy descriptions where applicable. See
-[Enemy, targeting and telegraph contracts](ENEMY_TARGETING_TELEGRAPHS.md) and
-[ADR-0015](../adr/ADR-0015-region-actor-state-and-recovery.md).
+Slice 3 added Region-owned enemy state, Foundation targeting, fact-driven telegraphs, safe-transform recovery and save-reset behavior. See [Enemy, targeting and telegraph contracts](ENEMY_TARGETING_TELEGRAPHS.md) and ADR-0015.
+
+A1 now treats those historical slices as one existing combat foundation and integrates the missing defensive/player-facing/authority work without creating a parallel framework.

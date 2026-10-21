@@ -10,6 +10,11 @@
 .tools/
 .cache/
 
+# Serena project config is committed, generated semantic state is local.
+.serena/.cache/
+.serena/cache/
+.serena/memories/
+
 # Godot generated/imported data
 **/.godot/
 **/.import/

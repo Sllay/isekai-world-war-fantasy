@@ -1,208 +1,227 @@
 # Codex + Godot MCP Workflow
 
-- **Status:** Initial development policy
-- **Updated:** 2026-10-13
+- **Status:** Active production workflow
+- **Updated:** 2026-10-20
 
 ## Purpose
 
-Define how Codex works on this project without wasting context, spawning unnecessary agents, or coupling the project to one workstation.
+Define how Codex works on this project with low human interruption, bounded context, resilient Godot tooling and explicit fallback modes.
 
-## Core Model
+GitHub remains the source of truth. **Codex Cloud is the preferred everyday development host.** Codespace remains the fallback host for FULL Godot editor/runtime work when the managed Cloud environment cannot sustain the live editor bridge.
 
-The project uses three distinct roles:
+The goal is to let Codex complete coherent Mission Contracts, prove deterministic facts automatically, and ask BK primarily for design/feel/device-specific acceptance.
+
+## Host order
+
+Preferred order for a normal task:
+
+1. **Codex Cloud FULL attempt** — published reusable project environment with Godot, Serena and the runtime editor bridge.
+2. **Codex Cloud DEGRADED** — continue code, docs, headless Godot, deterministic tests and semantic work if the live bridge is unavailable.
+3. **Codespace FULL fallback** — use only when remaining validation genuinely requires the live Godot Editor/runtime MCP and Cloud FULL is unavailable.
+4. **STATIC** — repository/deterministic work only when no live LSP/editor exists.
+
+Do not open a Codespace merely because a task touches Godot. Escalate to Codespace only for an actual editor-dependent gap.
+
+## Core roles
 
 1. **Repository / source of truth** — GitHub.
-2. **Development host** — a machine/devbox where Codex, Node.js, Git and engine tooling can run.
-3. **Mobile Godot device** — primary visual/runtime test device during early development.
+2. **Primary development host** — Codex Cloud reusable environment.
+3. **Fallback development host** — Codespace/devbox.
+4. **Godot semantic layer** — Serena connected to Godot's built-in GDScript LSP.
+5. **Godot diagnostics layer** — `minimal-godot-mcp` connected to LSP/DAP.
+6. **Godot runtime/editor layer** — `@satelliteoflove/godot-mcp` + editor addon.
+7. **Mobile device** — authoritative acceptance for touch/UX/mobile performance.
 
-The ChatGPT/Codex mobile app is treated primarily as the control plane for Codex work running on a connected host. Project files, tools and permissions remain on that host. Mobile Godot uses the same Git repository and validates real device behavior.
+## Tool layers
 
-## Why This Split
+### Serena
 
-Trying to make the phone simultaneously be:
+Pinned package: `serena-agent==2.0.0`.
 
-- the Godot editor,
-- the Codex execution host,
-- the MCP stdio host,
-- Rust server compiler,
-- database host,
-- benchmark machine,
+Project config: `.serena/project.yml`.
 
-would add fragile Android/Termux assumptions before the game exists.
+Use Serena for symbol discovery, references, narrow retrieval and surgical edits. Serena's GDScript backend needs the Godot LSP on port `6008` for live semantic support.
 
-The phone remains extremely important: it is the real mobile target and should be tested from the beginning. Heavy compilation and server experiments can run elsewhere.
+### Lightweight diagnostics MCP
 
-## Primary Godot MCP Candidate
+Pinned package: `@ryanmazzolini/minimal-godot-mcp@0.1.6`.
+
+Use for GDScript diagnostics and DAP console. It complements the runtime bridge.
+
+### Full runtime/editor MCP
+
+Pinned package: `@satelliteoflove/godot-mcp@4.1.11`.
+
+Use for scene/editor inspection, run/stop, runtime state, deterministic playtesting, input injection, animation/effective scene state, profiling and screenshots when pixels matter.
+
+## Operational modes
+
+### FULL
+
+Requires all of the following inside the **same active development task/host**:
+
+- repository editing;
+- Godot 4.7.2;
+- live Godot editor/LSP on `127.0.0.1:6008`;
+- runtime MCP bridge on `127.0.0.1:6550`;
+- Serena/diagnostics MCP;
+- headless tests.
+
+A host is not called FULL merely because the packages are installed.
+
+### DEGRADED
+
+Repository and headless/deterministic work remain available but one or more live editor integrations are unavailable.
+
+Continue with semantic work where available, diagnostics, CLI/headless tests, docs/data and deterministic integration coverage. Record only the genuinely editor-dependent validation gap.
+
+### STATIC
+
+No live editor/LSP. Continue only repository inspection, deterministic non-live checks and safe docs/data/schema work. Never claim live runtime behavior from STATIC mode.
+
+## Codex Cloud setup
+
+Codex Cloud environments are reusable prepared environments, but each new task receives its own isolated workspace. Important work still belongs in Git commits/branches, not in assumed VM persistence.
+
+For the published Isekai environment, use this setup command from the repository root:
+
+```bash
+bash tools/dev/prepare_codex_cloud.sh
+```
+
+The script:
+
+1. installs/validates the host-neutral project toolchain;
+2. installs exact Godot 4.7.2, Serena and pinned MCP dependencies;
+3. proves a headless Godot import/parse;
+4. attempts to start the normal Godot editor under Xvfb/software rendering;
+5. checks LSP/DAP/runtime-MCP ports;
+6. runs the runtime MCP smoke test;
+7. writes `.codex-local/codex-cloud-mode` as `FULL` or `DEGRADED`.
+
+Failure to obtain the live editor bridge does **not** make the Cloud environment useless. The preparation deliberately falls back to DEGRADED after headless viability is proven.
+
+### Runtime network access
+
+The published Cloud environment must allow the runtime network access required by Git/GitHub, npm packages and any enabled remote MCPs. Do not expose local Godot ports publicly; `6008`, `6006` and `6550` remain loopback-only.
+
+## Host-neutral bootstrap
+
+Shared implementation:
+
+```bash
+bash tools/dev/bootstrap_dev_environment.sh
+```
+
+Wrappers:
+
+```bash
+# Managed Codex Cloud task environment
+bash tools/dev/bootstrap_codex_cloud.sh
+
+# GitHub Codespace/devbox
+bash tools/dev/bootstrap_codespace.sh
+```
+
+Both wrappers produce the same pinned project toolchain. Codespace additionally installs/updates the local Codex CLI because Codex Cloud already supplies the managed agent runtime.
+
+## Codespace FULL fallback
+
+When Cloud finishes all deterministic work but the remaining acceptance genuinely requires the live editor/runtime bridge, use Codespace:
+
+```bash
+bash tools/dev/bootstrap_codespace.sh
+bash tools/dev/start_godot_mcp_editor.sh
+bash tools/dev/devctl.sh health
+node tools/dev/mcp_smoke_test.mjs
+codex mcp list
+```
+
+Codespace is not the default boot step anymore.
+
+## Health / mode classification
 
 Use:
 
-`@satelliteoflove/godot-mcp@4.1.11`
+```bash
+bash tools/dev/devctl.sh health
+bash tools/dev/devctl.sh mcp-status
+```
 
-Reasons for the initial choice:
+`health` now reports the effective mode. FULL requires both the LSP and runtime bridge to be live.
 
-- Godot 4.5+ support, compatible with the 4.7 line;
-- 21 top-level tools rather than hundreds of exposed schemas;
-- structured runtime state reduces screenshot/vision usage;
-- deterministic freeze/step/step-until playtesting;
-- real input injection;
-- profiler access;
-- editor/runtime inspection and screenshots when needed;
-- MIT licensed;
-- file edits are intentionally left to normal repository tools rather than duplicated in MCP.
+## MCP recovery policy
 
-This is a candidate dependency. Pin the tested version and upgrade deliberately.
+For the full runtime/editor MCP only:
 
-## Host Requirements
+1. run `bash tools/dev/ensure_godot_mcp_editor.sh` once;
+2. retry the failed MCP read;
+3. wait briefly and retry at most one additional time;
+4. after two failed runtime-MCP retries, stop reconnect loops;
+5. inspect `.codex-local/godot-editor.log` once;
+6. switch to DEGRADED and continue deterministic work;
+7. if the **remaining** validation is editor-dependent and Cloud is the host, route only that validation to Codespace FULL.
 
-The development host needs, at minimum:
+Never create ad-hoc competing `nohup`, `xvfb-run` or raw Godot bridge processes when project launchers exist.
 
-- Git;
-- Node.js 20+;
-- Codex local/remote execution environment;
-- Godot 4.7.x editor binary when using live Godot MCP features;
-- repository checkout.
-
-Later server work adds Rust/Cargo, SQLite/PostgreSQL tooling and related profilers.
-
-## MCP Installation Pattern
-
-Preferred command on a development host:
+## Unified developer commands
 
 ```bash
-npx -y @satelliteoflove/godot-mcp@4.1.11 --install-addon /workspace/isekai-world-war-fantasy/client
+bash tools/dev/devctl.sh health
+bash tools/dev/devctl.sh godot-check
+bash tools/dev/devctl.sh test affected
+bash tools/dev/devctl.sh test all
+bash tools/dev/devctl.sh mcp-status
+bash tools/dev/devctl.sh report
 ```
 
-The exact checkout path is host-specific.
+`test affected` remains conservative until the future Project Brain provides dependency-aware impact selection.
 
-Then enable **Godot MCP** in Godot Project Settings > Plugins.
+## Mission execution loop
 
-The MCP process itself can be started by Codex through project/user configuration when Node.js is available.
+1. Read the active Mission Contract.
+2. Inspect only relevant design/architecture/ADR material.
+3. Use Serena/symbol navigation before broad code reads when live semantics are available.
+4. Implement the coherent mission group.
+5. Run affected deterministic tests.
+6. Use diagnostics for changed GDScript.
+7. Use FULL runtime MCP only for behavior that needs live engine proof.
+8. If Cloud FULL fails, continue all non-editor work there rather than abandoning the task.
+9. Escalate to Codespace only for the exact editor-dependent gap.
+10. Run broader regressions based on impact.
+11. Report Engineering Complete vs Player Complete precisely.
+12. Ask BK only for subjective/device-specific acceptance.
 
-## MCP Usage Rules
+## Single-editor rule
 
-Use MCP for engine-aware work that normal file editing cannot prove cheaply:
+One live Godot editor bridge has one active MCP operator. Do not let parallel agents/tasks compete for the same live editor instance.
 
-- scene/editor inspection;
-- run/stop/restart;
-- runtime state;
-- deterministic playtesting;
-- input injection;
-- animation/scene effective state;
-- profiling;
-- screenshots for visual validation;
-- version-matched Godot documentation.
-
-Do not use MCP merely to edit a text file that Codex can edit directly.
-
-### Observation priority
-
-Prefer:
-
-1. structured runtime/editor state;
-2. narrow logs/metrics;
-3. screenshot only when pixels matter.
-
-This policy reduces token/context consumption.
-
-## Agent Policy
-
-Default: **one main Codex agent**.
-
-Subagents are reserved for independent workstreams.
-
-Normal limits:
-
-- routine coding: zero subagents;
-- complex investigation: one subagent if clearly useful;
-- genuinely parallel technical task: maximum two concurrent subagents;
-- larger fan-out requires explicit user direction.
-
-Subagents must not recursively create teams for routine work.
-
-A single live Godot editor should have one active MCP operator at a time. Other agents can work on isolated files/tests/worktrees without controlling that same editor session.
-
-## Worktree Strategy
-
-Parallel Codex work should prefer Git worktrees/branches rather than multiple agents editing the same checkout.
-
-Suggested pattern:
-
-- main task: current feature branch/worktree;
-- independent research/test: separate temporary worktree;
-- merge only after tests/review.
-
-Do not use parallelism merely because it exists.
-
-## Mobile Development Loop
+## Mobile development loop
 
 ```text
-Codex host
-  edit / validate / headless test
+Codex Cloud
+  edit / semantic navigation / deterministic tests
+        |
+        +--> FULL available: runtime MCP validation
+        |
+        +--> FULL unavailable: DEGRADED work continues
+                              |
+                              +--> only if needed: Codespace FULL validation
         |
         v
-Git branch / commit
+integrated candidate / branch / PR
         |
         v
-GitHub
+mobile checkout / device build
         |
         v
-Android phone checkout
-        |
-        v
-Godot Android Editor
-        |
-        v
-real-device run + profiler/debug observations
-        |
-        v
-issue/log/result returned to repo/Codex
+BK feel / touch / visual / real-device performance acceptance
 ```
-
-The mobile result is authoritative for mobile-specific performance/UX questions.
-
-## Direct Phone MCP
-
-Running a Godot MCP bridge directly against the Android editor may be investigated later, but it is **not a bootstrap dependency**.
-
-Reasons:
-
-- the selected MCP server expects a Node.js stdio host;
-- Codex Remote is designed around work running on a connected development host;
-- Android app sandbox/storage and localhost bridging add platform-specific failure modes;
-- direct phone MCP does not remove the need for a server/compiler host later.
-
-If direct-phone MCP is tested, it must be treated as an optional convenience path. Failure of that path must never block development.
-
-## Cloud Development Host
-
-For zero-cost early work, GitHub Codespaces is the preferred first devbox candidate because personal GitHub accounts include a monthly free quota.
-
-Rules:
-
-- use the smallest machine that satisfies the task;
-- stop the codespace immediately when work ends;
-- lower idle timeout;
-- avoid prebuilds unless measurements justify them;
-- do not treat Codespaces as the permanent game server.
-
-Codespaces is a development host, not the production hosting decision.
 
 ## Security
 
-- Never commit API keys, personal tokens or tunnel credentials.
-- Keep MCP/editor bridges on localhost/private networks unless a deliberate authenticated tunnel is configured.
-- Do not expose the Godot editor bridge directly to the public internet.
-- Write actions remain reviewable; high-impact repository/engine operations should not be globally auto-approved.
-
-## Acceptance Criteria for Bootstrap
-
-Before M1.2 gameplay work begins:
-
-- repository layout separates client/server/shared concerns;
-- Codex project instructions are concise;
-- agent/subagent limits are documented;
-- Godot MCP candidate/version is pinned;
-- a development host can clone the repo and start the MCP server;
-- the Godot client can be opened on Android;
-- the same Git commit can be tested on host and phone;
-- no workflow depends on a paid always-on service.
+- Never commit keys, personal tokens or environment credentials.
+- Keep Godot MCP/LSP/DAP bridges on localhost/private interfaces.
+- Do not expose ports `6550`, `6008` or `6006` publicly.
+- Third-party development MCPs are not runtime game dependencies.
+- Published Cloud environments must not embed secrets in repository files.

@@ -13,6 +13,28 @@ approvals_reviewer = "auto_review"
 [sandbox_workspace_write]
 network_access = true
 
+# Semantic code navigation/editing. Serena is installed by bootstrap_codespace.sh.
+# It uses .serena/project.yml and Godot's built-in GDScript LSP.
+[mcp_servers.serena]
+enabled = true
+command = "serena"
+args = ["start-mcp-server", "--project-from-cwd", "--context=codex"]
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+default_tools_approval_mode = "auto"
+
+# Lightweight GDScript diagnostics + DAP console. This complements the runtime
+# editor bridge below and can remain useful when the full bridge is unavailable.
+[mcp_servers.godot_diagnostics]
+enabled = true
+command = "npx"
+args = ["-y", "@ryanmazzolini/minimal-godot-mcp@0.1.6"]
+env = { GODOT_WORKSPACE_PATH = "client", GODOT_LSP_PORT = "6008", GODOT_DAP_PORT = "6006" }
+default_tools_approval_mode = "auto"
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+
+# Full Godot editor/runtime control.
 [mcp_servers.godot]
 enabled = true
 command = "npx"

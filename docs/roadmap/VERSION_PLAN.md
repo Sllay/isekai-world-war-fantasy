@@ -1,14 +1,43 @@
 # Version Plan
 
-## Documents
+## Product planning versions
 
-GDD and architecture use semantic-style versions during development:
+Development is organized by **Macro Versions** that represent coherent playable outcomes, not isolated technical slices.
+
+Recommended naming during the playable-foundation pass:
+
+- `A1 Combat & Player Gameplay`
+- `A2 World & Exploration`
+- `A3 Inventory, Items & Survival`
+- `A4 Living NPCs & Player-like Bots`
+- `A5 RPG Identity`
+- `A6 Building, Economy & World Transformation`
+- `A7 Multiplayer / Server Foundation`
+- `A8 Game Shell`
+
+Internal implementation groups may use task IDs such as `A1/G1`, `A1/G2`, etc., but those groups are not separate product releases.
+
+## Completion status
+
+A Macro Version can use these status labels:
+
+- `PLANNED`
+- `ACTIVE`
+- `ENGINEERING_COMPLETE`
+- `PLAYER_COMPLETE`
+- `ACCEPTED`
+
+`ENGINEERING_COMPLETE` means scoped technical implementation/tests pass. `PLAYER_COMPLETE` means the player-visible Mission Contract and `SHIPPABLE_DEFINITION_OF_DONE.md` pass. `ACCEPTED` means the required BK/device acceptance for that version has also passed.
+
+## Document versions
+
+GDD and architecture documents may continue to use semantic-style versions during development:
 
 - PATCH — clarification or small non-breaking design adjustment.
 - MINOR — new system/feature scope or meaningful design expansion.
 - MAJOR — fundamental premise/architecture change.
 
-During pre-production, versions remain `0.x`.
+During pre-release development, document versions may remain `0.x`.
 
 ## Repository
 
@@ -18,16 +47,22 @@ Use:
 
 - current document at stable path;
 - local changelog for important document changes;
-- Git tags/releases for meaningful project snapshots.
+- branches/PRs for implementation work;
+- Git tags/releases for meaningful integrated snapshots.
 
-## Suggested Milestone Tags
+## Suggested integrated tags
 
-- `gdd-v0.1`
-- `architecture-v0.1`
-- `prototype-v0.1`
-- `vertical-slice-v0.1`
-- later `v1.0.0` for the first production-level release scope.
+Examples:
+
+- `foundation-m1.3`
+- `playable-a1-combat`
+- `playable-a2-world`
+- `playable-a4-living-world`
+- later `vertical-v0.1`
+- later `v1.0.0` for the first production release scope.
+
+Do not create a tag for every internal task/checkpoint.
 
 ## Compatibility
 
-Code/module versions and save/data schema versions may evolve independently from GDD version. They should not be forced to share the same number.
+Code/module versions and save/data schema versions may evolve independently from Macro Version names and GDD versions. They should not be forced to share the same number.
