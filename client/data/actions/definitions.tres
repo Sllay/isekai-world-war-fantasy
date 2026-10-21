@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="ActionContent" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="ActionContent" load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://foundation/actions/action_content.gd" id="1"]
 [ext_resource type="Script" path="res://foundation/actions/action_definition.gd" id="2"]
@@ -6,7 +6,8 @@
 [ext_resource type="Resource" path="res://data/actions/basic_heal.tres" id="4"]
 
 [ext_resource type="Resource" path="res://data/actions/enemy_basic_strike.tres" id="5"]
+[ext_resource type="Resource" path="res://data/actions/strong_strike.tres" id="6"]
 
 [resource]
 script = ExtResource("1")
-actions = Array[ExtResource("2")]([ExtResource("3"), ExtResource("4"), ExtResource("5")])
+actions = Array[ExtResource("2")]([ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6")])

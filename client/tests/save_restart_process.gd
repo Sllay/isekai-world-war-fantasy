@@ -70,11 +70,13 @@ func run() -> void:
 		avatar.intent.movement = Vector2.RIGHT
 		avatar.intent.camera_delta = 0.8
 		avatar.intent.jump = true
+		runtime._process(0.05) # Forward semantic input before host-owned physics.
 		for i in 10:
 			await physics_frame
 		check(not runtime.player.state.grounded and runtime.player.state.position.y > start.y + 0.3, "jump works after process resume")
 		check(runtime.player.state.position.distance_to(start) > 0.4 and avatar.orbit.yaw > 0.5, "movement and camera work after process resume")
 		avatar.intent.movement = Vector2.ZERO
+		runtime._process(0.05)
 		for i in 100:
 			await physics_frame
 		check(runtime.player.state.grounded and runtime.core.clock.tick > expected.sections["core.runtime"].state.clock.tick, "landing and shared time continue after resume")

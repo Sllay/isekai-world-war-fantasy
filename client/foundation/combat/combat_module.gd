@@ -11,7 +11,7 @@ func _init(content: Dictionary = {}, action_data: ActionContent = null) -> void:
 	id = "foundation.combat"
 	requires.assign(["core.runtime"])
 	provides.assign(["foundation.combat", "foundation.actions"])
-	published_events.assign(["combat.damage_applied", "combat.healing_applied", "combat.health_changed", "combat.combatant_defeated", "combat.action_started", "combat.action_committed", "combat.action_cancelled", "combat.action_completed"])
+	published_events.assign(["combat.damage_applied", "combat.healing_applied", "combat.health_changed", "combat.combatant_defeated", "combat.defense_resolved", "combat.action_started", "combat.action_committed", "combat.action_cancelled", "combat.action_completed"])
 	definitions = CombatDefinitions.defaults() if content.is_empty() else content.duplicate(true)
 	for group in ["tokens", "profiles"]:
 		if definitions.get(group) is Array:
@@ -52,7 +52,7 @@ func initialize(services: CoreServices) -> Error:
 	for definition in action_content.actions:
 		if actions.register(definition) != OK:
 			return ERR_INVALID_DATA
-	for event_type in [DamageApplied, HealingApplied, HealthChanged, CombatantDefeated, ActionStarted, ActionCommitted, ActionCancelled, ActionCompleted]:
+	for event_type in [DamageApplied, HealingApplied, HealthChanged, CombatantDefeated, DefenseResolved, ActionStarted, ActionCommitted, ActionCancelled, ActionCompleted]:
 		if service.events.define(event_type) != OK:
 			return ERR_INVALID_DATA
 	return OK

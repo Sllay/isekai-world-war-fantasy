@@ -1,5 +1,35 @@
 # Production combat actions — Phase 2 Slice 2
 
+## A1 extension (current)
+
+The historical contracts below remain domain regression documentation. Runtime
+Player execution now goes through PlayerAuthorityAdapter -> AuthorityGateway ->
+LocalAuthorityHost -> the same ActionExecutor/CombatService. The legacy
+PlayerActionAdapter remains a domain harness/slot contract, not a production
+client outcome bypass. Secondary/heal stays available; G/Y/Strong requests the
+new `combat.action.strong_strike` (26 damage, 10 energy, 10 wind-up ticks,
+10 recovery ticks, 40 cooldown ticks). Basic attacks retain their accepted tuning.
+
+CombatDefense owns transient guard/dodge/stagger windows. CombatService's trusted
+mitigation port returns a bounded amount/cost decision, validated before the
+single transaction commits energy and health. DefenseResolved facts distinguish
+GUARDED/DODGED/GUARD_FAILED, including zero-damage evasion; DamageApplied remains
+the confirmed health impact. Strong tags permit a six-tick stagger with a
+20-tick immunity window; lights never interrupt. Guarded strong impacts do not
+stagger. Generic executor gates prevent actions/movement while staggered.
+
+CombatFeedback consumes facts to drive a one-handed sword, wind-up/swing pose,
+body reaction, impact flash, local 40 ms pose hold and synthesized swing/impact
+audio. It never changes Engine time scale, health, defense or action deadlines.
+Player Combat section v3 retains remaining dodge-reuse and stagger-immunity ticks,
+with an explicit v2 migration. Active guard/evasion windows stay transient, so a
+reload cannot restore invulnerability or bypass the reuse interval. Enemy active
+stagger remains transient, matching its existing cast/recovery restore policy.
+HUD includes HP/energy/lifecycle, confirmed hit and independent defense outcome
+messages. Headless tests skip audio playback; the live Runtime MCP world
+exercises the same presentation adapter. Final authored character art and Android
+feel/performance acceptance remain separate from this representative foundation.
+
 ## Ownership and content
 
 `foundation.combat` composes `ActionCatalog` alongside the existing, unchanged

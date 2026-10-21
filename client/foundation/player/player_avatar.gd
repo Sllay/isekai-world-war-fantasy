@@ -26,7 +26,8 @@ func _ready() -> void:
 	add_child(presentation)
 
 func _physics_process(_delta: float) -> void:
-	motor.movement_yaw = orbit.yaw
+	if not motor.authority_step.is_valid():
+		motor.movement_yaw = orbit.yaw
 	presentation.present(state, orbit.yaw)
 
 func development_state() -> Dictionary:

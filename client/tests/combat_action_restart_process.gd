@@ -32,10 +32,11 @@ func run() -> void:
 		check(executor.remaining_cooldown("combat.action.basic_heal") == 60, "fresh process preserves exact remaining cooldown")
 		check(executor.activate("combat.action.basic_heal") == "COOLDOWN", "fresh process prevents reload exploit")
 		for index in range(60): runtime._process(0.05)
+		var recovered_resource: int = runtime.player_combat.state.resource
 		check(executor.activate("combat.action.basic_heal") == "STARTED", "fresh process restored clock expires cooldown")
 		check(runtime.save_game() == OK, "save uncommitted cast")
 		check(runtime.resume_game() == OK and executor.phase == ActionExecutor.Phase.IDLE, "half cast discarded on next restore")
-		check(runtime.player_combat.state.resource == 45 and executor.remaining_cooldown("combat.action.basic_heal") == 0, "discarded half cast spends no resource/cooldown")
+		check(runtime.player_combat.state.resource == recovered_resource and executor.remaining_cooldown("combat.action.basic_heal") == 0, "discarded half cast spends no resource/cooldown after idle regeneration")
 	runtime.free()
 	print("Combat Action restart %s tests: %d checks, %d failures" % [args[0], checks, failures])
 	quit(0 if failures == 0 else 1)

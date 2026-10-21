@@ -6,6 +6,7 @@ cd "$ROOT_DIR"
 
 GODOT_VERSION="4.7.2"
 TESTS=(
+  authority
   core
   player
   combat
@@ -128,7 +129,7 @@ unique_tests_from_diff() {
   local base="$1" files
   files="$(git diff --name-only "$base"...HEAD 2>/dev/null || true)"
   if [[ -z "$files" ]]; then printf '%s\n' "${TESTS[@]}"; return 0; fi
-  if printf '%s\n' "$files" | rg -q '^(client/core/|client/runtime/|client/project\.godot|shared/|data/|\.codex/|\.serena/|tools/dev/)'; then printf '%s\n' "${TESTS[@]}"; return 0; fi
+  if printf '%s\n' "$files" | rg -q '^(client/core/|client/runtime/|client/foundation/authority/|client/project\.godot|shared/|data/|\.codex/|\.serena/|tools/dev/)'; then printf '%s\n' "${TESTS[@]}"; return 0; fi
 
   local selected=()
   add() { local candidate="$1" existing; for existing in "${selected[@]:-}"; do [[ "$existing" == "$candidate" ]] && return 0; done; selected+=("$candidate"); }

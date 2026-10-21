@@ -31,3 +31,6 @@ func consume_camera() -> float:
 	return result
 
 var select_target := false
+var strong_action := false
+var dodge_action := false
+var guard := false

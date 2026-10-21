@@ -7,6 +7,7 @@ var events: CoreEventBus
 var clock: CoreClock
 var diagnostics: CoreDiagnostics
 var target_policy := CombatTargetPolicy.new()
+var damage_policy: Callable
 var _combatants: Dictionary[String, Combatant] = {}
 var _transaction_active := false
 
@@ -87,18 +88,35 @@ func _apply(request: CombatRequest, healing: bool) -> CombatResult:
 	var scale := source.attributes.value(CombatModifier.Stat.HEAL_SCALE if healing else CombatModifier.Stat.DAMAGE_SCALE)
 	@warning_ignore("integer_division")
 	result.evaluated = mini(result.requested * scale / CombatNumbers.SCALE, CombatNumbers.MAX_UNITS)
+	var mitigation := {"amount": result.evaluated, "resource_cost": 0, "defense": "NONE"}
+	if not healing and damage_policy.is_valid():
+		var decision: Variant = damage_policy.call(request, result.evaluated)
+		if not decision is Dictionary or not CombatNumbers.integer(decision.get("amount"), 0, result.evaluated) or not CombatNumbers.integer(decision.get("resource_cost"), 0, target.resource) or decision.get("defense") not in ["NONE", "DODGED", "GUARDED", "GUARD_FAILED"]:
+			_transaction_active = false
+			return _reject(result, "INVALID_MITIGATION")
+		mitigation = decision
+	result.prevented = result.evaluated - int(mitigation.amount)
+	result.defense = mitigation.defense
 	result.health_before = target.health
-	result.actual = mini(result.evaluated, target.max_health() - target.health if healing else target.health)
-	result.overage = result.evaluated - result.actual
+	result.actual = mini(int(mitigation.amount), target.max_health() - target.health if healing else target.health)
+	result.overage = int(mitigation.amount) - result.actual
 	result.health_after = target.health + (result.actual if healing else -result.actual)
 	result.defeated = result.health_after == 0
 	result.accepted = true
 	result.code = "APPLIED" if result.actual > 0 else "NO_CHANGE"
 	# Commit once, before publishing any facts. Reentrant mutation is rejected.
 	request._resolved = true
+	target.resource -= int(mitigation.resource_cost)
 	target.health = result.health_after
 	if result.defeated:
 		target.lifecycle = Combatant.Lifecycle.DEFEATED
+	if result.defense != "NONE":
+		var defended := DefenseResolved.new()
+		defended.outcome = result.defense
+		defended.prevented = result.prevented
+		defended.resource_cost = int(mitigation.resource_cost)
+		_stamp(defended, result, clock.tick)
+		_publish(defended)
 	if result.actual == 0:
 		_transaction_active = false
 		return result

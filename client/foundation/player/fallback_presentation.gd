@@ -8,6 +8,9 @@ func _ready() -> void:
 	mesh.radius = 0.35
 	mesh.height = 1.8
 	marker.mesh = mesh
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.15, 0.4, 0.8)
+	marker.material_override = material
 	marker.position.y = 0.9
 	add_child(marker)
 	var nose := MeshInstance3D.new()

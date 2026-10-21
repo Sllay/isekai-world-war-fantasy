@@ -1,7 +1,7 @@
 class_name SaveIntegrity
 extends RefCounted
 
-const GAME_VERSION := "0.2.0"
+const GAME_VERSION := "0.3.0"
 
 var registry: CoreModuleRegistry
 var store: CoreSaveStore
@@ -16,7 +16,7 @@ func _init(modules: CoreModuleRegistry, adapter: CoreSaveStore, definition: Worl
 # Pure with respect to canonical state. Core prepares/migrates every section first.
 func prepare(snapshot: Dictionary) -> Dictionary:
 	reason = "SCHEMA_INVALID"
-	var upgraded := _upgrade_enemy_release(_upgrade_legacy(snapshot))
+	var upgraded := _upgrade_a1(_upgrade_enemy_release(_upgrade_legacy(snapshot)))
 	if upgraded.is_empty():
 		return _reject("LEGACY_SAVE_INVALID")
 	var staged := store.prepare_restore(registry, upgraded)
@@ -89,7 +89,7 @@ func _upgrade_legacy(snapshot: Dictionary) -> Dictionary:
 	if not CombatNumbers.stable_entity(entity_id):
 		return {}
 	var upgraded := snapshot.duplicate(true)
-	upgraded.game_version = GAME_VERSION
+	upgraded.game_version = "0.2.0"
 	for id in ["foundation.combat", "foundation.player_combat"]:
 		if not registry.modules.has(id):
 			return {}
@@ -102,7 +102,7 @@ func _upgrade_enemy_release(snapshot: Dictionary) -> Dictionary:
 	if snapshot.is_empty() or not registry.modules.has("gameplay.enemies") or not snapshot.get("modules") is Dictionary or snapshot.modules.has("gameplay.enemies"):
 		return snapshot
 	var previous := ["core.runtime", "foundation.player", "foundation.world", "foundation.regions", "foundation.combat", "foundation.player_combat"]
-	if snapshot.get("game_version") != GAME_VERSION or snapshot.modules.size() != previous.size() or not snapshot.get("sections") is Dictionary:
+	if snapshot.get("game_version") not in ["0.2.0", GAME_VERSION] or snapshot.modules.size() != previous.size() or not snapshot.get("sections") is Dictionary:
 		return {}
 	for id in previous:
 		if snapshot.modules.get(id) != "1.0.0":
@@ -110,6 +110,7 @@ func _upgrade_enemy_release(snapshot: Dictionary) -> Dictionary:
 	if snapshot.sections.get("foundation.regions", {}).get("version") != 1:
 		return {}
 	var result := snapshot.duplicate(true)
+	result.game_version = "0.2.0"
 	result.modules["gameplay.enemies"] = registry.modules["gameplay.enemies"].version
 	result.modules["foundation.targeting"] = registry.modules["foundation.targeting"].version
 	var owner := registry.modules["gameplay.enemies"] as EnemyModule
@@ -129,4 +130,29 @@ func _upgrade_enemy_release(snapshot: Dictionary) -> Dictionary:
 	saved["actors"] = {EnemyModule.SPAWN: owner.initial_state.duplicate(true)}
 	result.sections["foundation.regions"].version = 2
 	result.sections["core.runtime"].state.entities.ids.append(owner.initial_state.entity_id)
+	return result
+
+# Only the named old release may introduce the new authored opponent. Missing
+# current-release actor state is corruption, never a reason to refill defaults.
+func _upgrade_a1(snapshot: Dictionary) -> Dictionary:
+	if snapshot.is_empty() or snapshot.get("game_version") != "0.2.0":
+		return snapshot
+	var owner := registry.modules.get("gameplay.enemies") as EnemyModule
+	if owner == null:
+		return {}
+	var saved: Variant = snapshot.get("sections", {}).get("foundation.regions", {}).get("state", {}).get("regions", {}).get(owner.actor.region_id)
+	var ids: Variant = snapshot.get("sections", {}).get("core.runtime", {}).get("state", {}).get("entities", {}).get("ids")
+	if not saved is Dictionary or not saved.get("actors") is Dictionary or saved.actors.size() != 1 or not ids is Array or not saved.actors.has(EnemyModule.SPAWN) or not owner.actor.valid(saved.actors[EnemyModule.SPAWN]):
+		return {}
+	var result := snapshot.duplicate(true)
+	result.game_version = GAME_VERSION
+	for key in owner.companion_initial:
+		var added: Dictionary = owner.companion_initial[key].duplicate(true)
+		if ids.has(added.entity_id):
+			# Old Core may already own the new session's provisional spawn ID.
+			# Allocate a fresh identity; never alias an existing canonical actor.
+			added.entity_id = CoreIds.generate()
+			if ids.has(added.entity_id): return {}
+		result.sections["foundation.regions"].state.regions[owner.actor.region_id].actors[key] = added
+		result.sections["core.runtime"].state.entities.ids.append(added.entity_id)
 	return result

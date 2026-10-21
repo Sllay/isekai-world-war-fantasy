@@ -2,6 +2,19 @@
 
 ## Current authority interpretation
 
+A1 now implements the seam described here: the LocalAuthorityHost owns canonical
+module state and supplies PlayerMotor's validated simulation intent/physics port.
+The avatar handles hardware/camera/presentation; it no longer feeds raw input to
+the canonical motor. AuthorityGateway snapshots and PlayerReconciler provide a
+tested correction contract; full network prediction/replay is not implemented.
+Guard C/LT, dodge V/X, strong G/Y and touch buttons share semantic ingress.
+
+Death remains DEFEATED for 30 Core ticks, then the host respawns at the authored
+safe Region entry outside encounter acquisition range with full HP/energy, zero motion, released input/defense gates and
+retained committed cooldowns. Loading a defeated save starts this policy; ordinary
+healing cannot revive it. No downed/revive is introduced. Two persistent hostile
+actors support defeat followed by a second encounter and return after respawn.
+
 The existing Player foundation was implemented before the external AuthorityHost existed and therefore currently runs locally in Godot. Its semantic input/motor/presentation separation remains useful, but **local physical state must not be mistaken for production multiplayer authority**.
 
 ADR-0016 and `SERVER_AUTHORITY.md` now define the production boundary:

@@ -14,3 +14,5 @@ var overage := 0
 var health_before := 0
 var health_after := 0
 var defeated := false
+var prevented := 0
+var defense := "NONE"

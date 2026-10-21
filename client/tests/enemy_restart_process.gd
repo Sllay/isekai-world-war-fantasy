@@ -46,7 +46,7 @@ func run() -> void:
 		var expected: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(proof))
 		check(runtime.persistence.startup_mode == "resume", "separate OS process resumed slot")
 		check(actor.entity_id == expected.entity_id and player.entity_id == expected.player_id, "same actor and Player identity across OS processes")
-		check(runtime.core.entities.capture().ids.size() == 2, "exactly one Player and one Region actor")
+		check(runtime.core.entities.capture().ids.size() == 3 and runtime.core.entities.contains(runtime.enemies.companions[0].entity_id), "exactly one Player and two persistent Region actors")
 		check(player.position == Vector3(expected.safe.position[0], expected.safe.position[1], expected.safe.position[2]) and player.velocity == Vector3.ZERO, "fresh process uses validated recovery transform")
 		check(runtime.current_player_target().is_empty() and runtime.telegraphs.active.is_empty(), "no transient selection or telegraphs after restart")
 		if mode == "resume":
@@ -84,6 +84,7 @@ func run() -> void:
 		avatar.intent.movement = Vector2.RIGHT
 		avatar.intent.camera_delta = 0.5
 		avatar.intent.jump = true
+		runtime._process(0.05) # Forward semantic movement/jump through the host.
 		for i in 10: await physics_frame
 		check(player.position.x > start.x and avatar.orbit.yaw > 0.4, "movement/camera healthy after recovered process resume")
 		check(player.position.y > start.y + 0.2 and not player.grounded, "jump healthy after recovery")

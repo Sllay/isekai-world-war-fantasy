@@ -9,6 +9,7 @@ var movement_modifiers: Array[Callable] = []
 var movement_yaw := 0.0
 var movement_gate: Callable
 var turning_gate: Callable
+var authority_step: Callable
 
 func _ready() -> void:
 	var collision := CollisionShape3D.new()
@@ -27,7 +28,13 @@ static func horizontal_velocity(current: Vector3, target: Vector3, rate: float, 
 	return Vector3(next.x, current.y, next.y)
 
 func _physics_process(delta: float) -> void:
-	# State is authoritative, including after snapshot restore/teleport.
+	if authority_step.is_valid():
+		authority_step.call(delta)
+		return
+	simulate(delta)
+
+# Host-owned simulation port. A predicted client motor must use a distinct state.
+func simulate(delta: float) -> void:
 	position = state.position
 	velocity = state.velocity
 	var allowed := not movement_gate.is_valid() or bool(movement_gate.call())

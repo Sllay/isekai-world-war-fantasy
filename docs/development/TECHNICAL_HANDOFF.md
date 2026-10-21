@@ -1,5 +1,25 @@
 # Developer <-> Technical Design Handoff
 
+## A1 combat foundation implementation candidate
+
+- **Design gate:** Game Director's accepted first-scope is recorded in COMBAT.md;
+  the mission HOLD is released through that contract, not by engineering fiat.
+- **Authority invariant:** semantic Gateway commands bind a session to the Player;
+  trusted LocalAuthorityHost owns existing domain instances, movement/recovery
+  ports and persistence. No disconnect-to-local fallback. Rendering, body reaction,
+  impact, hit-stop and audio never decide combat outcomes.
+- **Persistence invariant:** app 0.3.0 adds only the new authored opponent to old
+  0.2.0 slots. Current missing actor/defense data rejects; no silent refills.
+  Player Combat v3 preserves dodge reuse/immunity alongside committed action
+  cooldowns; active windows/casts remain transient.
+- **Presentation acceptance:** one integrated victory/death/respawn/return scenario
+  remains for BK's subjective/device judgment; see COMBAT_A1_VALIDATION.md. Final
+  character art, Android frame/memory acceptance and A7 external transport are
+  explicitly not claimed by foundation engineering completion.
+- **Tooling:** Serena original-path diagnostics can report duplicate global classes
+  against the editor's linked view. Mirror-path Diagnostics MCP and headless parser
+  checks are clean. No cloud configuration or tracked tooling config was changed.
+
 - **Purpose:** asynchronous technical discussion between the implementing developer/Codex and the Technical Designer/Architect.
 - **Audience:** Codex/developer, Technical Designer/Architect, and BK when a translated product/design decision is needed.
 - **Status:** Active project workflow.

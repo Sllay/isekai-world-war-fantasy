@@ -3,6 +3,10 @@ extends CoreModule
 
 const ARCHETYPE = preload("res://gameplay/enemies/melee_skirmisher.tres")
 const SPAWN := "spawn.melee_skirmisher"
+var companions: Array[EnemyActor] = []
+var companion_controllers: Array[EnemyController] = []
+var companion_initial: Dictionary = {}
+var _companion_registered: Array[String] = []
 var actor := EnemyActor.new()
 var controller := EnemyController.new()
 var targeting: TargetingService
@@ -52,6 +56,7 @@ func initialize(services: CoreServices) -> Error:
 	controller.actor = actor
 	controller.targeting = targeting
 	initial_state = actor.capture()
+	_spawn_companion(catalog)
 	_defeat_token = combat.events.subscribe(CombatantDefeated, _defeated)
 	return OK
 
@@ -66,10 +71,23 @@ func bind_residency() -> void:
 	targeting.register(actor.entity_id, func() -> Variant: return actor.position if record.lifecycle == RegionState.Lifecycle.LOADED else null)
 	_registered_id = actor.entity_id
 	actor.actions.position_of = targeting.position_of
+	for old_id in _companion_registered:
+		targeting.unregister(old_id)
+		disposition.groups.erase(old_id)
+	_companion_registered.clear()
+	for extra in companions:
+		disposition.groups[extra.entity_id] = "disposition.hostile"
+		targeting.register(extra.entity_id, func() -> Variant: return extra.position if record.lifecycle == RegionState.Lifecycle.LOADED else null)
+		extra.actions.position_of = targeting.position_of
+		_companion_registered.append(extra.entity_id)
+	for ai in companion_controllers:
+		ai.reset()
 
 func tick() -> void:
 	if record.lifecycle == RegionState.Lifecycle.LOADED:
 		controller.tick()
+		for ai in companion_controllers:
+			ai.tick()
 	else:
 		targeting.unregister(actor.entity_id)
 
@@ -77,6 +95,13 @@ func dispose() -> void:
 	if combat == null:
 		return
 	combat.events.unsubscribe(_defeat_token)
+	for extra in companions:
+		targeting.unregister(extra.entity_id)
+		disposition.groups.erase(extra.entity_id)
+		combat.unregister(extra.entity_id)
+		record.actors.erase("spawn.melee_skirmisher_second")
+	companions.clear()
+	companion_controllers.clear()
 	targeting.unregister(actor.entity_id)
 	disposition.groups.erase(actor.entity_id)
 	controller.move_toward = Callable()
@@ -90,7 +115,39 @@ static func _valid_metadata(value: Dictionary) -> Error:
 	return OK if value.get("id") is String and value.id.begins_with("enemy.archetype.") and CoreIds.valid(value.id) else ERR_INVALID_DATA
 
 func _defeated(event: CombatantDefeated) -> void:
+	for ai in companion_controllers:
+		if ai.actor.entity_id == event.target_entity:
+			ai.state = EnemyController.State.DEFEATED
+			ai.target_id = ""
+			ai.actor.actions.advance()
 	if event.target_entity == actor.entity_id:
 		controller.state = EnemyController.State.DEFEATED
 		controller.target_id = ""
 		actor.actions.advance()
+
+func _spawn_companion(catalog: ActionCatalog) -> void:
+	const KEY := "spawn.melee_skirmisher_second"
+	if not record.definition.actor_spawns.has(KEY):
+		return
+	var extra := EnemyActor.new()
+	extra.entity_id = combat.entities.create()
+	extra.archetype = ARCHETYPE
+	extra.region_id = record.definition.region_id
+	extra.home = record.definition.to_world_position(record.definition.actor_spawns[KEY])
+	extra.position = extra.home
+	extra.combatant = combat.register(extra.entity_id, ARCHETYPE.profile_id)
+	extra.actions = ActionExecutor.new(combat, catalog, extra.entity_id)
+	extra.capabilities = EntityComponents.new(extra.entity_id)
+	extra.capabilities.attach("foundation.combatant", extra.combatant)
+	extra.capabilities.attach("foundation.actions", extra.actions)
+	var location := PlayerLocation.new()
+	location.world_id = directory.world.world_id
+	location.region_id = extra.region_id
+	extra.capabilities.attach("foundation.location", location)
+	var ai := EnemyController.new()
+	ai.actor = extra
+	ai.targeting = targeting
+	companions.append(extra)
+	companion_controllers.append(ai)
+	record.actors[KEY] = extra
+	companion_initial[KEY] = extra.capture()

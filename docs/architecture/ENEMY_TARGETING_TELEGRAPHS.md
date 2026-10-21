@@ -11,6 +11,11 @@ ActionExecutor, world-space position/facing and a location capability. No AI,
 rendering, loot, factions or quests live inside CombatService or the actor state.
 
 `region.home_valley` authors `spawn.melee_skirmisher` at local (4, 0, 2).
+A1 adds `spawn.melee_skirmisher_second` at (18, 0, -2) through the same actor,
+controller, action and Region persistence contracts. Application save version
+0.3.0 explicitly migrates old 0.2.0 slots by adding only the new authored actor
+and a fresh Core identity; existing damaged/defeated actors are preserved. A
+missing actor in a current-release slot is corruption, not a default respawn.
 The spawn key is an authored content binding, **not** the entity ID. Core allocates
 one persistent 32-hex entity ID on new game; Region restores that exact ID and
 rebinds the same capabilities. Node names/paths have no identity meaning.

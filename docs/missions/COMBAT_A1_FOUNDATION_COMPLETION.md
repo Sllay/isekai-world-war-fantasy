@@ -1,13 +1,28 @@
 # Mission — A1/G1 Combat Foundation Completion
 
 - **Macro Version:** A1 — Combat & Player Gameplay
-- **Mission state:** HOLD — release after Combat first-scope feel/feedback contract closes
+- **Mission state:** ENGINEERING_COMPLETE — scoped implementation validated; integrated player/device acceptance pending
 - **Mission type:** production implementation + gap closure + first authority integration
 - **Primary goal:** finish the missing combat foundation needed by A1, move gameplay-critical execution behind the online-first authority boundary, and reuse rather than rebuild the combat systems that already exist.
 
 ## Codex command
 
-Implement this mission, not just an audit, **after the HOLD is removed**.
+Implement this mission, not just an audit. The Game Director closed the design HOLD with the accepted first-scope in `docs/design/COMBAT.md`; engineering/player acceptance gates remain in force.
+
+## Accepted implementation scope
+
+One-handed melee, primary basic attack, one strong skill through existing actions,
+guard/block and foundation dodge. No advanced parry, downed/revive, equipment
+breadth or external A7 stack. Deliver the representative presentation and complete
+combat/death/respawn loop specified in the Combat first-scope contract. Engineering
+acceptance requires automated authority, defense, lifecycle and integrated runtime
+evidence. Player acceptance additionally requires the single integrated scenario
+below to feel readable/comfortable to the Game Director; no per-subsystem manual QA.
+
+Representative scenario: enter/spawn, move/aim/approach, read an enemy telegraph,
+guard a hit, receive an unguarded hit, land basic strikes, use the strong skill,
+produce a permitted stagger, defeat an enemy, face another enemy, be defeated,
+wait in the death state, respawn safely, and fight again without residual gates.
 
 Start by reading `AGENTS.md`, `docs/development/MISSION_CONTRACT.md`, `docs/development/SHIPPABLE_DEFINITION_OF_DONE.md`, `docs/architecture/SERVER_AUTHORITY.md`, ADR-0016, this file, and only the combat/player/network architecture/design/ADR documents required to understand the existing implementation.
 

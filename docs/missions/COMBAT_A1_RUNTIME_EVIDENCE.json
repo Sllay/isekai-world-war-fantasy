@@ -1,0 +1,29 @@
+{
+  "mode": "LocalAuthorityHost loopback",
+  "scenario": {
+    "elapsed_ticks": 2754,
+    "phase": "finished",
+    "result": {
+      "confirmed_hits": 23,
+      "death": true,
+      "energy": 50,
+      "guarded": 1,
+      "health": 100,
+      "passed": true,
+      "phase": "finished",
+      "reentered_combat": true,
+      "respawn": true,
+      "respawns": 1,
+      "stagger": true,
+      "ticks": 1043
+    }
+  },
+  "scene": "res://tests/worlds/a1_acceptance.tscn",
+  "timing": {
+    "application_tick_max_us": 3587,
+    "application_tick_p95_us": 1233,
+    "samples": 128
+  },
+  "validation": "Runtime MCP stdio -> editor bridge -> live game",
+  "performance_scope": "Post-scenario cloud software-rendered application-tick window only; not an active-combat frame benchmark, Android test or full-server capacity proof"
+}

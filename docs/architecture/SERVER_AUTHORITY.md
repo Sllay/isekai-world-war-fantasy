@@ -16,6 +16,39 @@ Official servers and player-hosted private servers use the same authority model.
 
 > Clients request gameplay. The authority decides gameplay.
 
+### A1 implemented development boundary
+
+`PlayerAuthorityAdapter` converts hardware-neutral PlayerIntent to movement,
+guard/dodge/cancel and action-slot commands. `LoopbackAuthorityGateway` numbers
+versioned envelopes; `LocalAuthorityHost` binds one trusted session to the Player,
+rejects unknown fields/outcomes, forged sessions, nonfinite/out-of-range axes,
+duplicates/replays, old/future tick windows and full inboxes. The inbox is capped
+at eight commands and consumes at most four per simulation tick. Sequence high
+water marks are session-scoped; correlation IDs are not deduplication keys.
+
+The application explicitly selects this host in debug development. Release or
+`--authority-remote` uses a disconnected AuthorityGateway until a transport is
+configured; it freezes gameplay instead of promoting client state. There is no
+network-error path that constructs a local host. Remote transport/authentication
+handshake, reconnect and A7 services remain outside this mission.
+
+The host reuses the canonical CombatService/ActionExecutor/module state, runs
+enemy decisions and controls PlayerMotor collision through a physics port. Raw
+input no longer writes the motor's canonical intent: the host uses its own
+validated PlayerIntent. Physics cadence drives collision; Core's fixed 20 Hz
+ticks drive actions, defense, regeneration and respawn. Region safe-transform
+observation is also invoked through the host's physics port. Camera and visual
+pose remain local. A detached snapshot contains tick/ack/state; PlayerReconciler
+corrects a separate mirror and rejects obsolete corrections. Full prediction,
+pending-input replay and remote interpolation are not claimed.
+
+Host loadout slots reference trusted action definitions. Combat modifiers remain
+the equipment/stat extension point; there is no separate equipment framework.
+Host-owned SaveCoordinator capture/resume retains canonical domain state; client
+snapshots are value copies and cannot mutate the host. Tests exercise adversarial
+ingress, direct-domain equivalence, defense, stagger, death and an entire playable
+scenario; see `client/tests/authority_tests.gd` and `a1_scenario_tests.gd`.
+
 A production client may submit semantic input/intent, but it does not authoritatively submit final gameplay outcomes.
 
 The authority owns at minimum:

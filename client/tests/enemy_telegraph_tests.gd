@@ -181,7 +181,7 @@ func run() -> void:
 	runtime.enemies.tick()
 	check(actor.combatant.lifecycle == Combatant.Lifecycle.DEFEATED and defeat_count == 1, "defeat fact exactly once")
 	check(ai.state == EnemyController.State.DEFEATED and executor.current == null, "defeat stops AI and cancels cast safely")
-	check(runtime.select_player_target().is_empty() and targets.hostiles(player.entity_id, 20).is_empty(), "defeated actor no longer targetable")
+	check(runtime.select_player_target() != actor.entity_id and actor.entity_id not in targets.hostiles(player.entity_id, 20), "defeated actor excluded while the second opponent remains selectable")
 	var defeated_position := actor.position
 	step(100)
 	check(actor.position == defeated_position and defeat_count == 1, "defeated actor retained without movement/repeated defeat")

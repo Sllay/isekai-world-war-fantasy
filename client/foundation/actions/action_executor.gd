@@ -7,6 +7,9 @@ var catalog: ActionCatalog
 var owner_id := ""
 # Pure world-space lookup: stable entity ID -> Vector3, or null if unavailable.
 var position_of: Callable
+var activation_gate: Callable
+var mobility_gate: Callable
+var target_gate: Callable
 var phase := Phase.IDLE
 var deadline := 0
 var current: ActionDefinition
@@ -63,6 +66,8 @@ func _validate(definition: ActionDefinition, chosen: String, starting: bool) -> 
 		return "OWNER_UNAVAILABLE"
 	if owner.lifecycle != Combatant.Lifecycle.ALIVE:
 		return "OWNER_DEFEATED"
+	if activation_gate.is_valid() and not bool(activation_gate.call()):
+		return "DEFENSE_OR_STAGGER"
 	if definition == null:
 		return "UNKNOWN_ACTION"
 	if starting and phase not in [Phase.IDLE, Phase.CANCELLED]:
@@ -85,6 +90,8 @@ func _validate(definition: ActionDefinition, chosen: String, starting: bool) -> 
 			return "POSITION_UNAVAILABLE"
 		if origin.distance_squared_to(destination) > definition.max_range * definition.max_range:
 			return "OUT_OF_RANGE"
+		if target_gate.is_valid() and not bool(target_gate.call(owner_id, chosen)):
+			return "TARGET_OCCLUDED"
 	return ActionEffectRunner.validate(combat, definition, owner_id, chosen)
 
 # Call after every simulation tick. No wall-clock or animation time is observed.
@@ -153,10 +160,10 @@ func _cancel(reason: String, tick: int) -> void:
 	deadline = tick
 
 func movement_allowed() -> bool:
-	return current == null or phase != Phase.CASTING or current.cast_while_moving
+	return (not mobility_gate.is_valid() or bool(mobility_gate.call())) and (current == null or phase != Phase.CASTING or current.cast_while_moving)
 
 func turning_allowed() -> bool:
-	return current == null or phase != Phase.CASTING or current.turn_while_casting
+	return (not mobility_gate.is_valid() or bool(mobility_gate.call())) and (current == null or phase != Phase.CASTING or current.turn_while_casting)
 
 func _emit(event: ActionEvent, tick: int, reason := "") -> void:
 	event.tick = tick

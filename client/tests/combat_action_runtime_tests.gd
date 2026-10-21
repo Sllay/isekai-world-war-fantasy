@@ -32,10 +32,11 @@ func run() -> void:
 	var strike_position: Vector3 = runtime.player.state.position
 	avatar.intent.movement = Vector2.RIGHT
 	avatar.intent.camera_delta = 0.4
+	runtime._process(0.05) # Client intent must cross an authority tick before physics.
 	for index in range(5): await physics_frame
 	check(runtime.player.state.position.x > strike_position.x and avatar.orbit.yaw > 0, "strike permits physical movement and simultaneous camera input")
 	avatar.intent.movement = Vector2.ZERO
-	for index in range(4): runtime._process(0.05)
+	for index in range(3): runtime._process(0.05)
 	check(runtime.action_harness.target.health == 88 and executor.effect_results.size() == 1, "runtime target takes one actual damage effect")
 	for index in range(6): runtime._process(0.05)
 	check(executor.phase == ActionExecutor.Phase.IDLE and runtime.action_harness.target.health == 88, "runtime recovery completes without duplicate damage")
@@ -52,12 +53,13 @@ func run() -> void:
 	var facing: Vector3 = runtime.player.state.facing
 	avatar.intent.movement = Vector2.RIGHT
 	avatar.intent.camera_delta = 0.7
+	runtime._process(0.05)
 	for index in range(5):
 		await physics_frame
 	check(Vector2(runtime.player.state.position.x - start.x, runtime.player.state.position.z - start.z).length() < 0.001, "movement gate physically stops heal cast")
 	check(runtime.player.state.facing == facing and absf(avatar.orbit.yaw) > 0.1, "turn gate preserves facing while camera works")
 	avatar.intent.movement = Vector2.ZERO
-	for index in range(10): runtime._process(0.05)
+	for index in range(9): runtime._process(0.05)
 	check(runtime.player_combat.state.health == 85 and runtime.player_combat.state.resource == 45, "runtime heal uses canonical health/resource")
 	var info: Dictionary = runtime.development_state().actions
 	check(info.cooldowns["combat.action.basic_heal"] == 60 and info.last_result == "COMMITTED", "structured action resource/cooldown diagnostics")
@@ -76,6 +78,7 @@ func run() -> void:
 	var old: Dictionary = saved.duplicate(true)
 	old.sections["foundation.player_combat"].version = 1
 	old.sections["foundation.player_combat"].state.erase("actions")
+	old.sections["foundation.player_combat"].state.erase("defense")
 	var migrated: Dictionary = runtime.persistence.integrity.prepare(old)
 	check(not migrated.is_empty() and migrated.sections["foundation.player_combat"].state.actions.cooldowns.is_empty(), "explicit Slice 1 section migration")
 	avatar = runtime.world_scene.active_region.avatar
@@ -84,10 +87,12 @@ func run() -> void:
 	avatar.intent.movement = Vector2.RIGHT
 	avatar.intent.camera_delta = 0.5
 	start = runtime.player.state.position
+	runtime._process(0.05)
 	for index in range(30): await physics_frame
 	check(runtime.player.state.position.distance_to(start) > 0.5 and avatar.orbit.yaw > 0.3, "movement and camera healthy after resume")
 	avatar.intent.movement = Vector2.ZERO
 	avatar.intent.jump = true
+	runtime._process(0.05)
 	for index in range(8): await physics_frame
 	check(not runtime.player.state.grounded, "jump healthy after resume")
 	# Touch action buttons reserve only their right-side region; movement/camera

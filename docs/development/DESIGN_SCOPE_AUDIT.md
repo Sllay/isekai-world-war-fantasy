@@ -163,7 +163,7 @@ Technically solid for current local implementation and compatible with semantic 
 
 Medium product doc supported by deep `COMBAT_FOUNDATION.md`, `COMBAT_ACTIONS.md`, `ENEMY_TARGETING_TELEGRAPHS.md`, `MOBILE_COMBAT_UI_AND_INVENTORY.md`, `VIEW_INTERACTION_PERCEPTION.md` and now `SERVER_AUTHORITY.md`.
 
-**Only immediate design-readiness blocker before releasing A1 Codex mission:**
+**A1 design blocker closed by the Game Director's accepted first-scope in COMBAT.md:**
 
 - explicit combat feel/feedback contract;
 - hit reaction/stagger/readability expectations;
@@ -173,7 +173,9 @@ Medium product doc supported by deep `COMBAT_FOUNDATION.md`, `COMBAT_ACTIONS.md`
 - first-scope block/dodge/parry semantics and feedback;
 - exact A1 Player Complete scenario.
 
-The mission itself has already been updated to include authority integration once released.
+The mission is now ACTIVE and includes authority integration, representative feedback
+and the integrated victory/death/respawn scenario. This closes design readiness;
+it does not pre-approve Player Complete or Android feel/performance.
 
 ---
 
@@ -197,7 +199,7 @@ Needs species vs individual state, senses/perception, needs/territory/social gro
 
 ## Before releasing Codex A1 mission
 
-1. **Combat first-scope player experience / feel contract.**
+1. **Closed:** Combat first-scope player experience / feel contract accepted by the Game Director; the A1 mission is ACTIVE.
 
 Performance, authority, View/Interaction/Perception and initial Materials are now first-scope closed.
 

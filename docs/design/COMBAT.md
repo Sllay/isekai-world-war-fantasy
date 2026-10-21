@@ -4,6 +4,48 @@
 
 Combate deve premiar leitura, posição, timing e construção de build, evitando uma simples corrida de DPS/tank.
 
+## A1 accepted first-scope contract
+
+The Game Director explicitly closed the first-scope design blocker for
+`COMBAT_A1_FOUNDATION_COMPLETION`. These are implementation decisions, not a claim
+of Engineering or Player Complete:
+
+- Representative weapon: one-handed melee. Primary basic attack and one strong
+  action/skill reuse ActionExecutor/CombatService. Guard/block is the initial
+  defense; foundation dodge is retained. Advanced parry is excluded.
+- Light confirmed hits have visible body/procedural reaction and impact, but never
+  gameplay stun-lock. Valid strong impacts may cause a short authoritative stagger
+  with a bounded immunity window. Enemy wind-up, telegraph and recovery are legible.
+- Minimum feedback: body reaction, impact visual, short bounded presentation-only
+  hit-stop where useful, swing/impact SFX, unequivocal hit confirmation, and distinct
+  guard success, guard failure and damage reduction/block messages.
+- Death is defeated/dead, a short authority-timed wait, safe-point respawn with
+  coherent health/resource/action/defense/movement state. No downed/revive in A1.
+- Clients request gameplay; authority decides gameplay. Animation/VFX/audio never
+  trigger damage, invulnerability, stagger, healing, cooldown or respawn commits.
+- Development uses AuthorityGateway -> LocalAuthorityHost loopback, semantic
+  commands, authenticated actor binding and bounded sequence/tick validation.
+  Disconnect never promotes the client to authority. No full external A7 stack.
+
+Initial tuning is authored data/policy, adjustable after feel acceptance: guard
+reduces frontal blockable damage by 75% for 4 energy per impact, fails when energy
+is insufficient or facing is wrong; dodge costs 8 energy, lasts 4 simulation ticks
+and has a 20-tick reuse interval. Strong hits stagger for 6 ticks with 20 ticks of
+immunity. Guard/dodge/stagger gate actions and movement through existing contracts.
+Energy recovers 1 unit each 10 authority ticks outside defense/casting; no passive
+health regeneration. Death waits 30 ticks (1.5 seconds at 20 Hz); respawn restores
+health/energy, clears transient actions/defense/input and retains committed action
+cooldowns. `entry.respawn` is authored outside the encounter's acquisition range
+(fallback: the Region's default entry); clients supply no
+coordinates. Reloading defeated state starts the same death policy, not a free heal.
+
+Player acceptance is one integrated scenario: enter/spawn; move/turn/aim and
+approach combat; read a telegraph; guard one attack; receive one without defense;
+land basic attacks; use the strong action; stagger when valid; defeat an enemy;
+face another; be defeated; enter death; respawn; return to combat without residual
+state. Machines validate canonical outcomes; the Director validates feel/readability
+and device control comfort in that scenario.
+
 ## Ability Properties
 
 Habilidades podem declarar propriedades como:
