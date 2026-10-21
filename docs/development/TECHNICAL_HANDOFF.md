@@ -1,5 +1,29 @@
 # Developer <-> Technical Design Handoff
 
+## C1-R1-P1 continuation of the integrated A1 foundation
+
+- Run 1 explicitly accepts representative procedural presentation; final Chapter
+  1 combat and the three definitive universal skills are Run 2. Foundation status
+  must not be mistaken for final mobile Player Complete. See the C1 mission and
+  validation record for the single subjective acceptance scenario.
+- Preserve ActionLoadout's trusted install/copy boundary, three skill slots and
+  per-action cooldown identity across loadouts. Current authored loadout is fixed;
+  future player-customized sets require their owning persistent schema/UI.
+- Spatial target query ports belong to authority/world. Their authored query IDs
+  must select trusted bounded geometry/perception strategies; no camera ray or
+  client-provided target list becomes hit truth. Target/effect order is stable,
+  maximum eight targets; multi-target effects remain sequential, not atomic.
+- Death/respawn clears only the defeated owner's active windows and client aim/
+  selection. Other actors retain stagger/immunity; failed guard is not immunity.
+  Missing remote transport disables motor and autonomous Region recovery/save.
+- Runtime evidence includes active-scenario application timing and cloud frame
+  deltas. Application timing excludes independent physics/render; the cloud frame
+  budget does not establish Android performance. Eight-flash/three-voice caps and
+  tick-rate HUD sampling are bounded foundation behavior, not population claims.
+- Native tool registration remains absent; actual Serena, Diagnostics and live
+  Runtime MCP were exercised through installed stdio servers. The existing FULL
+  Editor/Environment was preserved without configuration/recovery changes.
+
 ## A1 combat foundation implementation candidate
 
 - **Design gate:** Game Director's accepted first-scope is recorded in COMBAT.md;

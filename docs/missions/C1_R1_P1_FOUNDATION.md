@@ -65,6 +65,17 @@ full network prediction/replay and real Android performance acceptance.
 
 ## Completion
 
-Status: IMPLEMENTING. Foundation/Engineering completion requires the entire
-integrated loop and all applicable gates above; it is not final Chapter 1 combat
-or Player Complete on mobile. Preserve the Environment and PR #9; no main merge.
+Status: FOUNDATION_COMPLETE / ENGINEERING_COMPLETE for Run 1, validated on
+implementation commit `29ee999`. Godot Check passes; affected and all each pass
+716 checks across eight suites/24 groups. Diagnostics reports zero issues in 23
+changed scripts. Live Runtime MCP passes the full representative scenario,
+including basic before strong, stagger, clean respawn and confirmed combat after
+respawn. See [validation](C1_R1_P1_VALIDATION.md) and
+[live evidence](C1_R1_P1_RUNTIME_EVIDENCE.json).
+
+Manual acceptance of control comfort/feedback readability remains pending in one
+integrated scenario. This is not final Chapter 1 combat or Player Complete on
+mobile. Cloud application p95 is 2.00 ms against the scoped 25 ms gate; cloud frame
+p95 is 99.99 ms and does not establish the Android 33.3 ms budget. No device or
+external-server capacity acceptance is claimed. Environment and PR #9 were
+preserved; there was no main merge.
