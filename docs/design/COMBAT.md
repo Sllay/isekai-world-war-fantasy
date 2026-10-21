@@ -4,6 +4,16 @@
 
 Combate deve premiar leitura, posição, timing e construção de build, evitando uma simples corrida de DPS/tank.
 
+## Chapter 1 / Run 1 / Part 1
+
+C1-R1-P1 continues the accepted A1 first-scope below as one integrated foundation
+delivery. Representative procedural visuals and the technical HUD are accepted in
+Run 1. Final Chapter 1 combat content/readability refinement belongs to Run 2,
+including the three definitive universal skills. Run 1 supplies primary attack,
+three equip-capable skill slots (strong/heal/empty initially), authority/cost/
+cooldown/targeting infrastructure and the entire victory/death/respawn/return loop.
+This does not declare final combat, mobile UX or final-device performance accepted.
+
 ## A1 accepted first-scope contract
 
 The Game Director explicitly closed the first-scope design blocker for

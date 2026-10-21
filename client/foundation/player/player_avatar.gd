@@ -8,9 +8,9 @@ var intent := PlayerIntent.new()
 var motor := PlayerMotor.new()
 var orbit := PlayerCamera.new()
 var presentation := preload("res://foundation/player/fallback_presentation.gd").new()
+var input := PlayerInput.new()
 
 func _ready() -> void:
-	var input := PlayerInput.new()
 	input.intent = intent
 	input.tuning = tuning
 	add_child(input)
@@ -26,6 +26,10 @@ func _ready() -> void:
 	add_child(presentation)
 
 func _physics_process(_delta: float) -> void:
+	if input.pointer_aim:
+		var point: Variant = PlayerAimAdapter.project(orbit.camera, input.pointer_position, state.position)
+		if point is Vector3:
+			PlayerAimAdapter.apply(intent, point, state.position)
 	if not motor.authority_step.is_valid():
 		motor.movement_yaw = orbit.yaw
 	presentation.present(state, orbit.yaw)

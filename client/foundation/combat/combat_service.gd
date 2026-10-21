@@ -132,6 +132,7 @@ func _apply(request: CombatRequest, healing: bool) -> CombatResult:
 		facts.append(fact)
 	else:
 		var fact := DamageApplied.new()
+		fact.defense = result.defense
 		var hit := request as DamageRequest
 		fact.actual = result.actual
 		fact.evaluated = result.evaluated

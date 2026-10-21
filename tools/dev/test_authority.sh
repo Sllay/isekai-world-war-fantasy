@@ -7,6 +7,14 @@ trap 'rm -f "$authority_log"' EXIT
 cat "$authority_log"
 if rg -q 'SCRIPT ERROR:|ERROR:|WARNING:.*leaked|resources still in use' "$authority_log"; then exit 1; fi
 rg -q 'Authority tests: [1-9][0-9]* checks, 0 failures' "$authority_log"
+"${GODOT_BIN:-godot}" --headless --path client --script res://tests/c1_foundation_tests.gd > "$authority_log" 2>&1 || { cat "$authority_log"; exit 1; }
+cat "$authority_log"
+if rg -q 'SCRIPT ERROR:|ERROR:|WARNING:.*leaked|resources still in use' "$authority_log"; then exit 1; fi
+rg -q 'C1 foundation tests: [1-9][0-9]* checks, 0 failures' "$authority_log"
+"${GODOT_BIN:-godot}" --headless --path client --script res://tests/remote_authority_tests.gd -- --authority-remote > "$authority_log" 2>&1 || { cat "$authority_log"; exit 1; }
+cat "$authority_log"
+if rg -q 'SCRIPT ERROR:|ERROR:|WARNING:.*leaked|resources still in use' "$authority_log"; then exit 1; fi
+rg -q 'Remote authority tests: [1-9][0-9]* checks, 0 failures' "$authority_log"
 "${GODOT_BIN:-godot}" --headless --path client --script res://tests/a1_scenario_tests.gd > "$authority_log" 2>&1 || { cat "$authority_log"; exit 1; }
 cat "$authority_log"
 if rg -q 'SCRIPT ERROR:|ERROR:|WARNING:.*leaked|resources still in use' "$authority_log"; then exit 1; fi

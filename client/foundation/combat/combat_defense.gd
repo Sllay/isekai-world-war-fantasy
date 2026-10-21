@@ -70,7 +70,7 @@ func _hit(fact: DamageApplied) -> void:
 	if fact.actual <= 0 or "combat.tag.strong" not in fact.tags:
 		return
 	var id := fact.target_entity
-	if combat.clock.tick < int(state(id).stagger_ready) or state(id).guard or combat.combatant(id).lifecycle != Combatant.Lifecycle.ALIVE:
+	if combat.clock.tick < int(state(id).stagger_ready) or fact.defense == "GUARDED" or combat.combatant(id).lifecycle != Combatant.Lifecycle.ALIVE:
 		return
 	state(id).stagger_until = combat.clock.tick + 6
 	state(id).stagger_ready = combat.clock.tick + 20

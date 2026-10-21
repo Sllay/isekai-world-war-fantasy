@@ -8,12 +8,19 @@ The avatar handles hardware/camera/presentation; it no longer feeds raw input to
 the canonical motor. AuthorityGateway snapshots and PlayerReconciler provide a
 tested correction contract; full network prediction/replay is not implemented.
 Guard C/LT, dodge V/X, strong G/Y and touch buttons share semantic ingress.
+Run 1 adds hardware-neutral Skill Slots 1/2/3 (desktop 1/2/3), authority-installed
+loadouts and PlayerAimAdapter. Mouse projection creates world point/direction
+candidates; lock-on/touch/bots can supply the same intent. Camera transforms never
+become hit truth. Canonical range/LOS and relationship are revalidated at commit.
 
 Death remains DEFEATED for 30 Core ticks, then the host respawns at the authored
 safe Region entry outside encounter acquisition range with full HP/energy, zero motion, released input/defense gates and
 retained committed cooldowns. Loading a defeated save starts this policy; ordinary
 healing cannot revive it. No downed/revive is introduced. Two persistent hostile
 actors support defeat followed by a second encounter and return after respawn.
+Respawn also clears explicit aim/target/skill one-shots, pointer aim and selected
+target. Other actors' stagger/immunity is preserved; player death cannot clear
+their state. Failed guard does not grant stagger immunity against a strong hit.
 
 The existing Player foundation was implemented before the external AuthorityHost existed and therefore currently runs locally in Godot. Its semantic input/motor/presentation separation remains useful, but **local physical state must not be mistaken for production multiplayer authority**.
 
@@ -155,7 +162,7 @@ Those values are **requests/hints**, not proof of a valid hit. Authority revalid
 
 ## Recovery / respawn
 
-Region safe-transform/recovery behavior and current targeting were added in the historical enemy/telegraph work. Future death/respawn policy must be authority-owned because it changes canonical position/lifecycle and may interact with corpse/item custody.
+Region safe-transform/recovery behavior and current targeting were added in the historical enemy/telegraph work. The current death/respawn policy is authority-owned because it changes canonical position/lifecycle. Corpse/item custody is outside Run 1.
 
 The client may request a valid respawn option; it does not choose arbitrary coordinates.
 

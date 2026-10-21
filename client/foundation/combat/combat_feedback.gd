@@ -18,6 +18,7 @@ var _last_respawns := 0
 var _status := Label.new()
 var confirmed_hits := 0
 var defense_outcomes: Dictionary = {}
+var _hud_tick := -1
 
 func _ready() -> void:
 	_swing = _tone(380.0, 0.08)
@@ -140,12 +141,21 @@ func _process(delta: float) -> void:
 			_impacts.remove_at(index)
 		else:
 			_impacts[index].node.scale = Vector3.ONE * (1.0 + (0.15 - _impacts[index].time) * 4)
+	# UI samples simulation state once per authority tick, independently of pose FPS.
+	if _hud_tick == host.combat.clock.tick:
+		return
+	_hud_tick = host.combat.clock.tick
 	var snapshot := host.snapshot()
 	if snapshot.respawns > _last_respawns:
 		_last_respawns = snapshot.respawns
 		message = "RESPAWNED · ready to fight again"
 	var stance: String = "GUARD" if snapshot.defense.guard else ("DODGE" if host.defense.dodging(host.player.entity_id) else ("STAGGER" if host.defense.staggered(host.player.entity_id) else snapshot.actions.phase))
-	_status.text = "HP %d  Energy %d  %s\n%s · Strong ready in %.1fs\n%s\n%s" % [snapshot.health, snapshot.resource, snapshot.lifecycle, stance, snapshot.actions.cooldowns.get("combat.action.strong_strike", 0) * host.combat.clock.step_seconds, message, _defense_message if _defense_time > 0 else ""]
+	var loadout: Dictionary = snapshot.loadout
+	var skills: Array[String] = []
+	for slot: String in ["skill_1", "skill_2", "skill_3"]:
+		var action_id: String = loadout.slots[slot]
+		skills.append("%s: %s" % [slot, "empty" if action_id.is_empty() else "%s %.1fs" % [action_id.get_slice(".", 2), snapshot.actions.cooldowns.get(action_id, 0) * host.combat.clock.step_seconds]])
+	_status.text = "HP %d  Energy %d  %s\n%s · %s\n%s\n%s" % [snapshot.health, snapshot.resource, snapshot.lifecycle, stance, " / ".join(skills), message, _defense_message if _defense_time > 0 else ""]
 
 func _play(stream: AudioStreamWAV) -> void:
 	if DisplayServer.get_name() == "headless":

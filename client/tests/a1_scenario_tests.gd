@@ -25,9 +25,29 @@ func run() -> void:
 	var initial: Dictionary = world.persistence.capture_snapshot()
 	# The final confirmed strike still has committed recovery; defense cannot
 	# cancel that recovery. Let the authority finish it before testing dodge save.
-	for i in range(12):
+	for i in range(20):
 		world.core.clock.tick += 1
 		world.authority_host.advance()
+	# Real physics occlusion, through the same query used by targeting and commit.
+	var obstacle := StaticBody3D.new()
+	var collider := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(0.5, 3, 0.5)
+	collider.shape = box
+	obstacle.add_child(collider)
+	world.add_child(obstacle)
+	obstacle.global_position = (world.player.state.position + world.enemies.companions[0].position) * 0.5 + Vector3.UP
+	await physics_frame
+	var enemy_id: String = world.enemies.companions[0].entity_id
+	check(not world._authority_line_of_sight(world.player.state.entity_id, enemy_id), "real collider occludes authority line of effect")
+	check(not world.targeting.service.select(world.player.state.entity_id, enemy_id, 20), "real wall prevents lock-on, independent of camera")
+	world.authority_gateway.request("action", {"slot": "primary", "target": enemy_id})
+	world.core.clock.tick += 1
+	world.authority_host.advance()
+	check(world.authority_host.last_result == "TARGET_OCCLUDED", "authority rejects attack through actual wall: %s" % world.authority_host.last_result)
+	obstacle.free()
+	await physics_frame
+	check(world._authority_line_of_sight(world.player.state.entity_id, enemy_id), "removing occluder restores line of effect")
 	world.authority_gateway.request("dodge")
 	world.core.clock.tick += 1
 	world.authority_host.advance()

@@ -1,5 +1,14 @@
 # Version Plan
 
+## Active Chapter / Run / Part
+
+The current Game Director mission is **C1-R1-P1 — Player, Combat & Skills
+Foundation**, Chapter 1 / Run 1 / Part 1. It continues the existing A1 foundation
+as one macro delivery. Its scoped contract/status/evidence live in
+`docs/missions/C1_R1_P1_FOUNDATION.md`. Run 1 proves extensible architecture and a
+representative playable loop; Run 2 refines final Chapter 1 combat/content. A1-A8
+below remain domain planning/history, not an instruction to create micro releases.
+
 ## Product planning versions
 
 Development is organized by **Macro Versions** that represent coherent playable outcomes, not isolated technical slices.

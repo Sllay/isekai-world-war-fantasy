@@ -1,4 +1,17 @@
-# Production combat actions — Phase 2 Slice 2
+# Production combat actions — C1-R1-P1
+
+## Run 1 loadouts and targeting
+
+ActionLoadout supplies primary and skill_1/2/3 from validated trusted content.
+The host copies an installed loadout only when idle/cancelled; clients request a
+slot, never equip an arbitrary action ID. Default slot 1 is strong, slot 2 heal,
+slot 3 empty. G/Y/Strong and H/LB/Heal remain input aliases; desktop 1/2/3 and
+PlayerIntent.request_skill provide the generic slot path. The technical HUD reads
+equipped IDs/cooldowns, so it does not require final universal skills or equipment
+UI. Loadout IDs/slots are included in detached Gateway snapshots for presentation.
+Changing slots/loadouts never resets per-action cooldowns. Authored fixed
+loadouts need no new save field; future player-owned equipment needs explicit
+persistence. See ADR-0017 and the C1_R1_P1_FOUNDATION mission contract.
 
 ## A1 extension (current)
 
@@ -37,7 +50,8 @@ feel/performance acceptance remain separate from this representative foundation.
 catalog; `foundation.player_combat` owns one `ActionExecutor` attached under
 `foundation.actions` in the Player capability container. Other actor owners can
 construct the same executor with their stable ID, CombatService and catalog.
-Player slot mapping lives in `PlayerActionAdapter`, outside generic execution.
+Production slot mapping lives in the host's ActionLoadout; PlayerActionAdapter is
+retained only for explicit domain harnesses, outside generic execution.
 No Core, World/Region or CombatService gameplay rules were added.
 
 `data/actions/definitions.tres` is a typed `ActionContent` manifest. Its
@@ -55,6 +69,7 @@ the typed catalog owns the complete schema, rather than an untyped property bag.
 | --- | --- | --- | --- | --- | --- |
 | `combat.action.basic_strike` | 4 ticks | 6 ticks | 16 ticks | 0 | 12 physical damage, 2.5 world-unit range, blockable/dodgeable/parryable |
 | `combat.action.basic_heal` | 10 ticks | 4 ticks | 60 ticks | 5 energy | 15 self-healing |
+| `combat.action.strong_strike` | 10 ticks | 10 ticks | 40 ticks | 10 energy | 26 physical damage, 2.5 range, strong stagger tag |
 
 Strike allows movement/turning; heal restricts both during casting. These are real
 content definitions, with conservative initial tuning. No hitbox geometry,
@@ -62,13 +77,21 @@ projectile, mitigation, animation or VFX behavior is implied by their metadata.
 
 ## Target and effect boundaries
 
-`ActionTarget` is a value request containing a stable entity ID and reserved
-world-space direction/point values. V1 executes SELF and explicit ENTITY modes
-only; unsupported modes fail definition validation. SELF resolves to the owner,
+`ActionTarget` is a copied value request containing a stable entity ID and finite
+world-space direction/point values. SELF resolves to the owner,
 regardless of caller target. ENTITY requires a pure `position_of(id)` provider
 returning a finite world-space Vector3 or null. Missing positions reject rather
 than falling back to scene coordinates. Range uses squared 3D distance, inclusive
-at the maximum. No targeting code inspects Node ownership or selects enemies.
+at the maximum. ActionTargetResolver also supports DIRECTION/POINT through an
+authority-configured world_query port and authored target_query_id; no port means
+TARGET_QUERY_UNAVAILABLE. Directional aim must be unit length; point range is
+checked against canonical origin. The trusted query returns 1..max_targets stable
+IDs (maximum eight, no duplicates), which are sorted and independently validated
+for alive state, range, visibility and relationship before any spend. Resolution
+runs again at commit. No targeting code inspects camera mode or trusts a cursor
+intersection as a hit. Current melee content uses ENTITY; spatial query integration
+is deterministic extension coverage, not a shipped ranged/projectile arsenal.
+Typed facts include target_ids and aim alongside the compatible target_id field.
 
 `ActionEffectRunner` supports typed DAMAGE and HEALING effects. It constructs
 DamageRequest/HealingRequest objects, including action ID, tags, policy flags,

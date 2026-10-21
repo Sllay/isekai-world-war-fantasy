@@ -10,6 +10,9 @@ var position_of: Callable
 var activation_gate: Callable
 var mobility_gate: Callable
 var target_gate: Callable
+var target_resolver := ActionTargetResolver.new()
+var _target_hint := ActionTarget.new()
+var _resolved_targets: Array[String] = []
 var phase := Phase.IDLE
 var deadline := 0
 var current: ActionDefinition
@@ -39,15 +42,16 @@ func activate(action_id: String, target: ActionTarget = null) -> String:
 	advance()
 	_busy = true
 	var definition := catalog.lookup(action_id)
-	var chosen := owner_id if definition != null and definition.target_mode == ActionDefinition.TargetMode.SELF else (target.entity_id if target != null else "")
-	var code := _validate(definition, chosen, true)
+	var hint := target.copy() if target != null else ActionTarget.new()
+	var code := _validate(definition, hint, true)
 	if code != "OK":
 		last_result = code
 		last_activation_result = code
 		_busy = false
 		return code
 	current = definition
-	target_id = chosen
+	_target_hint = hint
+	target_id = _resolved_targets[0]
 	execution_id = CoreIds.generate()
 	_committed = false
 	effect_results.clear()
@@ -60,7 +64,7 @@ func activate(action_id: String, target: ActionTarget = null) -> String:
 	advance()
 	return "STARTED"
 
-func _validate(definition: ActionDefinition, chosen: String, starting: bool) -> String:
+func _validate(definition: ActionDefinition, hint: ActionTarget, starting: bool) -> String:
 	var owner := combat.combatant(owner_id)
 	if owner == null:
 		return "OWNER_UNAVAILABLE"
@@ -76,23 +80,10 @@ func _validate(definition: ActionDefinition, chosen: String, starting: bool) -> 
 		return "COOLDOWN"
 	if definition.resource_cost > 0 and (owner.resource_id != definition.resource_id or owner.resource < definition.resource_cost):
 		return "INSUFFICIENT_RESOURCE"
-	var target := combat.combatant(chosen)
-	if target == null:
-		return "TARGET_UNAVAILABLE"
-	if target.lifecycle != Combatant.Lifecycle.ALIVE:
-		return "TARGET_DEFEATED"
-	if definition.target_mode == ActionDefinition.TargetMode.ENTITY:
-		if not position_of.is_valid():
-			return "POSITION_UNAVAILABLE"
-		var origin: Variant = position_of.call(owner_id)
-		var destination: Variant = position_of.call(chosen)
-		if not origin is Vector3 or not destination is Vector3 or not origin.is_finite() or not destination.is_finite():
-			return "POSITION_UNAVAILABLE"
-		if origin.distance_squared_to(destination) > definition.max_range * definition.max_range:
-			return "OUT_OF_RANGE"
-		if target_gate.is_valid() and not bool(target_gate.call(owner_id, chosen)):
-			return "TARGET_OCCLUDED"
-	return ActionEffectRunner.validate(combat, definition, owner_id, chosen)
+	var resolution := target_resolver.resolve(definition, owner_id, hint, combat, position_of, target_gate)
+	if resolution.code == "OK":
+		_resolved_targets.assign(resolution.targets)
+	return resolution.code
 
 # Call after every simulation tick. No wall-clock or animation time is observed.
 func advance() -> void:
@@ -109,7 +100,7 @@ func advance() -> void:
 		if owner == null or owner.lifecycle != Combatant.Lifecycle.ALIVE:
 			_cancel("OWNER_UNAVAILABLE", tick)
 	if phase == Phase.CASTING and tick >= deadline:
-		var code := _validate(current, target_id, false)
+		var code := _validate(current, _target_hint, false)
 		if code != "OK":
 			_cancel(code, tick)
 		elif not _committed:
@@ -121,7 +112,10 @@ func advance() -> void:
 				phase = Phase.COMMIT
 				if current.cooldown_ticks > 0:
 					_cooldowns[current.action_id] = tick + current.cooldown_ticks
-				effect_results = ActionEffectRunner.execute(combat, current, owner_id, target_id, execution_id)
+				target_id = _resolved_targets[0]
+				effect_results.clear()
+				for id: String in _resolved_targets:
+					effect_results.append_array(ActionEffectRunner.execute(combat, current, owner_id, id, execution_id))
 				last_result = "COMMITTED"
 				_emit(ActionCommitted.new(), tick)
 				phase = Phase.RECOVERY
@@ -169,6 +163,9 @@ func _emit(event: ActionEvent, tick: int, reason := "") -> void:
 	event.tick = tick
 	event.owner_id = owner_id
 	event.target_id = target_id
+	event.target_ids = _resolved_targets.duplicate()
+	event.aim_direction = _target_hint.direction
+	event.aim_point = _target_hint.point
 	event.action_id = current.action_id
 	event.execution_id = execution_id
 	event.correlation_id = execution_id
@@ -200,6 +197,8 @@ func restore(value: Dictionary) -> void:
 	phase = Phase.IDLE
 	current = null
 	target_id = ""
+	_target_hint = ActionTarget.new()
+	_resolved_targets.clear()
 	execution_id = ""
 	deadline = 0
 	_committed = false

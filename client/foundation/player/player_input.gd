@@ -9,6 +9,8 @@ var move_origin := Vector2.ZERO
 var touch_axis := Vector2.ZERO
 var mouse_rotating := false
 var guard_touch := -1
+var pointer_aim := false
+var pointer_position := Vector2.ZERO
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -22,7 +24,7 @@ func _ready() -> void:
 				event.physical_keycode = key
 				InputMap.action_add_event(action, event)
 	var label := Label.new()
-	label.text = "Strike F / RB · Strong G / Y · Heal H / LB · Guard C / LT · Dodge V / X\nMove: WASD / left touch   Jump: Space / upper-right touch\nRotate: Q/E / right drag / right stick"
+	label.text = "Strike F / RB · Strong G / Y / 1 · Heal H / LB / 2 · Guard C / LT · Dodge V / X\nMove: WASD / left touch   Jump: Space / upper-right touch\nAim: mouse / target T · Rotate: Q/E / right drag / right stick"
 	label.position = Vector2(20, 20)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(label)
@@ -44,6 +46,14 @@ func _draw() -> void:
 		draw_circle(Vector2(size.x - 80, 90), 40, Color(1, 1, 1, 0.25))
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch or event is InputEventJoypadMotion:
+		pointer_aim = false
+	if event is InputEventMouseMotion and not mouse_rotating and _action_slot(event.position) < 0:
+		pointer_position = event.position
+		pointer_aim = true
+	if event is InputEventKey and event.physical_keycode in [KEY_1, KEY_2, KEY_3] and event.pressed and not event.echo:
+		intent.request_skill(event.physical_keycode - KEY_1 + 1)
+		return
 	if event is InputEventKey and event.physical_keycode in [KEY_G, KEY_C, KEY_V]:
 		if event.physical_keycode == KEY_C: intent.guard = event.pressed
 		elif event.pressed and not event.echo: request_action(4 if event.physical_keycode == KEY_G else 6)
@@ -121,7 +131,11 @@ func _notification(what: int) -> void:
 		intent.guard = false
 		intent.strong_action = false
 		intent.dodge_action = false
+		intent.skill_slot = 0
+		intent.aim_direction = Vector3.ZERO
+		intent.aim_point = Vector3.ZERO
 		guard_touch = -1
+		pointer_aim = false
 
 func _physics_process(delta: float) -> void:
 	var axis := Input.get_vector("player_left", "player_right", "player_forward", "player_back")

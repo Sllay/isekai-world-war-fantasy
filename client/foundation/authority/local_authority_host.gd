@@ -15,7 +15,7 @@ var safe_spawn: Callable
 var checkpoint: Callable
 var enemy_step: Callable
 var actor_executors: Dictionary = {}
-var loadout := {"primary": "combat.action.basic_strike", "strong": "combat.action.strong_strike", "heal": "combat.action.basic_heal"}
+var _loadout: ActionLoadout
 var _session := ""
 var _queue: Array[Dictionary] = []
 var _last_sequence := 0
@@ -31,10 +31,22 @@ func configure(service: CombatService, executor: ActionExecutor, state: PlayerSt
 	actions = executor
 	player = state
 	_session = session
+	install_loadout(preload("res://data/actions/player_loadout.tres") as ActionLoadout)
 	defense.bind(combat)
 	actor_executors[player.entity_id] = actions
 	actions.activation_gate = func() -> bool: return can_act(player.entity_id)
 	actions.mobility_gate = func() -> bool: return not defense.staggered(player.entity_id)
+
+func install_loadout(value: ActionLoadout) -> Error:
+	if value == null or not value.valid(actions.catalog):
+		return ERR_INVALID_DATA
+	if actions.phase not in [ActionExecutor.Phase.IDLE, ActionExecutor.Phase.CANCELLED]:
+		return ERR_BUSY
+	_loadout = value.duplicate(true) as ActionLoadout
+	return OK
+
+func loadout_state() -> Dictionary:
+	return {"id": _loadout.loadout_id, "slots": _loadout.slots.duplicate()}
 
 func can_act(id: String) -> bool:
 	return not defense.staggered(id) and not defense.dodging(id) and not defense.state(id).guard
@@ -62,8 +74,10 @@ func submit(session: String, command: Dictionary) -> Dictionary:
 			if p.size() != 3 or not p.get("axis") is Vector2 or not p.axis.is_finite() or p.axis.length() > 1.001 or not p.get("facing") is Vector3 or not p.facing.is_finite() or absf(p.facing.y) > 0.001 or not is_equal_approx(p.facing.length(), 1.0) or not p.get("jump") is bool:
 				return _reject("INVALID_MOVE")
 		"action":
-			if p.size() != 2 or p.get("slot") not in loadout or not p.get("target") is String or p.target.length() > 32:
+			if p.size() not in [2, 4] or not p.get("slot") is String or p.slot not in ActionLoadout.SLOTS + ["strong", "heal"] or not p.get("target") is String or p.target.length() > 32:
 				return _reject("INVALID_ACTION")
+			if p.size() == 4 and (not p.get("direction") is Vector3 or not p.direction.is_finite() or (p.direction != Vector3.ZERO and not is_equal_approx(p.direction.length(), 1.0)) or not p.get("point") is Vector3 or not p.point.is_finite()):
+				return _reject("INVALID_AIM")
 		"guard":
 			if p.size() != 1 or not p.get("enabled") is bool:
 				return _reject("INVALID_GUARD")
@@ -87,7 +101,7 @@ func advance() -> void:
 	if actor.lifecycle == Combatant.Lifecycle.DEFEATED:
 		if _dead_until < 0:
 			_dead_until = tick + 30
-			defense.states.clear()
+			defense.restore(player.entity_id, defense.capture(player.entity_id))
 			movement.movement = Vector2.ZERO
 			player.velocity = Vector3.ZERO
 		_queue.clear()
@@ -141,7 +155,11 @@ func _execute(command: Dictionary) -> void:
 			_input_tick = combat.clock.tick
 			last_result = "MOVED"
 		"action":
-			last_result = actions.activate(loadout[p.slot], ActionTarget.new(p.target))
+			var id := _loadout.action_for(p.slot)
+			var target := ActionTarget.new(p.target)
+			target.direction = p.get("direction", Vector3.ZERO)
+			target.point = p.get("point", Vector3.ZERO)
+			last_result = actions.activate(id, target) if not id.is_empty() else "SLOT_EMPTY"
 		"guard":
 			if p.enabled and actions.phase == ActionExecutor.Phase.CASTING:
 				actions.cancel()
@@ -164,7 +182,7 @@ func _respawn() -> void:
 	restored.lifecycle = Combatant.Lifecycle.ALIVE
 	combat.restore_owned(actor, player.entity_id, restored)
 	actions.restore(actions.capture())
-	defense.states.clear()
+	defense.restore(player.entity_id, defense.capture(player.entity_id))
 	movement.movement = Vector2.ZERO
 	movement.jump = false
 	player.velocity = Vector3.ZERO
@@ -176,7 +194,7 @@ func _respawn() -> void:
 
 func snapshot() -> Dictionary:
 	var actor := combat.combatant(player.entity_id)
-	return {"tick": combat.clock.tick, "ack": _ack, "player": player.capture(), "health": actor.health, "resource": actor.resource, "lifecycle": Combatant.Lifecycle.keys()[actor.lifecycle], "defense": defense.state(player.entity_id).duplicate(true), "actions": actions.development_state(), "respawn_in": maxi(0, _dead_until - combat.clock.tick) if _dead_until >= 0 else 0, "respawns": respawns, "result": last_result}
+	return {"tick": combat.clock.tick, "ack": _ack, "player": player.capture(), "health": actor.health, "resource": actor.resource, "lifecycle": Combatant.Lifecycle.keys()[actor.lifecycle], "defense": defense.state(player.entity_id).duplicate(true), "actions": actions.development_state(), "loadout": loadout_state(), "respawn_in": maxi(0, _dead_until - combat.clock.tick) if _dead_until >= 0 else 0, "respawns": respawns, "result": last_result}
 
 func save_game() -> Error:
 	return checkpoint.call() if checkpoint.is_valid() else ERR_UNCONFIGURED
@@ -187,6 +205,7 @@ func dispose() -> void:
 		executor.activation_gate = Callable()
 		executor.mobility_gate = Callable()
 		executor.target_gate = Callable()
+		executor.target_resolver.world_query = Callable()
 	actor_executors.clear()
 	move_port = Callable()
 	recovery_port = Callable()

@@ -1,7 +1,7 @@
 class_name ActionTarget
 extends RefCounted
 
-# Value request boundary. DIRECTION/POINT are reserved, not executed in v1.
+# Value request boundary. World-query resolution is configured only by authority.
 var entity_id := ""
 var direction := Vector3.ZERO
 var point := Vector3.ZERO

@@ -219,6 +219,7 @@ func _process(delta: float) -> void:
 			reconciler.apply(prediction_mirror, authority_gateway.snapshot())
 
 func _exit_tree() -> void:
+	targeting.service.visibility = Callable()
 	if authority_host != null:
 		authority_host.dispose()
 	telegraphs.dispose()
@@ -233,6 +234,9 @@ func _setup_authority(avatar: PlayerAvatar) -> void:
 		authority_host.dispose()
 		authority_host = null
 	authority_gateway = AuthorityGateway.new()
+	# Recovery is a gameplay transform mutation too. Only the host's physics port
+	# may invoke it; a disconnected view must not run the Region's standalone path.
+	world_scene.active_region.set_physics_process(false)
 	# Explicit development mode, never a network-error fallback.
 	if not OS.is_debug_build() or "--authority-remote" in OS.get_cmdline_user_args():
 		avatar.motor.set_physics_process(false)
@@ -259,7 +263,7 @@ func _setup_authority(avatar: PlayerAvatar) -> void:
 	authority_host.move_port = avatar.motor.simulate
 	for executor: ActionExecutor in authority_host.actor_executors.values():
 		executor.target_gate = _authority_line_of_sight
-	world_scene.active_region.set_physics_process(false)
+	targeting.service.visibility = _authority_line_of_sight
 	authority_host.recovery_port = world_scene.active_region.record.recovery.observe
 	avatar.motor.intent = authority_host.movement
 	avatar.motor.movement_yaw = 0.0
@@ -284,11 +288,9 @@ func _setup_authority(avatar: PlayerAvatar) -> void:
 		var region := world_scene.active_region.record.definition
 		player.state.position = region.to_world_position(region.entries.get("entry.respawn", region.entries[region.default_entry]))
 		player.state.facing = Vector3.FORWARD
-		avatar.intent.guard = false
-		avatar.intent.consume_actions()
-		avatar.intent.strong_action = false
-		avatar.intent.dodge_action = false
-		avatar.intent.jump = false
+		avatar.intent.clear_transient()
+		avatar.input.pointer_aim = false
+		targeting.service.clear_selection(player.state.entity_id)
 		authority_input.last_guard = false
 
 func _authority_facing(id: String) -> Vector3:

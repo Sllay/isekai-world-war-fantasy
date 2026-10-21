@@ -14,6 +14,9 @@ enum TargetMode { SELF, ENTITY, DIRECTION, POINT }
 @export var turn_while_casting := true
 @export var target_mode: TargetMode = TargetMode.SELF
 @export var max_range: float = 0.0
+@export_range(1, 8) var max_targets: int = 1
+# Authority world-query identity, required only for spatial targeting families.
+@export var target_query_id := ""
 @export var effects: Array[ActionEffect] = []
 @export var tags: Array[String] = []
 @export var windup_cue_id := ""
@@ -26,7 +29,13 @@ func valid(data: CoreDataRegistry) -> bool:
 		return false
 	if cast_ticks < 0 or cast_ticks > 1200 or recovery_ticks < 0 or recovery_ticks > 1200 or cooldown_ticks < 0 or cooldown_ticks > 72000 or resource_cost < 0 or resource_cost > CombatNumbers.MAX_UNITS:
 		return false
-	if data.lookup(resource_id).get("kind") != "resource" or target_mode not in [TargetMode.SELF, TargetMode.ENTITY] or not is_finite(max_range) or max_range < 0 or max_range > 10000:
+	if data.lookup(resource_id).get("kind") != "resource" or target_mode not in TargetMode.values() or not is_finite(max_range) or max_range < 0 or max_range > 10000:
+		return false
+	if max_targets < 1 or max_targets > 8 or (target_mode in [TargetMode.SELF, TargetMode.ENTITY] and max_targets != 1):
+		return false
+	if target_mode in [TargetMode.DIRECTION, TargetMode.POINT] and not CoreIds.valid(target_query_id):
+		return false
+	if not target_query_id.is_empty() and not CoreIds.valid(target_query_id):
 		return false
 	if effects.is_empty() or effects.size() > 16:
 		return false

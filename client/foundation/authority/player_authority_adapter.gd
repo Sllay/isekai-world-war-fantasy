@@ -8,8 +8,9 @@ func consume(avatar: PlayerAvatar, target_id: String, target_position: Variant) 
 	var input := avatar.intent
 	var axis := Vector3(input.movement.x, 0, input.movement.y).rotated(Vector3.UP, avatar.orbit.yaw)
 	var facing := avatar.state.facing
-	if input.aim_direction.is_finite() and input.aim_direction.length_squared() > 0.001:
-		facing = Vector3(input.aim_direction.x, 0, input.aim_direction.z).normalized()
+	var horizontal_aim := Vector3(input.aim_direction.x, 0, input.aim_direction.z)
+	if horizontal_aim.is_finite() and horizontal_aim.length_squared() > 0.001:
+		facing = horizontal_aim.normalized()
 	elif target_position is Vector3:
 		var toward: Vector3 = target_position - avatar.state.position
 		toward.y = 0
@@ -28,10 +29,16 @@ func consume(avatar: PlayerAvatar, target_id: String, target_position: Variant) 
 		gateway.request("dodge")
 	else:
 		if commands.x != 0:
-			gateway.request("action", {"slot": "primary", "target": target_id})
+			_request_action("primary", target_id, input)
 		if commands.y != 0:
-			gateway.request("action", {"slot": "heal", "target": target_id})
+			_request_action("skill_2", target_id, input)
 		if input.strong_action:
-			gateway.request("action", {"slot": "strong", "target": target_id})
+			_request_action("skill_1", target_id, input)
+		if input.skill_slot >= 1 and input.skill_slot <= 3:
+			_request_action("skill_%d" % input.skill_slot, target_id, input)
+	input.skill_slot = 0
 	input.strong_action = false
 	input.dodge_action = false
+
+func _request_action(slot: String, target: String, input: PlayerIntent) -> void:
+	gateway.request("action", {"slot": slot, "target": target, "direction": input.aim_direction, "point": input.aim_point})

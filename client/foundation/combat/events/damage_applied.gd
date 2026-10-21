@@ -7,6 +7,7 @@ var tags: Array[String] = []
 var actual: int
 var evaluated: int
 var overkill: int
+var defense := "NONE"
 var relationship: CombatTargetPolicy.Relationship
 var has_impact := false
 var impact_position := Vector3.ZERO

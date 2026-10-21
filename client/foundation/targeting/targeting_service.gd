@@ -3,6 +3,8 @@ extends RefCounted
 
 var combat: CombatService
 var disposition := DispositionPolicy.new()
+# Authority-owned visibility/perception query; no dependency on camera rendering.
+var visibility: Callable
 # Runtime position ports are never captured. Canonical selections contain IDs only.
 var _positions: Dictionary[String, Callable] = {}
 var _current: Dictionary[String, String] = {}
@@ -33,7 +35,10 @@ func valid_hostile(owner: String, target: String, max_range: float) -> bool:
 		return false
 	var origin: Variant = position_of(owner)
 	var destination: Variant = position_of(target)
-	return origin is Vector3 and destination is Vector3 and origin.distance_squared_to(destination) <= max_range * max_range
+	return origin is Vector3 and destination is Vector3 and origin.distance_squared_to(destination) <= max_range * max_range and (not visibility.is_valid() or bool(visibility.call(owner, target)))
+
+func clear_selection(owner: String) -> void:
+	_current.erase(owner)
 
 func hostiles(owner: String, max_range: float) -> Array[String]:
 	var result: Array[String] = []
