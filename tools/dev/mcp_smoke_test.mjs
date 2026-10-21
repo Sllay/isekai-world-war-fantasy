@@ -6,7 +6,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
-const MCP_PACKAGE = '@satelliteoflove/godot-mcp@4.1.11';
+const MCP_BIN = process.env.GODOT_MCP_BIN ?? 'godot-mcp';
 const EXPECTED_GODOT = '4.7.2';
 const TIMEOUT_MS = 30000;
 const RETRY_MS = 500;
@@ -23,14 +23,14 @@ if (!(await canConnect(HOST, PORT))) {
   printEditorDiagnostics();
   console.error(
     `FAIL: Godot bridge is not listening at ${HOST}:${PORT} before the smoke test starts.\n` +
-    'Start the editor from a persistent shell/terminal, not from a short-lived agent command, then retry.'
+    'Start the editor from the project launcher, then retry.'
   );
   process.exit(1);
 }
 
 console.log(`Preflight: Godot bridge is listening at ${HOST}:${PORT}`);
 
-const child = spawn('npx', ['-y', MCP_PACKAGE], {
+const child = spawn(MCP_BIN, [], {
   stdio: ['pipe', 'pipe', 'pipe'],
   env: {
     ...process.env,
@@ -45,6 +45,10 @@ let nextRequestId = 2;
 let attempts = 0;
 const startedAt = Date.now();
 const timer = setTimeout(() => fail('Timed out waiting for MCP/Godot connection.'), TIMEOUT_MS);
+
+child.on('error', (error) => {
+  if (!finished) fail(`Could not launch ${MCP_BIN}: ${error.message}`);
+});
 
 child.stderr.on('data', (chunk) => {
   process.stderr.write(`[godot-mcp] ${chunk}`);
@@ -228,6 +232,6 @@ send({
   params: {
     protocolVersion: '2024-11-05',
     capabilities: {},
-    clientInfo: { name: 'isekai-mcp-smoke', version: '2' },
+    clientInfo: { name: 'isekai-mcp-smoke', version: '3' },
   },
 });
