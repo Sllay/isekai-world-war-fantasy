@@ -91,6 +91,11 @@ if uv tool list | grep -q '^serena-agent '; then
 else
   uv tool install -p 3.13 "$SERENA_PACKAGE"
 fi
+SERENA_BIN="$(command -v serena || true)"
+[[ -n "$SERENA_BIN" ]] || { echo "Serena installed but executable was not found." >&2; exit 1; }
+# Cloud install and task-start shells are separate lifecycles. Make the launcher
+# available from a stable system PATH instead of depending on setup-shell exports.
+run_root ln -sf "$SERENA_BIN" /usr/local/bin/serena
 
 log "Validating pinned Godot MCP packages..."
 npx -y "$MCP_PACKAGE" --version
@@ -106,7 +111,7 @@ printf 'Godot: '; godot --version
 printf 'Node: '; node --version
 printf 'npm: '; npm --version
 if command -v codex >/dev/null 2>&1; then printf 'Codex: '; codex --version || true; fi
-printf 'Serena: '; serena --version || true
+printf 'Serena: '; /usr/local/bin/serena --version || true
 printf 'Godot runtime MCP: '; npx -y "$MCP_PACKAGE" --version
 printf 'Godot diagnostics MCP: '; npm view "$DIAGNOSTICS_MCP_PACKAGE" version
 
@@ -114,14 +119,14 @@ cat <<'EOF'
 
 Host-neutral bootstrap complete.
 
-FULL-mode probe:
+Install/setup intentionally does not keep live Godot services running.
+For Codex Cloud, the environment Start skill should run:
+  bash tools/dev/start_codex_cloud_full.sh
+
+For a persistent developer shell, the equivalent manual probe is:
   1. bash tools/dev/start_godot_mcp_editor.sh
   2. bash tools/dev/devctl.sh health
   3. node tools/dev/mcp_smoke_test.mjs
-
-FULL requires the live Godot LSP/editor + runtime MCP bridge. If the bounded
-recovery flow cannot establish them, continue in DEGRADED mode and reserve only
-editor-dependent validation for a host where FULL is available.
 
 Never expose ports 6550/6008 publicly.
 EOF
