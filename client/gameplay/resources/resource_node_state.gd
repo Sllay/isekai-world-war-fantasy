@@ -28,7 +28,12 @@ func valid(value: Dictionary) -> bool:
 	if value.size() != 8 or value.get("node_id") != definition.node_id or value.get("profile_id") != definition.profile_id or value.get("region_id") != definition.region_id:
 		return false
 	var expected_position := [definition.position.x, definition.position.y, definition.position.z]
-	if not value.get("position") is Array or value.position != expected_position or not CombatNumbers.integer(value.get("remaining"), 0, profile.reserves) or not CombatNumbers.integer(value.get("extractions"), 0, profile.reserves) or not CombatNumbers.integer(value.get("cycle"), 0, CombatNumbers.MAX_UNITS) or not CombatNumbers.integer(value.get("regeneration_tick"), -1, 9007199254740991):
+	if not value.get("position") is Array or value.position.size() != 3: return false
+	for number: Variant in value.position:
+		if not (number is int or number is float) or not is_finite(number): return false
+	# Positions have Godot Vector3 precision on both sides of a JSON boundary.
+	# Comparing the parsed doubles directly rejects valid generated placements.
+	if Vector3(value.position[0], value.position[1], value.position[2]) != Vector3(expected_position[0], expected_position[1], expected_position[2]) or not CombatNumbers.integer(value.get("remaining"), 0, profile.reserves) or not CombatNumbers.integer(value.get("extractions"), 0, profile.reserves) or not CombatNumbers.integer(value.get("cycle"), 0, CombatNumbers.MAX_UNITS) or not CombatNumbers.integer(value.get("regeneration_tick"), -1, 9007199254740991):
 		return false
 	if value.remaining + value.extractions != profile.reserves:
 		return false

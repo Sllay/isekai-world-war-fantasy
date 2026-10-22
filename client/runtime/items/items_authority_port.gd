@@ -3,7 +3,7 @@ extends AuthorityCommandPort
 
 const KINDS: Array[String] = ["item.pickup", "item.equip", "item.unequip", "item.split", "item.merge", "item.move", "item.harvest", "item.craft", "item.consume", "skill.equip"]
 var host: LocalAuthorityHost
-var items: ItemsModule
+var items: ItemAuthorityContext
 var spatial_gate: Callable
 var region_id: Callable
 var pending: Dictionary = {}
@@ -11,8 +11,11 @@ var effects := ItemsActionPort.new()
 var _tokens: Array[int] = []
 
 func bind(authority: LocalAuthorityHost, domain: ItemsModule) -> void:
+	bind_context(authority, domain.authority_context())
+
+func bind_context(authority: LocalAuthorityHost, context: ItemAuthorityContext) -> void:
 	host = authority
-	items = domain
+	items = context
 	effects.preflight = check_work
 	effects.apply_effect = commit_work
 	host.actions.capability_port = effects
@@ -46,7 +49,8 @@ func execute(actor: String, kind: String, p: Dictionary) -> String:
 			pending = {"kind": kind, "payload": p.duplicate(true)}
 			var action := "combat.action.consume"
 			if kind == "item.harvest":
-				var node := items.content.node(p.node)
+				var nodes: ResourceService = items.resources
+				var node := nodes.definition(p.node)
 				if node == null: pending.clear(); return "NODE_UNKNOWN"
 				action = ItemsModule.harvest_action(node.profile_id)
 			elif kind == "item.craft":
@@ -63,13 +67,13 @@ func execute(actor: String, kind: String, p: Dictionary) -> String:
 				"skill.equip": code = _skill(p.slot, p.action)
 				"item.split", "item.merge", "item.move":
 					var entry: String = p.get("entry", p.get("source", ""))
-					if items.equipment.is_equipped(ItemsModule.BAG, entry) or (kind == "item.merge" and items.equipment.is_equipped(ItemsModule.BAG, p.target)): return "ITEM_EQUIPPED"
+					if items.equipment.is_equipped(items.bag_id, entry) or (kind == "item.merge" and items.equipment.is_equipped(items.bag_id, p.target)): return "ITEM_EQUIPPED"
 					var result: Dictionary
-					if kind == "item.split": result = items.inventory.split(actor, ItemsModule.BAG, entry, int(p.quantity))
-					elif kind == "item.merge": result = items.inventory.merge(actor, ItemsModule.BAG, entry, p.target)
+					if kind == "item.split": result = items.inventory.split(actor, items.bag_id, entry, int(p.quantity))
+					elif kind == "item.merge": result = items.inventory.merge(actor, items.bag_id, entry, p.target)
 					else:
-						if p.destination not in [ItemsModule.BAG, ItemsModule.STASH] or items.player.position.distance_to(Vector3(-1, 0, 10)) > 3: return "STORAGE_UNAVAILABLE"
-						var source := ItemsModule.STASH if p.destination == ItemsModule.BAG else ItemsModule.BAG
+						if p.destination not in [items.bag_id, items.stash_id] or items.player.position.distance_to(Vector3(-1, 0, 10)) > 3: return "STORAGE_UNAVAILABLE"
+						var source := items.stash_id if p.destination == items.bag_id else items.bag_id
 						result = items.inventory.transfer(actor, source, p.destination, entry, int(p.quantity))
 					code = "ITEM_MOVED" if result.ok else result.code
 	items.touch(code)
@@ -83,7 +87,7 @@ func _pickup(actor: String, id: String) -> String:
 	if not _near(drop.position, drop.region): return "OUT_OF_RANGE"
 	var ops: Array = []
 	for entry: Dictionary in items.inventory.entries(drop.container):
-		ops.append({"kind": "transfer", "source_id": drop.container, "destination_id": ItemsModule.BAG, "entry_id": entry.id, "quantity": entry.quantity})
+		ops.append({"kind": "transfer", "source_id": drop.container, "destination_id": items.bag_id, "entry_id": entry.id, "quantity": entry.quantity})
 	if ops.is_empty(): return "ALREADY_PICKED_UP"
 	var result := items.inventory.transact(actor, ops)
 	if not result.ok: return result.code
@@ -101,26 +105,27 @@ func check_work(capability: String, owner: String) -> String:
 	var p: Dictionary = pending.payload
 	match pending.kind:
 		"item.harvest":
-			var node := items.content.node(p.node)
+			var nodes: ResourceService = items.resources
+			var node := nodes.definition(p.node)
 			if node == null: return "NODE_UNKNOWN"
 			if region_id.is_valid() and region_id.call() != node.region_id: return "WRONG_REGION"
 			if spatial_gate.is_valid() and not bool(spatial_gate.call(node.position)): return "TARGET_OCCLUDED"
-			var result := items.resources.gather_check(owner, ItemsModule.BAG, p.node, host.combat.clock.tick, items.player.position, items.tool())
+			var result := items.resources.gather_check(owner, items.bag_id, p.node, host.combat.clock.tick, items.player.position, items.tool(), items.inventory)
 			return "OK" if result.ok else result.code
 		"item.craft":
 			var tags := _station_tags(p.station)
 			if not p.station.is_empty() and tags.is_empty(): return "STATION_UNAVAILABLE"
-			var result := items.crafting.preview(owner, ItemsModule.BAG, p.recipe, p.choices, tags, items.known_recipes, items.tool())
+			var result := items.crafting.preview(owner, items.bag_id, p.recipe, p.choices, tags, items.known_recipes, items.tool())
 			if result.ok:
 				for op: Dictionary in result.operations:
-					if op.kind == "remove" and items.equipment.is_equipped(ItemsModule.BAG, op.entry_id): return "ITEM_EQUIPPED"
+					if op.kind == "remove" and items.equipment.is_equipped(items.bag_id, op.entry_id): return "ITEM_EQUIPPED"
 				var trial := InventoryService.new(items.catalog)
 				trial.restore(items.inventory.capture())
 				var capacity := trial.transact(owner, result.operations)
 				if not capacity.ok: return capacity.code
 			return "OK" if result.ok else result.code
 		"item.consume":
-			var entry := items.inventory.entry(ItemsModule.BAG, p.entry)
+			var entry := items.inventory.entry(items.bag_id, p.entry)
 			if entry.is_empty(): return "ITEM_NOT_OWNED"
 			var definition := items.catalog.lookup(entry.definition_id)
 			if definition.consume_heal <= 0: return "NOT_CONSUMABLE"
@@ -135,19 +140,27 @@ func commit_work(capability: String, owner: String) -> Dictionary:
 	var p: Dictionary = pending.payload
 	var result: Dictionary
 	match pending.kind:
-		"item.harvest": result = items.resources.gather(owner, ItemsModule.BAG, p.node, host.combat.clock.tick, items.player.position, items.tool())
-		"item.craft": result = items.crafting.craft(owner, ItemsModule.BAG, p.recipe, host.combat.clock.tick, p.choices, _station_tags(p.station), items.known_recipes, items.tool())
+		"item.harvest": result = items.resources.gather(owner, items.bag_id, p.node, host.combat.clock.tick, items.player.position, items.tool(), items.inventory)
+		"item.craft": result = items.crafting.craft(owner, items.bag_id, p.recipe, host.combat.clock.tick, p.choices, _station_tags(p.station), items.known_recipes, items.tool())
 		"item.consume":
-			var entry := items.inventory.entry(ItemsModule.BAG, p.entry)
+			var entry := items.inventory.entry(items.bag_id, p.entry)
 			var definition := items.catalog.lookup(entry.definition_id)
 			var before := items.inventory.capture()
-			result = items.inventory.remove(owner, ItemsModule.BAG, p.entry, 1)
+			result = items.inventory.remove(owner, items.bag_id, p.entry, 1)
 			if result.ok:
 				# Inventory commits before health facts, so observers see coherent state.
 				# Rejected healing emits no facts; restore the exact staged ledger then.
 				var healing := host.combat.heal(HealingRequest.new(owner, owner, definition.consume_heal))
 				if not healing.accepted: items.inventory.restore(before)
 				result = {"ok": healing.accepted, "code": "CONSUMED" if healing.accepted else healing.code, "healed": healing.actual}
+	if result.ok and pending.kind in ["item.harvest", "item.craft"]:
+		var fact := ItemWorkCommitted.new()
+		fact.tick = host.combat.clock.tick
+		fact.actor_id = owner
+		fact.cause = "resource.harvest" if pending.kind == "item.harvest" else "craft.complete"
+		fact.subject_id = p.node if pending.kind == "item.harvest" else p.recipe
+		fact.sequence = int(result.node.cycle) * 32 + int(result.node.extractions) if pending.kind == "item.harvest" else int(items.inventory.capture().revision)
+		host.combat.events.publish(fact)
 	items.touch(result.code)
 	return result
 
@@ -158,9 +171,10 @@ func _equip(slot: String, entry: String) -> String:
 	if slot not in EquipmentState.SLOTS: return "INVALID_EQUIPMENT_SLOT"
 	var proposed := EquipmentState.new(items.player.entity_id)
 	proposed.restore(items.equipment.capture(), items.inventory)
-	var error := proposed.unequip(slot) if entry.is_empty() else proposed.equip(slot, ItemsModule.BAG, entry, items.inventory)
+	var error := proposed.unequip(slot) if entry.is_empty() else proposed.equip(slot, items.bag_id, entry, items.inventory)
 	if error != OK: return "EQUIP_REJECTED"
 	var definitions := proposed.definitions(items.inventory)
+	if not entry.is_empty() and items.equipment_eligibility.is_valid() and not bool(items.equipment_eligibility.call(definitions[slot])): return "CLASS_EQUIPMENT_REJECTED"
 	var bonus: int = definitions.weapon.damage_bonus if definitions.has("weapon") else 0
 	var actor := host.combat.combatant(items.player.entity_id)
 	var existing := actor.attributes.capture_modifiers()
@@ -187,7 +201,7 @@ func _skill(slot: String, action: String) -> String:
 	var proposed := items.loadout.duplicate(true) as ActionLoadout
 	proposed.slots[slot] = action
 	if host.install_loadout(proposed) != OK: return "LOADOUT_REJECTED"
-	items.loadout = proposed
+	items.set_loadout(proposed)
 	return "SKILL_EQUIPPED"
 
 func _ended(fact: ActionEvent) -> void:
@@ -200,6 +214,7 @@ func dispose() -> void:
 	effects.apply_effect = Callable()
 	pending.clear()
 	host = null
+	if items != null: items.dispose()
 	items = null
 	spatial_gate = Callable()
 	region_id = Callable()

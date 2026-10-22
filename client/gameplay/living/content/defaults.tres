@@ -1,0 +1,59 @@
+[gd_resource type="Resource" script_class="LivingCatalog" load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://gameplay/living/living_catalog.gd" id="1"]
+[ext_resource type="Script" path="res://gameplay/living/race_definition.gd" id="2"]
+[ext_resource type="Script" path="res://gameplay/living/race_visual_profile.gd" id="3"]
+[ext_resource type="Script" path="res://gameplay/living/class_definition.gd" id="4"]
+[ext_resource type="Script" path="res://gameplay/living/progression_definition.gd" id="5"]
+[ext_resource type="Script" path="res://gameplay/living/faction_definition.gd" id="6"]
+
+[sub_resource type="Resource" id="Visual"]
+script = ExtResource("3")
+profile_id = "race.visual.human_lpc"
+body_families = Array[String](["lpc.body.adult"])
+palette_ids = Array[String](["palette.skin.human_warm", "palette.hair.brown", "palette.eye.green"])
+equipment_tags = Array[String](["equipment.body.humanoid"])
+
+[sub_resource type="Resource" id="Human"]
+script = ExtResource("2")
+race_id = "race.human"
+visual_profile_id = "race.visual.human_lpc"
+attribute_modifiers = {"strength": 1, "agility": 1, "intellect": 1, "vitality": 1}
+culture_id = "culture.crossing"
+origin_id = "origin.world_a"
+historical_faction_id = "faction.home_valley"
+gameplay_tags = Array[String](["race.tag.humanoid", "race.tag.generalist"])
+
+[sub_resource type="Resource" id="Warrior"]
+script = ExtResource("4")
+class_id = "class.warrior"
+starting_actions = Array[String](["combat.action.basic_strike", "combat.action.strong_strike", "combat.action.basic_heal"])
+equipment_tags = Array[String](["weapon.onehanded", "tool.axe", "tool.pickaxe", "armor.light"])
+role_tags = Array[String](["role.frontline", "role.adventurer"])
+progression_id = "progression.chapter1_foundation"
+
+[sub_resource type="Resource" id="Progression"]
+script = ExtResource("5")
+progression_id = "progression.chapter1_foundation"
+
+[sub_resource type="Resource" id="Valley"]
+script = ExtResource("6")
+faction_id = "faction.home_valley"
+dispositions = {"faction.raiders": "hostile"}
+
+[sub_resource type="Resource" id="Raiders"]
+script = ExtResource("6")
+faction_id = "faction.raiders"
+dispositions = {"faction.home_valley": "hostile"}
+
+[sub_resource type="Resource" id="Free"]
+script = ExtResource("6")
+faction_id = "faction.free"
+
+[resource]
+script = ExtResource("1")
+races = Array[ExtResource("2")]([SubResource("Human")])
+visuals = Array[ExtResource("3")]([SubResource("Visual")])
+classes = Array[ExtResource("4")]([SubResource("Warrior")])
+progressions = Array[ExtResource("5")]([SubResource("Progression")])
+factions = Array[ExtResource("6")]([SubResource("Valley"), SubResource("Raiders"), SubResource("Free")])

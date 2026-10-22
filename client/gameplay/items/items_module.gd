@@ -32,7 +32,7 @@ func _init() -> void:
 	requires.assign(["foundation.player", "foundation.combat", "foundation.player_combat", "gameplay.enemies"])
 	persistent = true
 	consumed_events.assign(["combat.combatant_defeated"])
-	published_events.assign(["items.operation_resolved"])
+	published_events.assign(["items.operation_resolved", "items.work_committed"])
 
 func initialize(services: CoreServices) -> Error:
 	player = services.resolve("foundation.player") as PlayerState
@@ -49,7 +49,8 @@ func initialize(services: CoreServices) -> Error:
 	inventory = InventoryService.new(catalog)
 	resources.configure(inventory, content)
 	crafting.configure(inventory, content)
-	return combat.events.define(ItemOperationResolved)
+	var error := combat.events.define(ItemOperationResolved)
+	return combat.events.define(ItemWorkCommitted) if error == OK else error
 
 func bind(actors: EnemyModule, definition: WorldDefinition) -> void:
 	enemies = actors
@@ -231,6 +232,26 @@ func tool() -> ItemDefinition:
 	var entry := inventory.entry(references.tool.container_id, references.tool.entry_id)
 	if entry.is_empty() or entry.condition <= 0: return null
 	return catalog.lookup(entry.definition_id)
+
+func authority_context() -> ItemAuthorityContext:
+	var context := ItemAuthorityContext.new()
+	context.catalog = catalog
+	context.content = content
+	context.inventory = inventory
+	context.equipment = equipment
+	context.skills = skills
+	context.resources = resources
+	context.crafting = crafting
+	context.loadout = loadout
+	context.known_recipes = known_recipes
+	context.drops = drops
+	context.player = player
+	context.combat = combat
+	context.actions = actions
+	context.changed = touch
+	context.snapshot = state_view
+	context.loadout_changed = func(value: ActionLoadout) -> void: loadout = value
+	return context
 
 func state_view() -> Dictionary:
 	var nodes := {}

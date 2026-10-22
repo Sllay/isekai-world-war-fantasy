@@ -27,6 +27,7 @@ var respawns := 0
 var last_result := "READY"
 var command_ports: Dictionary[String, AuthorityCommandPort] = {}
 var extension_snapshot: Callable
+var _owns_defense := true
 
 func register_command_port(kinds: Array[String], port: AuthorityCommandPort) -> Error:
 	if port == null: return ERR_INVALID_PARAMETER
@@ -36,13 +37,15 @@ func register_command_port(kinds: Array[String], port: AuthorityCommandPort) -> 
 	for kind in kinds: command_ports[kind] = port
 	return OK
 
-func configure(service: CombatService, executor: ActionExecutor, state: PlayerState, session: String) -> void:
+func configure(service: CombatService, executor: ActionExecutor, state: PlayerState, session: String, shared_defense: CombatDefense = null) -> void:
 	combat = service
 	actions = executor
 	player = state
 	_session = session
 	install_loadout(preload("res://data/actions/player_loadout.tres") as ActionLoadout)
-	defense.bind(combat)
+	_owns_defense = shared_defense == null
+	if shared_defense != null: defense = shared_defense
+	else: defense.bind(combat)
 	actor_executors[player.entity_id] = actions
 	actions.activation_gate = func() -> bool: return can_act(player.entity_id)
 	actions.mobility_gate = func() -> bool: return not defense.staggered(player.entity_id)
@@ -78,31 +81,49 @@ func submit(session: String, command: Dictionary) -> Dictionary:
 		return _reject("DUPLICATE_OR_REPLAY")
 	if command.tick < combat.clock.tick - 20 or command.tick > combat.clock.tick + 2:
 		return _reject("STALE_OR_FUTURE")
-	var p: Dictionary = command.payload
-	match command.kind:
-		"move":
-			if p.size() != 3 or not p.get("axis") is Vector2 or not p.axis.is_finite() or p.axis.length() > 1.001 or not p.get("facing") is Vector3 or not p.facing.is_finite() or absf(p.facing.y) > 0.001 or not is_equal_approx(p.facing.length(), 1.0) or not p.get("jump") is bool:
-				return _reject("INVALID_MOVE")
-		"action":
-			if p.size() not in [2, 4] or not p.get("slot") is String or p.slot not in ActionLoadout.SLOTS + ["strong", "heal"] or not p.get("target") is String or p.target.length() > 32:
-				return _reject("INVALID_ACTION")
-			if p.size() == 4 and (not p.get("direction") is Vector3 or not p.direction.is_finite() or (p.direction != Vector3.ZERO and not is_equal_approx(p.direction.length(), 1.0)) or not p.get("point") is Vector3 or not p.point.is_finite()):
-				return _reject("INVALID_AIM")
-		"guard":
-			if p.size() != 1 or not p.get("enabled") is bool:
-				return _reject("INVALID_GUARD")
-		"dodge", "cancel", "respawn":
-			if not p.is_empty():
-				return _reject("FORGED_STATE")
-		_:
-			if not command_ports.has(command.kind): return _reject("UNKNOWN_COMMAND")
-			var code := command_ports[command.kind].validate(command.kind, p)
-			if code != "OK": return _reject(code)
+	var payload_code := validate_payload(command.kind, command.payload)
+	if payload_code != "OK": return _reject(payload_code)
 	if _queue.size() >= 8:
 		return _reject("QUEUE_FULL")
 	_last_sequence = int(command.sequence)
 	_queue.append(command.duplicate(true))
 	return {"accepted": true, "code": "QUEUED", "sequence": _last_sequence}
+
+# Shared semantic schema for human envelopes and trusted server intent producers.
+func validate_payload(kind: String, p: Dictionary) -> String:
+	match kind:
+		"move":
+			if p.size() != 3 or not p.get("axis") is Vector2 or not p.axis.is_finite() or p.axis.length() > 1.001 or not p.get("facing") is Vector3 or not p.facing.is_finite() or absf(p.facing.y) > 0.001 or not is_equal_approx(p.facing.length(), 1.0) or not p.get("jump") is bool:
+				return "INVALID_MOVE"
+		"action":
+			if p.size() not in [2, 4] or not p.get("slot") is String or p.slot not in ActionLoadout.SLOTS + ["strong", "heal"] or not p.get("target") is String or p.target.length() > 32:
+				return "INVALID_ACTION"
+			if p.size() == 4 and (not p.get("direction") is Vector3 or not p.direction.is_finite() or (p.direction != Vector3.ZERO and not is_equal_approx(p.direction.length(), 1.0)) or not p.get("point") is Vector3 or not p.point.is_finite()):
+				return "INVALID_AIM"
+		"guard":
+			if p.size() != 1 or not p.get("enabled") is bool:
+				return "INVALID_GUARD"
+		"dodge", "cancel", "respawn":
+			if not p.is_empty():
+				return "FORGED_STATE"
+		_:
+			if not command_ports.has(kind): return "UNKNOWN_COMMAND"
+			var code := command_ports[kind].validate(kind, p)
+			if code != "OK": return code
+	return "OK"
+
+# Authority-only ingress: no fake peer, loopback network or client envelope.
+# The owning actor coordinator enables this only while that logical actor is L0.
+var server_intent_epoch := -1
+func submit_authority_intent(actor_id: String, epoch: int, kind: String, payload: Dictionary) -> Dictionary:
+	if actor_id != player.entity_id: return _reject("ACTOR_MISMATCH")
+	if server_intent_epoch < 0 or epoch != server_intent_epoch: return _reject("STALE_ACTOR_EPOCH")
+	var code := validate_payload(kind, payload)
+	if code != "OK": return _reject(code)
+	if combat.combatant(actor_id).lifecycle != Combatant.Lifecycle.ALIVE: return _reject("OWNER_DEFEATED")
+	if kind == "action" and not can_act(actor_id): return _reject("DEFENSE_OR_STAGGER")
+	_execute({"kind": kind, "payload": payload.duplicate(true)})
+	return {"accepted": true, "code": last_result}
 
 func advance() -> void:
 	var tick := combat.clock.tick
@@ -222,7 +243,7 @@ func dispose() -> void:
 	for port in unique: port.dispose()
 	command_ports.clear()
 	extension_snapshot = Callable()
-	defense.dispose()
+	if _owns_defense: defense.dispose()
 	for executor: ActionExecutor in actor_executors.values():
 		executor.activation_gate = Callable()
 		executor.mobility_gate = Callable()
@@ -235,6 +256,7 @@ func dispose() -> void:
 	safe_spawn = Callable()
 	checkpoint = Callable()
 	enemy_step = Callable()
-	defense.position_of = Callable()
-	defense.facing_of = Callable()
+	if _owns_defense:
+		defense.position_of = Callable()
+		defense.facing_of = Callable()
 	_queue.clear()

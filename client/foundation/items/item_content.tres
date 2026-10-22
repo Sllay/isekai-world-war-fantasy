@@ -129,6 +129,7 @@ item_id = "item.armor.leather"
 display_name = "Leather Armor"
 category = "item.category.armor"
 material_id = "material.leather.common"
+tags = Array[String](["armor.light"])
 unit_mass_grams = 3000
 equipment_slot = "armor"
 

@@ -6,6 +6,25 @@ var catalog: ResourceCatalog
 var world_seed := 77231
 var _nodes: Dictionary[String, ResourceNodeState] = {}
 
+func definition(node_id: String) -> ResourceNodeDefinition:
+	return _nodes[node_id].definition.duplicate(true) as ResourceNodeDefinition if _nodes.has(node_id) else null
+
+func node_ids() -> Array[String]:
+	var result: Array[String] = []
+	result.assign(_nodes.keys())
+	result.sort()
+	return result
+
+# Trusted world placement adapter. Existing reserves are never reset on residency.
+func register_node(authored: ResourceNodeDefinition) -> Error:
+	if authored == null or not authored.valid() or catalog.profile(authored.profile_id) == null: return ERR_INVALID_DATA
+	if _nodes.has(authored.node_id):
+		var previous := definition(authored.node_id)
+		return OK if previous.profile_id == authored.profile_id and previous.region_id == authored.region_id and previous.position == authored.position else ERR_INVALID_DATA
+	if _nodes.size() >= 256: return ERR_OUT_OF_MEMORY
+	_nodes[authored.node_id] = ResourceNodeState.new(authored.duplicate(true) as ResourceNodeDefinition, catalog.profile(authored.profile_id))
+	return OK
+
 func configure(items: InventoryService, content: ResourceCatalog, trusted_seed: int = 77231) -> Error:
 	if items == null or content == null or not content.valid(items.catalog):
 		return ERR_INVALID_DATA
@@ -19,12 +38,13 @@ func configure(items: InventoryService, content: ResourceCatalog, trusted_seed: 
 
 # Commit-time domain validation. Caller supplies authority-owned actor/tool facts.
 # Preview uses a detached node so merely checking cannot refill canonical state.
-func gather_check(actor_id: String, container_id: String, node_id: String, tick: int, position: Vector3, tool_definition: ItemDefinition) -> Dictionary:
+func gather_check(actor_id: String, container_id: String, node_id: String, tick: int, position: Vector3, tool_definition: ItemDefinition, actor_inventory: InventoryService = null) -> Dictionary:
 	if inventory == null or catalog == null or not _nodes.has(node_id):
 		return _failure("NODE_UNKNOWN")
 	if actor_id.is_empty() or container_id.is_empty() or tick < 0 or tick > 9007199254740991 or not position.is_finite():
 		return _failure("INVALID_GATHER")
-	var container := inventory.snapshot(container_id)
+	var ledger := actor_inventory if actor_inventory != null else inventory
+	var container := ledger.snapshot(container_id)
 	if container.is_empty() or container.get("owner_id") != actor_id:
 		return _failure("NOT_OWNER")
 	var node_value := _staged(node_id, tick)
@@ -42,23 +62,24 @@ func gather_check(actor_id: String, container_id: String, node_id: String, tick:
 		return resolved
 	# Capacity is preflighted against a detached canonical ledger. No output,
 	# reserve, revision, identity allocation or RNG counter escapes this trial.
-	var trial := InventoryService.new(inventory.catalog)
-	if trial.restore(inventory.capture()) != OK:
+	var trial := InventoryService.new(ledger.catalog)
+	if trial.restore(ledger.capture()) != OK:
 		return _failure("INVALID_INVENTORY")
 	var planned := trial.transact(actor_id, _yield_operations(container_id, node_id, resolved.outputs))
 	if not planned.ok:
 		return _failure(planned.code)
 	return {"ok": true, "code": "GATHER_READY", "node": _view(node_value), "work_ticks": profile_value.work_ticks}
 
-func gather(actor_id: String, container_id: String, node_id: String, tick: int, position: Vector3, tool_definition: ItemDefinition) -> Dictionary:
-	var checked := gather_check(actor_id, container_id, node_id, tick, position, tool_definition)
+func gather(actor_id: String, container_id: String, node_id: String, tick: int, position: Vector3, tool_definition: ItemDefinition, actor_inventory: InventoryService = null) -> Dictionary:
+	var checked := gather_check(actor_id, container_id, node_id, tick, position, tool_definition, actor_inventory)
 	if not checked.ok:
 		return checked
 	var staged := _staged(node_id, tick)
 	var resolved := _resolve_yield(staged)
 	if not resolved.ok:
 		return resolved
-	var transaction := inventory.transact(actor_id, _yield_operations(container_id, node_id, resolved.outputs))
+	var ledger := actor_inventory if actor_inventory != null else inventory
+	var transaction := ledger.transact(actor_id, _yield_operations(container_id, node_id, resolved.outputs))
 	if not transaction.ok:
 		return _failure(transaction.code)
 	staged.remaining -= 1
@@ -81,16 +102,41 @@ func capture() -> Dictionary:
 	return {"nodes": values}
 
 func validate_state(value: Dictionary) -> bool:
-	if value.size() != 1 or not value.get("nodes") is Dictionary or value.nodes.size() != _nodes.size():
+	if value.size() != 1 or not value.get("nodes") is Dictionary or value.nodes.size() < catalog.nodes.size() or value.nodes.size() > 256:
 		return false
-	for id in _nodes:
-		if not value.nodes.get(id) is Dictionary or not _nodes[id].valid(value.nodes[id]):
+	for authored in catalog.nodes:
+		if not value.nodes.has(authored.node_id): return false
+	for id: Variant in value.nodes:
+		if not id is String or not value.nodes[id] is Dictionary or value.nodes[id].get("node_id") != id: return false
+		var authored := catalog.node(id)
+		if authored == null:
+			if not id.begins_with("resource.generated.") or not _generated_definition(value.nodes[id]) is ResourceNodeDefinition: return false
+			authored = _generated_definition(value.nodes[id])
+		var state := ResourceNodeState.new(authored, catalog.profile(authored.profile_id))
+		if not state.valid(value.nodes[id]):
 			return false
 	return true
 
 func restore(value: Dictionary) -> void:
-	for id in _nodes:
+	_nodes.clear()
+	for id: String in value.nodes:
+		var authored := catalog.node(id)
+		if authored == null: authored = _generated_definition(value.nodes[id])
+		_nodes[id] = ResourceNodeState.new(authored, catalog.profile(authored.profile_id))
 		_nodes[id].restore(value.nodes[id])
+
+# Generic schema only. SaveIntegrity additionally requires exact ownership and
+# placement in the same validated persisted WorldBlueprint/chunk base.
+func _generated_definition(value: Dictionary) -> ResourceNodeDefinition:
+	if not value.get("node_id") is String or not value.node_id.begins_with("resource.generated.") or not CoreIds.valid(value.node_id) or not value.get("profile_id") is String or catalog.profile(value.profile_id) == null or not value.get("region_id") is String or not CoreIds.valid(value.region_id) or not value.get("position") is Array or value.position.size() != 3: return null
+	for number: Variant in value.position:
+		if not (number is int or number is float) or not is_finite(number) or absf(number) > 10000: return null
+	var authored := ResourceNodeDefinition.new()
+	authored.node_id = value.node_id
+	authored.profile_id = value.profile_id
+	authored.region_id = value.region_id
+	authored.position = Vector3(value.position[0], value.position[1], value.position[2])
+	return authored
 
 func _staged(id: String, tick: int) -> ResourceNodeState:
 	var previous: ResourceNodeState = _nodes[id]
