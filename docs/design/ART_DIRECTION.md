@@ -1,300 +1,327 @@
 # Isekai World War Fantasy — Art Direction
 
+- **Version:** 0.2.0
+- **Status:** Production direction
+- **Updated:** 2026-10-22
+
 ## Visual thesis
 
-The game uses a modern stylized vector look with a deliberate contrast:
+The game uses a hybrid **3D systemic world + authored pixel-art presentation**.
 
-**cute, readable and vibrant on the surface; harsh, war-torn and emotionally heavy underneath.**
+The world remains true 3D for terrain height, hills, cliffs, bridges, jumping, structures, physics, camera rotation and spatial gameplay. Characters and many readable gameplay-facing assets use crisp pixel art integrated into that world through `Sprite3D`, controlled lighting and carefully authored materials.
 
-The target is not photorealism, retro pixel art or a generic flat-vector look. The world should feel authored, coherent and immediately recognizable as this game.
+The previous production direction based on modular vector characters, three-view vector rigs, procedural bone deformation and IK is retired. Existing placeholder vector/billboard work remains valid only as technical prototype evidence and must not define final character presentation.
 
 Core visual goals:
 
-- soft/cute silhouettes without becoming childish;
-- vibrant but controlled color;
-- strong readability on mobile;
-- clean vector construction with enough secondary detail to avoid looking unfinished;
-- stylized damage, scars, blood, dirt and war consequences as a controlled "light gore" layer rather than photorealistic gore;
-- consistent shape language across characters, creatures, foliage, props, buildings and equipment;
-- modular character visuals that support equipment, animation, IK and view-dependent layering.
+- strong readability on mobile at gameplay zoom;
+- coherent pixel density and palette discipline;
+- expressive fantasy silhouettes without requiring high-cost bespoke character animation production;
+- world depth, lighting and terrain that clearly remain 3D;
+- characters that visually belong in the world despite being pixel sprites;
+- scalable modularity for races, clothing, armor, weapons and tools;
+- predictable asset generation that can be automated and validated.
 
-## Shape language
+## Character asset foundation — LPC
 
-Prefer:
+Production humanoid characters should use the **Universal Liberated Pixel Cup (LPC/ULPC) ecosystem** as the primary modular asset foundation when the selected asset licenses are compatible with the target distribution.
 
-- rounded primary masses;
-- readable silhouettes;
-- compact, slightly exaggerated proportions;
-- asymmetry in secondary details where it adds character;
-- large readable forms first, small detail second;
-- restrained sharp accents for weapons, armor, hostile creatures, ruins and corrupted magic.
+LPC is an upstream content source, not runtime authority and not a network dependency. The shipped game must never depend on an online LPC service to construct a player.
 
-Avoid:
+The project owns an offline import/composition pipeline that consumes pinned LPC source metadata and produces validated game-ready assets.
 
-- random flat geometric shapes with no material logic;
-- over-detailed silhouettes that collapse at mobile scale;
-- one visual language for characters and a completely different one for the environment;
-- black outline everywhere by default;
-- generic stock-vector appearance.
+Detailed pipeline and licensing contract: `docs/design/LPC_CHARACTER_PIPELINE_AND_LICENSING.md`.
 
-The visual hierarchy should usually be:
+## Pixel density and filtering
 
-1. silhouette;
-2. major color blocks;
-3. face/equipment/material read;
-4. secondary detail;
-5. small accents.
-
-## Palette system
-
-The game uses a shared palette language rather than independent colors per asset.
-
-### Global behavior
-
-- medium-to-high saturation for focal objects;
-- lower saturation for background/supporting surfaces;
-- warm/cool contrast used to separate factions, danger, magic and biome mood;
-- shadows should normally shift hue, not merely become black;
-- highlights should remain controlled so vector assets do not become plastic/glossy by accident.
-
-### Provisional palette families
-
-These are direction tokens, not immutable final hex values:
-
-- natural green: grass, foliage, food, life;
-- warm earth: soil, leather, wood, homes;
-- cool stone: rock, metal-neutral architecture;
-- warm gold: wealth, light, selected magical accents;
-- saturated blue family: temporary Blue-faction visual language;
-- saturated red family: temporary Red-faction visual language;
-- violet/cyan/unstable contrast: Convergence / Dead Zone phenomena;
-- controlled deep crimson: wounds/blood, used as an event accent rather than a permanent dominant palette.
-
-Asset authors must reuse palette tokens or documented variants before inventing new hues.
-
-## Cute + dark contrast
-
-The setting must support adorable creatures, expressive faces and pleasant towns while still making war feel consequential.
-
-The darker layer may include:
-
-- blood decals/effects;
-- bruises, bandages and wounds;
-- chipped/broken armor;
-- damaged equipment;
-- burnt vegetation;
-- ruins;
-- bodies/remains where appropriate;
-- dirt, ash and battle wear;
-- frightened, exhausted or grieving expression sets.
-
-Keep this stylized and readable. Do not chase anatomical gore realism. The contrast works because the base world is appealing and alive.
+- Preserve nearest-neighbor pixel edges for character sprites and intentionally pixel-art textures.
+- Avoid unintended smoothing, mip bleeding and sub-pixel shimmer.
+- Atlas padding must prevent neighboring animation frames from bleeding into one another.
+- Pixel density is authored around gameplay readability rather than arbitrary screen resolution.
+- Camera and sprite scaling should prefer stable pixel presentation where practical, but gameplay camera motion must not become mechanically constrained merely to force integer-perfect rendering.
 
 ## Character presentation in the 2.5D world
 
-The M1.2 proof may use a simple camera-facing billboard. That is a technical placeholder only.
+Characters are upright `Sprite3D`-style presentations inside the true 3D world.
 
-The intended production presentation is camera-relative **three-view character art**:
+The production contract is **four-direction authored facing** when using standard LPC content:
 
-- front;
-- back;
-- side.
+- north/back;
+- south/front;
+- east/side;
+- west/side.
 
-The side view is mirrored horizontally (`flip_h`) for left/right rather than requiring a fourth authored view.
+Eight-direction art may be supported later by content that explicitly provides it, but the game architecture must not fabricate diagonal art by rotating or distorting a four-direction sprite.
 
-The selected view depends on the character/world facing direction relative to the camera. The final rig should not force the complete character image to stare at the camera at all times.
+### World-facing versus camera-facing
 
-## Modular character rig
+Gameplay facing belongs to the actor/world state. Camera rotation does not rotate the canonical character direction.
 
-Characters are assembled from separate visual parts driven by bones/IK and procedural transforms rather than full-body frame-by-frame spritesheets.
+A presentation-only `DirectionResolver` compares:
 
-Typical authored parts may include:
+- the actor's canonical horizontal facing vector;
+- the camera's horizontal basis/view vector.
 
-- rear hair/accessories;
-- rear hand/arm;
-- rear leg/foot;
-- torso/body;
-- clothing base;
-- front leg/foot;
-- front arm/hand;
-- neck/head;
-- ears/horns/species features;
-- face features;
-- front hair;
-- helmet/hat;
-- chest/shoulder armor;
-- held item/weapon/tool;
-- front accessories/effects.
+It selects the correct LPC visual direction relative to the current camera. Therefore a character physically facing east can appear front, side or back as the camera rotates around that actor while the underlying actor orientation remains east.
 
-Exact ordering changes by view and pose. Layer order is therefore metadata, not an assumption baked into one SVG.
+Use angular hysteresis/dead bands around direction boundaries to prevent rapid visual flipping when the camera sits close to a quadrant threshold.
 
-### Layering rule
+The sprite plane may use a constrained vertical/Y billboard strategy so it remains readable toward the camera without tilting unnaturally with an inclined camera.
 
-Every modular visual asset must declare whether it belongs behind, inside or in front of the body region it attaches to.
+## Character composition model
 
-Example: a hat must not accidentally render entirely behind the head if its brim/crown should visually overlap the face/hair.
+LPC content is modular, but production gameplay should not naively keep every body/clothing/equipment layer as an independently animated `Sprite3D` draw object.
 
-Complex equipment may be split into multiple pieces such as `helmet_back` and `helmet_front` so the rig can place the head between them.
+Preferred pipeline:
 
-## Equipment as visual skin layers
+1. resolve race/body/appearance/equipment data;
+2. resolve required LPC layers and palette variants;
+3. composite compatible layers into game-ready animation sheets or cached textures;
+4. validate animation/frame alignment;
+5. present the composed result through a minimal number of runtime draw surfaces.
 
-Armor, accessories, weapons and tools use the same modular attachment system as character visuals.
+Runtime-separated layers remain allowed when they provide a real benefit, for example special foreground effects, independently moving equipment, emissive overlays or exceptional occlusion cases. They are the exception rather than the default.
 
-Equipment definitions should be able to provide:
+Benefits:
 
-- one or more visual pieces;
-- supported views;
-- attachment socket/bone;
-- local pivot/offset;
-- draw/layer class;
-- optional palette/material variants;
-- optional deformation/secondary-motion behavior.
+- lower draw-call/material pressure on mobile;
+- no layer drift between body, clothes and equipment;
+- simpler animation synchronization;
+- deterministic appearance caching;
+- easier normal-map generation;
+- cleaner persistence/network representation.
 
-A sword is not painted permanently onto the character. It is an equipped visual attached to the hand/weapon socket. The same principle applies to tools, shields, backpacks, hats and visible accessories.
+## Race visual profiles
 
-## View-dependent layer ordering
+Race identity is curated. Character creation does not expose every LPC body component as an unrestricted assembly kit.
 
-The rig must support ordering changes by orientation.
+Each playable race has a data-driven `RaceVisualProfile` that declares:
 
-For example, the same sword may be:
+- allowed body/base families;
+- required racial layers/features;
+- allowed skin palette set;
+- allowed eye palette set;
+- allowed hair/facial-hair families and colors where applicable;
+- allowed starter clothing families;
+- body scale/presentation profile;
+- compatible equipment/body tags;
+- optional markings, ears, horns, tusks or race-specific overlays.
 
-- behind the torso in one side/back pose;
-- in front of the torso in another;
-- partially occluded by a hand or sleeve.
+Examples of direction, not final content counts:
 
-Do not rely on one global static Z-order for all views.
+- humans/dwarves: curated human skin ranges;
+- elves: mandatory elf ear/body profile plus curated human/fantasy skin ranges;
+- ogres: blue/green and blue-green skin families with ogre-specific body/marking profiles;
+- vampires: intentionally pale or deeply saturated skin variants with stronger fantasy eye palettes.
 
-## Vector authoring rules
+A saved appearance stores stable IDs and palette choices, not raw generated pixels as canonical identity.
 
-Vector is the authoring language, not permission to create arbitrarily complex SVGs.
+Example conceptual data:
 
-Prefer:
+```text
+race_id = dwarf
+body_variant = adult_a
+skin_palette = skin_05
+hair_style = long_03
+hair_palette = brown_02
+eye_palette = green_01
+outfit_profile = starter_02
+```
 
-- clean closed shapes;
-- named groups/layers;
-- stable pivots;
-- small number of purposeful gradients;
-- minimal masks/clipping paths;
-- no gratuitous SVG filters;
-- reusable material/palette tokens;
-- simple geometry that remains readable after rasterization/import.
+Required racial pieces are derived from the race profile rather than trusted from the client.
 
-Avoid:
+## Body scale and gameplay geometry
 
-- hundreds of tiny paths for texture noise;
-- unnecessary blur/filter stacks;
-- hidden junk geometry;
-- accidental overlapping shapes that only look correct at one scale;
-- relying on SVG DOM order alone when the runtime needs modular layering.
+Visual race scale may vary, but visual scale must not implicitly become collision/gameplay authority.
 
-Source vector files remain editable. Runtime representation may be rasterized/imported/atlased when profiling shows it is cheaper on mobile/Web.
+A dwarf may render at a smaller uniform visual scale and an ogre at a larger scale, while canonical gameplay capsules, reach, camera anchors and navigation dimensions are defined by race/gameplay data.
 
-## Asset metadata
+Do not non-uniformly stretch pixel characters merely to create race proportions.
 
-Production visual pieces should eventually expose metadata such as:
+## Equipment, tools and material recoloring
 
-- `asset_id`;
-- `view` (`front`, `back`, `side`);
-- `attachment_socket`;
-- `pivot`;
-- `layer_class`;
-- `layer_bias`;
-- `mirror_allowed`;
-- `palette_profile`;
-- `material_profile`;
-- `bounds`;
-- `secondary_motion_profile`;
-- compatibility tags for race/body/equipment families.
+Equipment remains data-driven gameplay state. Visual equipment references LPC-compatible layers or project-authored compatible art.
 
-Do not encode all of this implicitly in filenames or hardcoded scene logic.
+Tools and equipment should support palette/material variants rather than duplicate nearly identical sheets for every material.
 
-## Environment consistency
+Conceptual example:
 
-Trees, rocks, buildings, props and terrain decorations must use the same world language:
+```text
+tool_visual = pickaxe_01
+handle_material = oak
+head_material = iron
+```
 
-- similar edge softness;
-- similar value contrast;
-- compatible palette;
-- compatible amount of detail;
-- compatible light/shadow logic;
-- readable silhouettes at gameplay zoom.
+Presentation maps canonical material IDs to approved visual palettes such as wood, iron, gold or fantasy materials.
 
-An asset is not approved merely because it looks good in isolation. It must look like it belongs in the same world.
+Gameplay statistics come from item/material definitions. Color never becomes gameplay authority.
 
-## Detail budget
+Material recoloring should preserve authored pixel clusters, ramps and contrast instead of applying arbitrary hue shifts that destroy the LPC visual language.
 
-Detail is hierarchical.
+## Animation architecture
 
-### Character/interactive focal assets
+LPC frame data is imported into a project-owned animation definition layer.
 
-May receive:
+Godot presentation should use:
 
-- layered clothing seams;
-- material breaks;
-- readable buckles/plates/pouches;
-- small race features;
-- surface wear;
-- facial details.
+- `AnimationPlayer` as the authored/imported clip holder where appropriate;
+- `AnimationTree` / state machines / one-shot transitions for high-level presentation flow;
+- semantic gameplay animation requests rather than combat code directly selecting frame numbers.
 
-### Environment/support assets
+Expected semantic states include:
 
-Use broader shapes and fewer high-frequency details so they do not compete with characters or UI-relevant action.
+- idle;
+- walk/run;
+- attack families;
+- cast;
+- gather/tool-use;
+- hurt/stagger;
+- jump/fall/land where supported;
+- sleep/offline-body pose;
+- death.
 
-The game should never become a wall of equally loud detail.
+Not every upstream LPC asset supports every expanded animation. Content validation must know which animation families exist for a composition and provide explicit fallback policy rather than silently misalign layers.
+
+Gameplay timing remains authoritative in gameplay systems. Animation presents wind-up/commit/recovery; it does not decide whether damage, harvest or crafting succeeded.
+
+## Pixel normal-map direction
+
+The project intends to build an internal sprite-normal tool specialized for pixel art and spritesheets.
+
+Generic whole-image normal generators are not accepted as the final pipeline because adjacent frames and transparent atlas borders can contaminate gradients.
+
+The intended pipeline is frame-aware:
+
+1. read the sheet/frame manifest;
+2. isolate each animation frame with transparent padding;
+3. derive or ingest a height/surface mask;
+4. compute per-frame pixel-preserving normal information;
+5. avoid cross-frame bleeding;
+6. rebuild a normal atlas with identical frame coordinates;
+7. validate orientation in Godot lighting.
+
+Possible sources include silhouette distance fields, controlled luminance-to-height, semantic material masks and project-authored height hints. Filters must remain pixel-aware and configurable by material family.
+
+The normal map is presentation only. Failure to generate one must never modify gameplay geometry or collision.
+
+## Environment direction
+
+The environment should visually support the pixel characters rather than reproduce the retired clean-vector style.
+
+Preferred language:
+
+- stylized/pixel-aware terrain albedo;
+- clear material families for grass, dirt, stone, wood, ore and constructed surfaces;
+- controlled texture repetition;
+- true 3D terrain/structures with readable pixel-texture treatment;
+- limited high-frequency noise;
+- lighting that gives volume without washing out pixel clusters;
+- VFX/UI that can be smoother when useful but remain stylistically compatible.
+
+Environment texture tooling may be custom-built and can generate/recolor tileable material families independent of LPC.
+
+## Palette language
+
+The game uses curated palette families rather than unrestricted RGB selection for canonical character creation.
+
+Palette families should exist for:
+
+- skin;
+- fantasy skin;
+- eyes;
+- hair;
+- cloth;
+- leather;
+- wood;
+- neutral/colored metals;
+- magic/faction accents;
+- biome/world materials.
+
+Players choose approved variants exposed by race/body/equipment rules. This preserves racial art direction and avoids visually broken combinations.
+
+## Asset identity and cache keys
+
+Generated appearance is derived data.
+
+A deterministic visual cache key should be derived from stable source data such as:
+
+- pinned LPC source/catalog version;
+- body/race profile IDs;
+- ordered layer IDs;
+- palette IDs;
+- animation profile;
+- composition pipeline version;
+- normal-map pipeline version when relevant.
+
+Two actors with the same visual recipe should be able to reuse composed assets rather than generate duplicate textures.
 
 ## Mobile/Web performance rules
 
-- Design assets for gameplay zoom first.
-- Preserve vector masters, but do not assume live complex vector rendering is free.
-- Minimize draw pieces that do not contribute meaningful animation/layering.
-- Prefer reusable pieces and palettes over unique duplicated textures.
-- Profile rig complexity, overdraw, material switches and attachment count on Android.
-- LOD may reduce secondary visual pieces or animation complexity at distance.
+- Prefer composed/cached character sheets over many independently animated transparent layers.
+- Avoid per-frame texture composition.
+- Rebuild appearance only when appearance/equipment changes.
+- Use lazy generation plus bounded cache eviction where required.
+- Keep logical appearance data tiny for networking/persistence.
+- Do not synchronize texture bytes over gameplay networking when peers can resolve approved asset IDs locally.
+- Profile overdraw, texture memory, atlas size, material switches and normal-map cost on Android.
+- Allow distance LOD to simplify animation frequency, shadow/normal usage or presentation detail without changing canonical actor state.
 
-## Asset creation workflow
+## Licensing and provenance requirement
 
-Before producing an asset:
+No LPC-derived asset enters production without machine-readable provenance.
 
-1. Define gameplay role and expected screen size.
-2. Choose the palette family/material language.
-3. Define the silhouette.
-4. Define required views.
-5. Write a layer/occlusion plan.
-6. Define pivots/sockets when modular.
-7. Create the vector shapes from large to small.
-8. Validate layer order and mirror behavior.
-9. Validate at actual gameplay scale.
-10. Validate inside the Godot world, not only in an SVG preview.
-11. Only then polish secondary detail.
+Every imported source piece must retain, where available:
+
+- source asset ID/path;
+- upstream revision;
+- author/attribution parties;
+- source URL;
+- license option(s);
+- modification/derivative status;
+- generated output dependencies.
+
+The project keeps both:
+
+1. a complete upstream LPC legal/catalog archive, including entries not currently used;
+2. an exact build manifest of assets actually used/generated by this game.
+
+The in-game Credits screen is generated from project manifests. Full details: `docs/design/LPC_CHARACTER_PIPELINE_AND_LICENSING.md`.
 
 ## Acceptance checklist
 
-Reject or revise an asset when any of these are true:
+Reject/revise character presentation when any of these are true:
 
-- it looks like unrelated stock vector art;
-- its palette breaks the world palette without a reason;
-- major layers are in the wrong depth order;
-- equipment clips through the body in normal poses;
-- the silhouette fails at mobile scale;
-- detail is inconsistent with neighboring assets;
-- side mirroring exposes asymmetry that should have its own variant;
-- pivots/sockets are missing or wrong;
-- the asset depends on accidental SVG ordering;
-- a character/equipment piece only works from one camera angle despite requiring multiple views.
+- camera rotation changes canonical actor facing;
+- direction flips rapidly near quadrant boundaries;
+- body/clothing/equipment frames drift out of alignment;
+- a race can select combinations outside its visual profile;
+- palette recoloring destroys pixel clusters/value hierarchy;
+- equipment color is treated as gameplay material truth;
+- appearance requires an online LPC service at runtime;
+- generated assets have missing author/license/source provenance;
+- atlas filtering causes frame bleed or blurred pixel edges;
+- normal generation leaks neighboring frame information;
+- runtime composition produces unacceptable mobile draw-call or memory cost;
+- presentation logic becomes authoritative for combat/items/movement.
 
-## Current M1.2 feedback
+## Migration from the retired vector direction
 
-The first 2.5D proof validates the technical concept:
+The previous vector/IK character direction is superseded by this document.
 
-- true 3D world;
-- visually 2D player presentation;
-- rotatable inclined camera;
-- ground movement and jump/elevation;
-- stable ~60 FPS observed on the initial Android test, with occasional 59 FPS dips.
+Keep reusable concepts only where they remain valid:
 
-This does **not** freeze the final art implementation. In particular:
+- data-driven appearance;
+- equipment as gameplay-owned visual state;
+- race compatibility tags;
+- strong mobile readability;
+- true 3D world/camera/elevation.
 
-- camera rotation sensitivity should be tuned upward from the first proof;
-- full camera-facing billboard behavior is temporary;
-- production characters should adopt the three-view modular rig described above;
-- final vector art requires stronger palette, detail and layer discipline than placeholder assets.
+Retire as production assumptions:
+
+- three-view front/back/side vector character sets;
+- full modular body rendering as independent vector pieces;
+- bone/IK-driven deformable humanoid characters as the default player pipeline;
+- vector-only world identity;
+- procedural squash/stretch as the primary humanoid animation method.
+
+No completed gameplay/authority work needs to be rewritten solely because of this art migration.
