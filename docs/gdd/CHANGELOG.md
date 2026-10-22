@@ -1,5 +1,34 @@
 # GDD Changelog
 
+## [0.3.0] - 2026-10-22
+
+### Added
+- Universal LPC/ULPC as the primary modular humanoid pixel-art asset foundation.
+- Camera-relative four-direction character presentation while preserving canonical world-space facing.
+- Data-driven `RaceVisualProfile` direction for curated race bodies, required features and palette choices.
+- Offline/cached LPC composition instead of defaulting to many independently animated runtime layers.
+- `AnimationPlayer` + `AnimationTree` semantic presentation direction for LPC animation state flow.
+- Internal frame-aware pixel normal-map tooling direction for spritesheets.
+- Full pinned-upstream LPC license/catalog archive plus exact used-asset manifest.
+- Generated in-game Credits/legal resources and target-aware license validation direction.
+- Main lobby/account shell with logged-out/logged-in states, official/community server separation and Audio/Graphics/Language options.
+- Stable hidden account ID separated from a unique public account name and server-authoritative rename cooldown.
+- Discoverable Credits screen and separate Donate/Support entry.
+- Persistent offline player-body design: disconnect leaves the canonical character sleeping in the world.
+- Offline death/theft/world consequences persist across reconnect.
+- Server-residency lifecycle and cleanup based on significance/reference safety rather than inactivity alone.
+- Active -> dormant -> compacted -> purge-candidate lifecycle for trivial server residencies.
+
+### Changed
+- Retired the production assumption of custom modular vector humanoids using three views, bones/IK and procedural deformation.
+- Character/world presentation now targets a true 3D systemic world with pixel-art character and material language.
+- GDD Presentation section now references LPC art/provenance contracts and ADR-0017.
+- Player persistence now explicitly treats presence after disconnect as a gameplay/world rule rather than merely a save concern.
+- Credits/legal attribution is now a first-class product-shell requirement.
+
+### Preserved
+- Existing gameplay authority, combat, movement, items/resources and persistence contracts remain valid; the LPC migration is a presentation/art-pipeline change and does not restart C1-R1-P2.
+
 ## [0.2.0] - 2026-10-15
 
 ### Added
