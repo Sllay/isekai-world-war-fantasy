@@ -189,6 +189,12 @@ func restore_state(value: Dictionary) -> void:
 	resources.restore(value.resources)
 	known_recipes.assign(value.recipes)
 	drops = value.drops.duplicate(true)
+	# Canonical positions have the same Vector3 precision/type as their actor.
+	# JSON/page codecs may normalize integral floats to integers; raw arrays must
+	# not make an otherwise unchanged drop differ after save/resume.
+	for drop: Dictionary in drops.values():
+		var point := Vector3(drop.position[0], drop.position[1], drop.position[2])
+		drop.position = [point.x, point.y, point.z]
 	looted = value.looted.duplicate()
 	revision = int(value.revision)
 	last_result = "RESTORED"

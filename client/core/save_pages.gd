@@ -49,7 +49,9 @@ func write(path: String, snapshot: Dictionary, members: Dictionary, atomic_write
 		state[member] = refs
 		locations[section] = member
 	manifest["_core_pages"] = {"schema": SCHEMA, "members": locations}
-	error = atomic_write.call(path, manifest)
+	# The same lossless codec protects unpaged state too (notably the Core
+	# clock's fractional remainder). Paging must not change simulation precision.
+	error = atomic_write.call(path, _encode(manifest))
 	if error == OK:
 		# One writer per slot, as before. Only unreachable immutable pages are
 		# retired AFTER the new manifest commits. Never touch unrelated files.
@@ -61,6 +63,9 @@ func write(path: String, snapshot: Dictionary, members: Dictionary, atomic_write
 
 func hydrate(path: String, manifest: Dictionary) -> Dictionary:
 	var started := Time.get_ticks_usec()
+	var decoded_manifest: Variant = _decode(manifest)
+	if not decoded_manifest is Dictionary: return {}
+	manifest = decoded_manifest
 	var header: Variant = manifest.get("_core_pages")
 	if not header is Dictionary or header.size() != 2 or header.get("schema") != SCHEMA or not header.get("members") is Dictionary or header.members.size() > 32 or not manifest.get("sections") is Dictionary: return {}
 	var result := manifest.duplicate(true)

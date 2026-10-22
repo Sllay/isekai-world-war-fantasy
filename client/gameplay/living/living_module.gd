@@ -17,6 +17,9 @@ var paths := LivingPathQueue.new()
 var revision := 0
 var rewards := 0
 var _tokens: Array[int] = []
+var _validated_actors: Dictionary = {}
+var validation_cache_hits := 0
+var validation_cache_misses := 0
 
 func _init() -> void:
 	id = "gameplay.living"
@@ -98,8 +101,19 @@ func validate_state(value: Dictionary) -> Error:
 	# SaveIntegrity; this module validator never consults stale live identities.
 	var known := func(id_value: String) -> bool: return CombatNumbers.stable_entity(id_value)
 	var source := func(id_value: String) -> bool: return CombatNumbers.stable_entity(id_value) or CoreIds.valid(id_value)
+	# Reuse the prepared immutable catalog across this bounded checkpoint. Loading
+	# and duplicating every item definition once per actor adds no validation.
+	var item_catalog: ItemCatalog = items.catalog if items != null else ItemCatalog.defaults()
 	for key: Variant in value.actors:
-		if not key is String or not value.actors[key] is Dictionary or not value.actors[key].get("state") is Dictionary or value.actors[key].state.get("id") != key or not LivingCapabilities.valid(value.actors[key], catalog, ItemCatalog.defaults(), action_catalog, combat, known, source): return ERR_INVALID_DATA
+		if not key is String or not value.actors[key] is Dictionary or not value.actors[key].get("state") is Dictionary or value.actors[key].state.get("id") != key: return ERR_INVALID_DATA
+		if value.actors[key] == _validated_actors.get(key):
+			validation_cache_hits += 1
+			continue
+		validation_cache_misses += 1
+		if not LivingCapabilities.valid(value.actors[key], catalog, item_catalog, action_catalog, combat, known, source): return ERR_INVALID_DATA
+		_validated_actors[key] = value.actors[key].duplicate(true)
+	for key: String in _validated_actors.keys():
+		if not value.actors.has(key): _validated_actors.erase(key)
 	return OK
 
 func valid_player(value: Dictionary) -> bool:
@@ -110,6 +124,7 @@ func valid_player(value: Dictionary) -> bool:
 	return value.attributes is Dictionary and RpgAttributes.valid(value.attributes) and value.progression is Dictionary and LivingProgression.valid(value.progression, catalog.progression(catalog.character_class(value.class_id).progression_id))
 
 func restore_state(value: Dictionary) -> void:
+	_validated_actors.clear()
 	for key: String in actors:
 		actors[key].dispose()
 		combat.unregister(key)
@@ -173,6 +188,7 @@ func _heard_action(fact: ActionStarted) -> void:
 	for observer in perception.hear(fact.owner_id, fact.execution_id, point, 12.0, fact.tick): scheduler.wake(observer, fact.tick)
 
 func dispose() -> void:
+	_validated_actors.clear()
 	for token in _tokens: combat.events.unsubscribe(token)
 	_tokens.clear()
 	perception.known_actor = Callable()

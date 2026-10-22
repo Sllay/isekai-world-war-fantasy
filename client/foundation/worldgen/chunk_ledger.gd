@@ -10,6 +10,7 @@ var generation_phases: Dictionary = {}
 var dirty_chunks: Dictionary = {}
 var persisted_load_count := 0
 var first_generation_us := 0
+var max_generation_pipeline_us := 0
 var last_persisted_load_us := 0
 var _records: Dictionary = {}
 
@@ -59,7 +60,9 @@ func request(coord: Vector2i, tick: int, region_id: String = WorldBlueprint.REGI
 		return _failure("GENERATION_COMMIT_FAILED")
 	_records[key] = generated.record.duplicate(true)
 	generation_phases.erase(key)
-	if first_generation_us == 0: first_generation_us = Time.get_ticks_usec() - started
+	var elapsed := Time.get_ticks_usec() - started
+	if first_generation_us == 0: first_generation_us = elapsed
+	max_generation_pipeline_us = maxi(max_generation_pipeline_us, elapsed)
 	return {"ok": true, "code": "GENERATED_PERSISTED", "generated": true, "record": record(coord, region_id)}
 
 # Typed monotonic world consequences only. Ordinary mutations remain dirty until
@@ -97,7 +100,6 @@ func acknowledge_persisted(chunk_ids: Array = []) -> void:
 		for key: Variant in chunk_ids: dirty_chunks.erase(key)
 
 func validate_state(value: Dictionary) -> bool:
-	value = WorldGenIds.normalize(value)
 	if not WorldGenIds.keys(value, ["blueprint", "chunks"]) or not value.blueprint is Dictionary or not WorldBlueprint.valid(value.blueprint) or not value.chunks is Dictionary: return false
 	# A configured world cannot silently load another world/version/profile.
 	if not blueprint.is_empty() and WorldGenIds.digest(blueprint) != WorldGenIds.digest(value.blueprint): return false
@@ -106,7 +108,11 @@ func validate_state(value: Dictionary) -> bool:
 	var features := {}
 	for key: Variant in value.chunks:
 		var baked: Variant = value.chunks[key]
-		if not key is String or not baked is Dictionary or not ChunkRecord.valid(baked, value.blueprint) or key != baked.chunk_id: return false
+		if not key is String or not baked is Dictionary: return false
+		# Installed records were validated before their atomic commit. Equality
+		# reuses that proof; any changed/imported record still validates fully.
+		if baked != _records.get(key) and not ChunkRecord.valid(baked, value.blueprint): return false
+		if key != baked.chunk_id: return false
 		for entry: Dictionary in baked.base.resources:
 			if features.has(entry.node_id): return false
 			features[entry.node_id] = true

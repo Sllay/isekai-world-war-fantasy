@@ -25,7 +25,7 @@ func fixture() -> Dictionary:
 			"gameplay.living": {"version": 1, "state": {"actors": {
 				"actor.a": {"id": "actor.a", "health": 85, "position": [1.5, 0.000220715650357306, 2.0], "fraction": 0.123456789123456, "annotations": [{"_core_float64": "literal_data"}, {"_core_object": {"note": "literal_object"}}]},
 				"actor.b": {"id": "actor.b", "health": 100, "position": [4.5, 0.25, 2.0]}}}},
-			"foundation.player": {"version": 1, "state": {"health": 42, "position": [1.5, 0.25, 2.0]}}}}
+			"foundation.player": {"version": 1, "state": {"health": 42, "position": [1.5, 0.25, 2.0], "clock_fraction": 1.38777878078145e-17}}}}
 
 func same(a: Dictionary, b: Dictionary) -> bool:
 	return WorldGenIds.digest(a) == WorldGenIds.digest(b)
@@ -46,7 +46,7 @@ func run() -> void:
 	check(store.pages.metrics.pages_written == 4 and store.pages.metrics.pages_reused == 0, "initial write creates only four bounded immutable pages")
 	var manifest := physical()
 	check(manifest.format_version == CoreSaveStore.FORMAT_VERSION and manifest._core_pages.schema == 1 and manifest._core_pages.members == MEMBERS, "physical paging preserves existing Core format and module ownership")
-	check(same(manifest.sections["foundation.player"], initial.sections["foundation.player"]), "ordinary unpaged section remains directly in same manifest")
+	check(same(CoreSavePages._decode(manifest.sections["foundation.player"]), initial.sections["foundation.player"]), "ordinary unpaged section remains in the same manifest with the lossless codec")
 	var old_chunk_hash: String = manifest.sections["foundation.world_genesis"].state.chunks["chunk.a"]
 	check(CoreSavePages._hash(old_chunk_hash) and FileAccess.file_exists((slot + ".pages").path_join(old_chunk_hash + ".json")), "manifest references safe content hash, not arbitrary external path")
 	check(same(store.read_snapshot(slot), initial) and not store.read_snapshot(slot).has("_core_pages"), "read hydrates exact canonical logical snapshot without physical adapter header")
@@ -54,6 +54,7 @@ func run() -> void:
 	var original_actor: Dictionary = initial.sections["gameplay.living"].state.actors["actor.a"]
 	check(decoded_actor.position[1] == original_actor.position[1] and decoded_actor.fraction == original_actor.fraction, "fractional transform and clock-like value preserve exact IEEE bits")
 	check(decoded_actor.annotations == original_actor.annotations, "literal reserved codec tag objects remain ordinary data")
+	check(store.read_snapshot(slot).sections["foundation.player"].state.clock_fraction == initial.sections["foundation.player"].state.clock_fraction, "unpaged tiny clock fractions retain exact IEEE precision too")
 	check(store.write_snapshot(slot, initial) == OK and store.pages.metrics.pages_written == 4 and store.pages.metrics.pages_reused == 4, "unchanged records reuse pages without rewriting immutable world data")
 	var after_read := store.read_snapshot(slot)
 	var written: int = store.pages.metrics.pages_written
