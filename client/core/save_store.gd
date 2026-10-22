@@ -5,6 +5,8 @@ const FORMAT_VERSION: int = 1
 const GAME_VERSION: String = "0.1.0"
 var diagnostics: CoreDiagnostics
 var format_migrations: Dictionary = {}
+var page_members: Dictionary = {}
+var pages := CoreSavePages.new()
 
 func capture(registry: CoreModuleRegistry, world_id: String, seed_value: int) -> Dictionary:
 	if registry.state != CoreModuleRegistry.State.RUNNING or world_id.is_empty() or not _integer(seed_value):
@@ -102,6 +104,11 @@ func _integer(value: Variant) -> bool:
 func write_snapshot(path: String, snapshot: Dictionary) -> Error:
 	if not _json_safe(snapshot):
 		return _failure("snapshot contains unsupported JSON values")
+	if not page_members.is_empty():
+		return pages.write(path, snapshot, page_members, _write_snapshot)
+	return _write_snapshot(path, snapshot)
+
+func _write_snapshot(path: String, snapshot: Dictionary) -> Error:
 	var file := FileAccess.open(path + ".tmp", FileAccess.WRITE)
 	if file == null:
 		return FileAccess.get_open_error()
@@ -122,7 +129,7 @@ func read_snapshot(path: String) -> Dictionary:
 	if parser.parse(file.get_as_text()) != OK or not parser.data is Dictionary:
 		_failure("invalid JSON snapshot")
 		return {}
-	return parser.data
+	return pages.hydrate(path, parser.data) if parser.data.has("_core_pages") else parser.data
 
 func _json_safe(value: Variant, depth: int = 0) -> bool:
 	if depth > 64:

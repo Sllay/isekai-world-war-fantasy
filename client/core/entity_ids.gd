@@ -13,6 +13,12 @@ func create() -> String:
 func contains(id: String) -> bool:
 	return _ids.has(id)
 
+func register(id: String) -> Error:
+	if not id.length() == 32 or id != id.to_lower() or not id.is_valid_hex_number(false): return ERR_INVALID_DATA
+	if _ids.has(id): return ERR_ALREADY_EXISTS
+	_ids[id] = true
+	return OK
+
 func capture() -> Dictionary:
 	return {"ids": _ids.keys()}
 
