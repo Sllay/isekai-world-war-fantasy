@@ -1,6 +1,8 @@
 # C1-R1-P2 — Items, Resources & Survival Foundation
 
-Chapter 1 / Run 1 / Part 2. Status: IMPLEMENTING. Reference:
+Chapter 1 / Run 1 / Part 2. Status: FOUNDATION_COMPLETE / ENGINEERING_COMPLETE
+for the scoped technical foundation; new Android controls/readability acceptance
+remains pending. Reference:
 https://github.com/Sllay/isekai-world-war-fantasy/issues/10 (read through its public
 page; the GitHub API returned Forbidden). One integrated macro delivery, continuing
 the Android-accepted P1. No final inventory, crafting, equipment or skill UI.
@@ -96,3 +98,22 @@ Completion requires all first-scope systems, tests, live integrated validation,
 clean intentional commits and a pushed P2 branch with remote SHA matching HEAD.
 Final Chapter 1 catalogs/UI/balance/decay/economy/art belong to later Runs; external
 multiplayer transport and A7 are not implemented here.
+
+## Delivery evidence
+
+Implemented integration commit: `a24cc28bf066c44fcff9b54c9edfcfc2269fa896`;
+earlier P2 commits define this contract and the reusable pure domains. Final
+Godot Check passed. Affected and all runs each passed nine suites / 31 groups /
+1,081 checks, zero failures (363 P2 checks plus 718 regression checks). Diagnostics
+MCP/LSP returned zero warnings/errors for 47 scripts.
+
+Actual Runtime MCP passed the complete acquire/equip/gather/deplete/craft/consume
+flow, then launched a new game process and verified all six save sections exactly.
+Repeated production save/resume also passed with unchanged items and correct
+capability references. The game was stopped; the FULL Editor remained active.
+
+See [validation and the one Android scenario](C1_R1_P2_VALIDATION.md) and
+[structured Runtime evidence](C1_R1_P2_RUNTIME_EVIDENCE.json). P2 publication is
+verified by matching origin's branch SHA to local HEAD at delivery. Main/P1 and
+Environment configuration remain unchanged. Foundation completion does not claim
+final Chapter 1 content/UI/balance or Android acceptance of the new panel.

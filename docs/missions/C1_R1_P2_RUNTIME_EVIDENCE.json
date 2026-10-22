@@ -1,0 +1,587 @@
+{
+  "mission": "C1-R1-P2",
+  "validated_dates": [
+    "2026-10-21",
+    "2026-10-22"
+  ],
+  "base_remote_sha": "86d0c49bbf001415963a74ad2475b6cea13a3f48",
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "application_save_version": "0.4.0",
+  "scene": "res://tests/p2_acceptance.tscn",
+  "slot": "user://tests/p2-runtime-foundation.json",
+  "transport": "actual installed Godot MCP stdio SDK tool calls; native tool registration absent",
+  "ingress": "semantic PlayerIntent and existing AuthorityGateway only; no bot writes to canonical health, transform or inventory",
+  "initial_live_result": {
+    "checkpoint_saved": true,
+    "passed": true,
+    "proofs": {
+      "actual_stock_before_defeat": [
+        {
+          "composition": {},
+          "condition": 10000,
+          "container_id": "inventory.spawn.melee_skirmisher",
+          "definition_id": "item.consumable.healing_balm",
+          "id": "item.entry.e0000000005",
+          "owner_id": "5256b1975188afac5a5f23b138d532db",
+          "provenance": {
+            "source": "initial_stock",
+            "source_id": "spawn.melee_skirmisher"
+          },
+          "quantity": 1
+        },
+        {
+          "composition": {},
+          "condition": 10000,
+          "container_id": "inventory.spawn.melee_skirmisher",
+          "definition_id": "item.currency.coin",
+          "id": "item.entry.e0000000006",
+          "owner_id": "5256b1975188afac5a5f23b138d532db",
+          "provenance": {
+            "source": "initial_stock",
+            "source_id": "spawn.melee_skirmisher"
+          },
+          "quantity": 3
+        },
+        {
+          "composition": {},
+          "condition": 10000,
+          "container_id": "inventory.spawn.melee_skirmisher",
+          "definition_id": "item.weapon.sword",
+          "id": "item.entry.e0000000007",
+          "owner_id": "5256b1975188afac5a5f23b138d532db",
+          "provenance": {
+            "source": "initial_stock",
+            "source_id": "spawn.melee_skirmisher"
+          },
+          "quantity": 1
+        }
+      ],
+      "crafted_composition": {
+        "ingredient.metal": "material.metal.iron",
+        "ingredient.wood": "material.wood.common"
+      },
+      "crafted_weapon_equipped": true,
+      "death_stock_conserved": true,
+      "drop_claimed": true,
+      "drop_custody_before_pickup": [
+        {
+          "composition": {},
+          "condition": 10000,
+          "container_id": "inventory.drop.spawn.melee_skirmisher",
+          "definition_id": "item.consumable.healing_balm",
+          "id": "item.entry.e0000000005",
+          "owner_id": "5256b1975188afac5a5f23b138d532db",
+          "provenance": {
+            "source": "initial_stock",
+            "source_id": "spawn.melee_skirmisher"
+          },
+          "quantity": 1
+        },
+        {
+          "composition": {},
+          "condition": 10000,
+          "container_id": "inventory.drop.spawn.melee_skirmisher",
+          "definition_id": "item.currency.coin",
+          "id": "item.entry.e0000000006",
+          "owner_id": "5256b1975188afac5a5f23b138d532db",
+          "provenance": {
+            "source": "initial_stock",
+            "source_id": "spawn.melee_skirmisher"
+          },
+          "quantity": 3
+        },
+        {
+          "composition": {},
+          "condition": 10000,
+          "container_id": "inventory.drop.spawn.melee_skirmisher",
+          "definition_id": "item.weapon.sword",
+          "id": "item.entry.e0000000007",
+          "owner_id": "5256b1975188afac5a5f23b138d532db",
+          "provenance": {
+            "source": "initial_stock",
+            "source_id": "spawn.melee_skirmisher"
+          },
+          "quantity": 1
+        }
+      ],
+      "drop_entries_before_pickup": 3,
+      "enemy_defeated": true,
+      "healing_applied": true,
+      "health_after_combat": 84,
+      "health_after_consume": 99,
+      "health_before_consume": 84,
+      "initial_carried_entries": [
+        {
+          "composition": {},
+          "condition": 10000,
+          "container_id": "inventory.spawn.melee_skirmisher",
+          "definition_id": "item.consumable.healing_balm",
+          "id": "item.entry.e0000000005",
+          "owner_id": "5256b1975188afac5a5f23b138d532db",
+          "provenance": {
+            "source": "initial_stock",
+            "source_id": "spawn.melee_skirmisher"
+          },
+          "quantity": 1
+        },
+        {
+          "composition": {},
+          "condition": 10000,
+          "container_id": "inventory.spawn.melee_skirmisher",
+          "definition_id": "item.currency.coin",
+          "id": "item.entry.e0000000006",
+          "owner_id": "5256b1975188afac5a5f23b138d532db",
+          "provenance": {
+            "source": "initial_stock",
+            "source_id": "spawn.melee_skirmisher"
+          },
+          "quantity": 3
+        },
+        {
+          "composition": {},
+          "condition": 10000,
+          "container_id": "inventory.spawn.melee_skirmisher",
+          "definition_id": "item.weapon.sword",
+          "id": "item.entry.e0000000007",
+          "owner_id": "5256b1975188afac5a5f23b138d532db",
+          "provenance": {
+            "source": "initial_stock",
+            "source_id": "spawn.melee_skirmisher"
+          },
+          "quantity": 1
+        }
+      ],
+      "material_preserved": true,
+      "npc_carried_empty": true,
+      "received_damage": true,
+      "ticks": 399,
+      "tree_depleted": true,
+      "wood_gathered": 6
+    },
+    "resumed": false,
+    "slot_path": "user://tests/p2-runtime-foundation.json",
+    "timing": {
+      "application_tick_max_us": 56810.0,
+      "application_tick_p95_us": 5751.5,
+      "application_tick_samples": 256
+    }
+  },
+  "live_authority": {
+    "tick": 399,
+    "ack": 467,
+    "health": 99,
+    "lifecycle": "ALIVE",
+    "items": {
+      "drops": {
+        "drop.spawn.melee_skirmisher": {
+          "claimed": true,
+          "container": "inventory.drop.spawn.melee_skirmisher",
+          "owner": "ae5db5bbb7beba5b1f71858f22a7a8b3",
+          "position": [
+            2.95993590354919,
+            0.000220712507143617,
+            3.56009435653687
+          ],
+          "region": "region.home_valley",
+          "source": "spawn.melee_skirmisher"
+        }
+      },
+      "equipment": {
+        "owner_id": "ae5db5bbb7beba5b1f71858f22a7a8b3",
+        "slots": {
+          "armor": {
+            "container_id": "inventory.player.bag",
+            "entry_id": "item.entry.e0000000004"
+          },
+          "tool": {
+            "container_id": "inventory.player.bag",
+            "entry_id": "item.entry.e0000000003"
+          },
+          "weapon": {
+            "container_id": "inventory.player.bag",
+            "entry_id": "item.entry.e0000000016"
+          }
+        },
+        "version": 1
+      },
+      "inventory": {
+        "capacity_mode": "FIXED_SLOTS",
+        "entries": [
+          {
+            "composition": {},
+            "condition": 10000,
+            "container_id": "inventory.player.bag",
+            "definition_id": "item.weapon.sword",
+            "id": "item.entry.e0000000001",
+            "owner_id": "ae5db5bbb7beba5b1f71858f22a7a8b3",
+            "provenance": {
+              "source": "starting",
+              "source_id": "items.starting.traveler"
+            },
+            "quantity": 1
+          },
+          {
+            "composition": {},
+            "condition": 10000,
+            "container_id": "inventory.player.bag",
+            "definition_id": "item.tool.axe",
+            "id": "item.entry.e0000000002",
+            "owner_id": "ae5db5bbb7beba5b1f71858f22a7a8b3",
+            "provenance": {
+              "source": "starting",
+              "source_id": "items.starting.traveler"
+            },
+            "quantity": 1
+          },
+          {
+            "composition": {},
+            "condition": 10000,
+            "container_id": "inventory.player.bag",
+            "definition_id": "item.tool.pickaxe",
+            "id": "item.entry.e0000000003",
+            "owner_id": "ae5db5bbb7beba5b1f71858f22a7a8b3",
+            "provenance": {
+              "source": "starting",
+              "source_id": "items.starting.traveler"
+            },
+            "quantity": 1
+          },
+          {
+            "composition": {},
+            "condition": 10000,
+            "container_id": "inventory.player.bag",
+            "definition_id": "item.armor.leather",
+            "id": "item.entry.e0000000004",
+            "owner_id": "ae5db5bbb7beba5b1f71858f22a7a8b3",
+            "provenance": {
+              "source": "starting",
+              "source_id": "items.starting.traveler"
+            },
+            "quantity": 1
+          },
+          {
+            "composition": {},
+            "condition": 10000,
+            "container_id": "inventory.player.bag",
+            "definition_id": "item.consumable.healing_balm",
+            "id": "item.entry.e0000000005",
+            "owner_id": "5256b1975188afac5a5f23b138d532db",
+            "provenance": {
+              "source": "initial_stock",
+              "source_id": "spawn.melee_skirmisher"
+            },
+            "quantity": 1
+          },
+          {
+            "composition": {},
+            "condition": 10000,
+            "container_id": "inventory.player.bag",
+            "definition_id": "item.currency.coin",
+            "id": "item.entry.e0000000006",
+            "owner_id": "5256b1975188afac5a5f23b138d532db",
+            "provenance": {
+              "source": "initial_stock",
+              "source_id": "spawn.melee_skirmisher"
+            },
+            "quantity": 3
+          },
+          {
+            "composition": {},
+            "condition": 10000,
+            "container_id": "inventory.player.bag",
+            "definition_id": "item.weapon.sword",
+            "id": "item.entry.e0000000007",
+            "owner_id": "5256b1975188afac5a5f23b138d532db",
+            "provenance": {
+              "source": "initial_stock",
+              "source_id": "spawn.melee_skirmisher"
+            },
+            "quantity": 1
+          },
+          {
+            "composition": {},
+            "condition": 10000,
+            "container_id": "inventory.player.bag",
+            "definition_id": "item.wood.common",
+            "id": "item.entry.e0000000011",
+            "owner_id": "ae5db5bbb7beba5b1f71858f22a7a8b3",
+            "provenance": {
+              "source": "gather",
+              "source_id": "resource.node.common_tree"
+            },
+            "quantity": 3
+          },
+          {
+            "composition": {},
+            "condition": 10000,
+            "container_id": "inventory.player.bag",
+            "definition_id": "item.stone.common",
+            "id": "item.entry.e0000000012",
+            "owner_id": "ae5db5bbb7beba5b1f71858f22a7a8b3",
+            "provenance": {
+              "source": "gather",
+              "source_id": "resource.node.stone"
+            },
+            "quantity": 1
+          },
+          {
+            "composition": {
+              "ingredient.metal": "material.metal.iron",
+              "ingredient.wood": "material.wood.common"
+            },
+            "condition": 10000,
+            "container_id": "inventory.player.bag",
+            "definition_id": "item.weapon.tempered_sword",
+            "id": "item.entry.e0000000016",
+            "owner_id": "ae5db5bbb7beba5b1f71858f22a7a8b3",
+            "provenance": {
+              "source": "craft",
+              "source_id": "recipe.tempered_sword"
+            },
+            "quantity": 1
+          }
+        ],
+        "id": "inventory.player.bag",
+        "mass_grams": 13615,
+        "max_mass_grams": 50000,
+        "owner_id": "ae5db5bbb7beba5b1f71858f22a7a8b3",
+        "revision": 14,
+        "slots": 24
+      },
+      "nodes": {
+        "resource.node.common_tree": {
+          "cycle": 0,
+          "display_name": "Common tree",
+          "extractions": 3,
+          "interaction_range": 3.0,
+          "kind": "tree",
+          "max_reserves": 3,
+          "minimum_tool_power": 1,
+          "node_id": "resource.node.common_tree",
+          "position": [
+            -4.0,
+            0.0,
+            5.0
+          ],
+          "profile_id": "resource.profile.common_tree",
+          "regeneration_tick": 519,
+          "region_id": "region.home_valley",
+          "remaining": 0,
+          "tool_tag": "tool.axe",
+          "work_ticks": 12
+        },
+        "resource.node.iron_ore": {
+          "cycle": 0,
+          "display_name": "Iron deposit",
+          "extractions": 1,
+          "interaction_range": 3.0,
+          "kind": "ore",
+          "max_reserves": 4,
+          "minimum_tool_power": 2,
+          "node_id": "resource.node.iron_ore",
+          "position": [
+            -11.0,
+            0.0,
+            6.0
+          ],
+          "profile_id": "resource.profile.iron_ore",
+          "regeneration_tick": -1,
+          "region_id": "region.home_valley",
+          "remaining": 3,
+          "tool_tag": "tool.pickaxe",
+          "work_ticks": 20
+        },
+        "resource.node.mountain_tree": {
+          "cycle": 0,
+          "display_name": "Mountain wood",
+          "extractions": 0,
+          "interaction_range": 3.0,
+          "kind": "tree",
+          "max_reserves": 3,
+          "minimum_tool_power": 2,
+          "node_id": "resource.node.mountain_tree",
+          "position": [
+            -5.0,
+            0.0,
+            1.0
+          ],
+          "profile_id": "resource.profile.mountain_tree",
+          "regeneration_tick": -1,
+          "region_id": "region.home_valley",
+          "remaining": 3,
+          "tool_tag": "tool.axe",
+          "work_ticks": 16
+        },
+        "resource.node.stone": {
+          "cycle": 0,
+          "display_name": "Stone deposit",
+          "extractions": 1,
+          "interaction_range": 3.0,
+          "kind": "stone",
+          "max_reserves": 4,
+          "minimum_tool_power": 1,
+          "node_id": "resource.node.stone",
+          "position": [
+            -8.0,
+            0.0,
+            5.0
+          ],
+          "profile_id": "resource.profile.stone",
+          "regeneration_tick": -1,
+          "region_id": "region.home_valley",
+          "remaining": 3,
+          "tool_tag": "tool.pickaxe",
+          "work_ticks": 16
+        }
+      },
+      "result": "EQUIPPED",
+      "revision": 23,
+      "skills": {
+        "grants": {},
+        "known": {
+          "combat.action.basic_heal": [
+            "skill.source.starting"
+          ],
+          "combat.action.basic_strike": [
+            "skill.source.starting"
+          ],
+          "combat.action.strong_strike": [
+            "skill.source.starting"
+          ]
+        },
+        "owner_id": "ae5db5bbb7beba5b1f71858f22a7a8b3",
+        "version": 1
+      },
+      "stash": {
+        "capacity_mode": "FIXED_SLOTS",
+        "entries": [],
+        "id": "inventory.player.stash",
+        "mass_grams": 0,
+        "max_mass_grams": 200000,
+        "owner_id": "ae5db5bbb7beba5b1f71858f22a7a8b3",
+        "revision": 0,
+        "slots": 48
+      }
+    }
+  },
+  "fresh_process_resume": {
+    "checkpoint_saved": false,
+    "exact_snapshot": true,
+    "passed": true,
+    "resumed": true,
+    "sections": {
+      "core.runtime": true,
+      "foundation.player": true,
+      "foundation.player_combat": true,
+      "foundation.regions": true,
+      "foundation.world": true,
+      "gameplay.items_resources": true
+    },
+    "slot_path": "user://tests/p2-runtime-foundation.json"
+  },
+  "final_runtime_recheck": {
+    "capabilities_bound": true,
+    "items_unchanged": true,
+    "resume_error": 0,
+    "save_error": 0
+  },
+  "final_process_resume": {
+    "checkpoint_saved": false,
+    "exact_snapshot": true,
+    "passed": true,
+    "resumed": true,
+    "sections": {
+      "core.runtime": true,
+      "foundation.player": true,
+      "foundation.player_combat": true,
+      "foundation.regions": true,
+      "foundation.world": true,
+      "gameplay.items_resources": true
+    },
+    "slot_path": "user://tests/p2-runtime-foundation.json"
+  },
+  "application_timing": {
+    "application_tick_max_us": 56810.0,
+    "application_tick_p95_us": 5751.5,
+    "application_tick_samples": 256
+  },
+  "post_scenario_engine_snapshot": {
+    "audio_output_latency": 0,
+    "fps": 45,
+    "frame_time_ms": 31.929,
+    "memory_msg_buffer_max": 12288,
+    "memory_static": 65776158,
+    "memory_static_max": 83802399,
+    "navigation_active_maps": 0,
+    "navigation_agent_count": 0,
+    "navigation_edge_connection_count": 0,
+    "navigation_edge_count": 0,
+    "navigation_edge_free_count": 0,
+    "navigation_edge_merge_count": 0,
+    "navigation_link_count": 0,
+    "navigation_obstacle_count": 0,
+    "navigation_polygon_count": 0,
+    "navigation_region_count": 0,
+    "navigation_time_ms": 0.042,
+    "object_count": 2172,
+    "object_node_count": 112,
+    "object_orphan_node_count": 0,
+    "object_resource_count": 155,
+    "physics_2d_active_objects": 0,
+    "physics_2d_collision_pairs": 0,
+    "physics_2d_island_count": 0,
+    "physics_3d_active_objects": 0,
+    "physics_3d_collision_pairs": 3,
+    "physics_3d_island_count": 0,
+    "physics_time_ms": 0.654,
+    "pipeline_compilations_canvas": 0,
+    "pipeline_compilations_draw": 0,
+    "pipeline_compilations_mesh": 0,
+    "pipeline_compilations_specialization": 0,
+    "pipeline_compilations_surface": 0,
+    "render_buffer_mem": 11225764,
+    "render_draw_calls": 54,
+    "render_objects": 448,
+    "render_primitives": 9006,
+    "render_texture_mem": 8100803,
+    "render_video_mem": 19326567,
+    "viewport_render_cpu_ms": 0,
+    "viewport_render_gpu_ms": 0
+  },
+  "measurement_limits": [
+    "application callback cost divided by Core steps; excludes independent physics/render",
+    "engine snapshot is after scenario freeze, not active frame distribution",
+    "shared cloud software renderer; no Android memory/FPS or server population capacity claim"
+  ],
+  "presentation_review": "Technical panel visually inspected at 1280x720; interaction utilities moved below crafting row; final screenshot checked.",
+  "environment": "Existing FULL Editor reused; game stopped after validation; Environment configuration untouched.",
+  "manual_scene_runtime_boot": {
+    "equipment_bound": true,
+    "inventory_entries": 4,
+    "local_host": true,
+    "slot": "user://tests/p2-android-manual.json",
+    "startup_error": 0,
+    "tool": "item.tool.axe"
+  },
+  "validated_integration_commit": "a24cc28bf066c44fcff9b54c9edfcfc2269fa896",
+  "automated_gates": {
+    "godot_check": "PASS, clean import/parse",
+    "diagnostics_scripts": 47,
+    "diagnostics_warnings": 0,
+    "diagnostics_errors": 0,
+    "p2_checks": 363,
+    "p1_regression_checks": 718,
+    "affected": {
+      "suites": 9,
+      "groups": 31,
+      "checks": 1081,
+      "failures": 0
+    },
+    "all": {
+      "suites": 9,
+      "groups": 31,
+      "checks": 1081,
+      "failures": 0
+    }
+  }
+}
