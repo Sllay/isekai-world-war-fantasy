@@ -122,7 +122,7 @@ func run() -> void:
 		var runtime := preload("res://scenes/runtime/game_runtime.tscn").instantiate()
 		runtime.save_slot = LocalSaveSlot.new("test.world", "user://world-suite-no-save-%s.json" % CoreIds.generate())
 		root.add_child(runtime)
-		check(runtime.registry.state == CoreModuleRegistry.State.RUNNING and runtime.registry.order.size() == 9 and runtime.registry.modules.has("gameplay.items_resources"), "production runtime initializes nine expected modules including items/resources")
+		check(runtime.registry.state == CoreModuleRegistry.State.RUNNING and runtime.registry.order.size() == 11 and runtime.registry.modules.has("gameplay.items_resources"), "production runtime initializes eleven expected modules including world genesis and living actors")
 		check(runtime.world_scene.active_region.record.lifecycle == RegionState.Lifecycle.LOADED, "production runtime opens real Region")
 		for frame in 10:
 			await physics_frame

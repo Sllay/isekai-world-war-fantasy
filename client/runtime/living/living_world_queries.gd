@@ -59,8 +59,9 @@ func _active(point: Vector3) -> bool:
 	return active_chunks.is_valid() and bool(active_chunks.call(key))
 
 func _reindex_resources() -> void:
-	var ids := module.items.resources.node_ids()
-	if ids.size() == _resource_count: return
+	var nodes: ResourceService = module.items.resources
+	if nodes.node_count() == _resource_count: return
+	var ids := nodes.node_ids()
 	_resource_count = ids.size()
 	_resource_cells.clear()
 	for id: String in ids:

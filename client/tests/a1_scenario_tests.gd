@@ -62,8 +62,9 @@ func run() -> void:
 	check(world.persistence.integrity.prepare(broken).is_empty(), "missing current-release opponent cannot reset to defaults")
 	var previous := broken.duplicate(true)
 	previous.game_version = "0.2.0"
-	previous.modules.erase("gameplay.items_resources")
-	previous.sections.erase("gameplay.items_resources")
+	for id in ["gameplay.items_resources", "foundation.world_genesis", "gameplay.living"]:
+		previous.modules.erase(id)
+		previous.sections.erase(id)
 	previous.sections["foundation.player_combat"].version = 2
 	previous.sections["foundation.player_combat"].state.erase("defense")
 	previous.sections["core.runtime"].state.entities.ids.erase(world.enemies.companions[0].entity_id)

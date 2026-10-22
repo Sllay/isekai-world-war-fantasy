@@ -46,7 +46,7 @@ func run() -> void:
 		check(runtime.save_game() == OK, "first process writes actual slot")
 		var snapshot: Dictionary = runtime.core.saves.read_snapshot(slot_path)
 		var file := FileAccess.open(proof_path, FileAccess.WRITE)
-		file.store_string(FileAccess.get_file_as_string(slot_path))
+		file.store_string(JSON.stringify(runtime.core.saves.read_snapshot(slot_path), "", true, true))
 		file.close()
 		check(snapshot.sections["core.runtime"].state.clock.tick > 0, "time advanced before save")
 	else:

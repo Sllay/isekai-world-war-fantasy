@@ -31,7 +31,7 @@ func write_json(value: Dictionary) -> void:
 func run() -> void:
 	var runtime := start_runtime()
 	check(runtime.startup_error == OK and runtime.persistence.startup_mode == "new_game", "no slot starts new game")
-	check(runtime.persistence.last_resume_code == "NO_SAVE" and not FileAccess.file_exists(path), "NO_SAVE distinct; startup does not write implicitly")
+	check(runtime.persistence.last_resume_code == "NO_SAVE" and FileAccess.file_exists(path) and runtime.genesis.ledger.generator.generation_invocation_count == 9, "NO_SAVE remains distinct; P3 genesis commits nine canonical chunks before attachment")
 	check(runtime.world_scene.active_region != null, "new game owns real Region residency")
 	var original_id: String = runtime.player.state.entity_id
 	runtime.player.state.position = Vector3(2, 3.01, -24)
@@ -44,7 +44,7 @@ func run() -> void:
 	var tick: int = runtime.core.clock.tick
 	var original_json := JSON.stringify(good)
 	check(not runtime.persistence.integrity.prepare(good).is_empty() and JSON.stringify(good) == original_json, "complete snapshot validates without mutation")
-	check(good.sections.size() == 6 and good.format_version == 1, "six versioned module sections including items/resources")
+	check(good.sections.size() == 8 and good.format_version == 1, "eight versioned module sections including canonical world and living actors")
 	check(not JSON.stringify(good).contains("Camera") and not good.sections["foundation.regions"].state.regions["region.home_valley"].has("lifecycle"), "snapshot excludes residency and visual state")
 	runtime.free()
 	runtime = start_runtime()

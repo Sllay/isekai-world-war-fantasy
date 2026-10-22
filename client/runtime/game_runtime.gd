@@ -29,11 +29,18 @@ var prediction_mirror := PlayerState.new()
 var reconciler := PlayerReconciler.new()
 var items := ItemsModule.new()
 var items_panel: ItemsPanel
+var genesis := WorldGenerationModule.new()
+var living := LivingModule.new()
+var streamer: ChunkStreamer
+var living_runtime: LivingRuntime
+var _world_label: Label
+var _enemy_cell := Vector2i(1000000, 1000000)
+var _defer_genesis_until_save := false
 
 func _ready() -> void:
 	var core_only := "--core-smoke" in OS.get_cmdline_user_args()
 	if not core_only:
-		for module in [player, world, regions, combat, player_combat, targeting, enemies, items]:
+		for module in [player, world, regions, combat, player_combat, targeting, enemies, items, genesis, living]:
 			var error := registry.add(module)
 			if error != OK:
 				push_error("Production module registration failed: %s" % error)
@@ -44,6 +51,8 @@ func _ready() -> void:
 		return
 	items.bind(enemies, WORLD_CONTENT)
 	items.restore_state(items.initial_state(player.state.entity_id, items.actor_map()))
+	living.bind(items)
+	core.saves.page_members = {genesis.id: "chunks", living.id: "actors"}
 	world_scene = WORLD_SCENE.instantiate() as WorldScene
 	world_scene.directory = regions.directory
 	world_scene.player = player.state
@@ -52,8 +61,11 @@ func _ready() -> void:
 	persistence = SaveCoordinator.new(save_slot, registry, core.saves, world_scene, WORLD_CONTENT)
 	initial_snapshot.game_version = SaveIntegrity.GAME_VERSION
 	persistence.initial_snapshot = initial_snapshot
+	genesis.durable_commit = func(candidate: Dictionary) -> Error: return persistence.commit_section(genesis.id, candidate)
+	persistence.checkpoint_committed = genesis.ledger.acknowledge_persisted
 	telegraphs.bind(core.events, combat.actions, core.clock)
 	startup_error = persistence.startup()
+	_defer_genesis_until_save = persistence.migration_pending
 	_create_save_controls()
 	if startup_error != OK:
 		set_process(false)
@@ -66,6 +78,7 @@ func _ready() -> void:
 
 func _activate_session() -> void:
 	startup_error = OK
+	enemies.relevant = Callable()
 	action_adapter.executor = player_combat.actions
 	# Application activation rebuilds transient target ports for the restored
 	# Region. Actor modules register only their own capabilities/identities.
@@ -112,6 +125,8 @@ func _activate_session() -> void:
 		player_combat.actions.position_of = action_harness.position_of
 		action_adapter.default_target = action_harness.target_id
 	_setup_authority(avatar)
+	_setup_world()
+	if startup_error != OK: return
 	set_process(true)
 	get_tree().auto_accept_quit = false
 	if is_instance_valid(startup_message):
@@ -145,11 +160,25 @@ func select_player_target() -> String:
 func delete_save() -> Error:
 	var error := persistence.delete_and_reset()
 	if error == OK:
+		# Delete retains the existing unsaved P1/P2 reset preview. A new durable
+		# world starts at explicit Save, never by silently recreating the slot.
+		_defer_genesis_until_save = true
 		_activate_session()
 	return error
 
 # Public application API for later UI/gameplay/lifecycle adapters.
 func save_game() -> Error:
+	if _defer_genesis_until_save:
+		var initial_error := authority_host.save_game() if authority_host != null else ERR_UNCONFIGURED
+		if initial_error != OK: return initial_error
+		_defer_genesis_until_save = false
+		_setup_world()
+		return startup_error
+	# Cached relevance is amortized during movement. Checkpoint at the exact
+	# current position so a fresh runtime applies the same deterministic policy.
+	if is_instance_valid(living_runtime):
+		living_runtime.invalidate_relevance()
+		living_runtime.sync_relevance(player.state.position)
 	return authority_host.save_game() if authority_host != null else ERR_UNCONFIGURED
 
 func resume_game() -> Error:
@@ -158,6 +187,7 @@ func resume_game() -> Error:
 	var previous_region := world_scene.active_region
 	var error := persistence.resume_game()
 	if error == OK or (persistence.ready and world_scene.active_region != previous_region):
+		_defer_genesis_until_save = persistence.migration_pending
 		_activate_session()
 	return error
 
@@ -194,11 +224,16 @@ func development_state() -> Dictionary:
 		result["action_target"] = action_harness.development_state()
 	if authority_host != null:
 		result["authority"] = authority_gateway.snapshot()
+	if is_instance_valid(streamer): result["streaming"] = streamer.snapshot()
+	if is_instance_valid(living_runtime): result["living"] = living_runtime.snapshot()
+	result["rpg"] = living.capture_player() if living.items != null else {}
+	result["storage"] = core.saves.pages.metrics.duplicate()
 	return result
 
 func _process(delta: float) -> void:
 	if registry.state != CoreModuleRegistry.State.RUNNING:
 		return
+	if authority_host != null and is_instance_valid(streamer): streamer.advance_frame()
 	var previous := core.clock.tick
 	var steps := core.clock.advance(delta)
 	if steps == 0:
@@ -220,10 +255,16 @@ func _process(delta: float) -> void:
 				chosen = select_player_target()
 			authority_input.consume(avatar, chosen, player_combat.actions.position_of.call(chosen) if not chosen.is_empty() else null)
 			authority_host.advance()
+			if is_instance_valid(living_runtime): living_runtime.tick()
+			_sync_enemy_bodies()
+			if is_instance_valid(_world_label) and core.clock.tick % 10 == 0:
+				_world_label.text = "Chunk %s · loaded %d/%d\nLogical %d · bodies %d\nL0/L1/L2/L3 %s\nGen %d · XP %d" % [world_scene.development_state().chunk_coordinates, streamer.views.size(), streamer.policy.max_resident_chunks, living.actors.size(), living_runtime.bodies.size(), str(living.scheduler.fidelity_counts()), genesis.ledger.generator.generation_invocation_count, living.player_identity.progression.xp]
 			reconciler.apply(prediction_mirror, authority_gateway.snapshot())
 
 func _exit_tree() -> void:
 	targeting.service.visibility = Callable()
+	if is_instance_valid(living_runtime): living_runtime.dispose()
+	if persistence != null: persistence.checkpoint_committed = Callable()
 	if authority_host != null:
 		authority_host.dispose()
 	telegraphs.dispose()
@@ -288,11 +329,14 @@ func _setup_authority(avatar: PlayerAvatar) -> void:
 	authority_host.checkpoint = persistence.save_game
 	var item_commands := ItemsAuthorityPort.new()
 	item_commands.bind(authority_host, items)
+	var character_class: ClassDefinition = living.catalog.character_class(living.player_identity.class_id)
+	item_commands.items.equipment_eligibility = character_class.allows_equipment
 	item_commands.region_id = func() -> String: return regions.directory.world.current_region_id
 	item_commands.spatial_gate = _authority_world_visible
 	items_panel = ItemsPanel.new()
 	items_panel.items = items
 	items_panel.gateway = authority_gateway
+	items_panel.external_world_markers = not _defer_genesis_until_save
 	world_scene.active_region.add_child(items_panel)
 	avatar.input.ui_hit_test = items_panel.owns_point
 	if "--combat-actions-acceptance" not in OS.get_cmdline_user_args():
@@ -313,6 +357,7 @@ func _authority_facing(id: String) -> Vector3:
 		return enemies.actor.facing
 	for extra in enemies.companions:
 		if extra.entity_id == id: return extra.facing
+	if living.actors.has(id): return living.actors[id].state.facing
 	return Vector3.ZERO
 
 func _authority_line_of_sight(source: String, destination: String) -> bool:
@@ -336,3 +381,103 @@ func _authority_world_visible(point: Vector3) -> bool:
 	for body in companion_bodies: excluded.append(body.get_rid())
 	query.exclude = excluded
 	return world_scene.active_region.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+
+func _world_visible(origin: Vector3, destination: Vector3) -> bool:
+	if not origin.is_finite() or not destination.is_finite(): return false
+	var query := PhysicsRayQueryParameters3D.create(origin + Vector3.UP, destination + Vector3.UP, 1)
+	query.exclude = [world_scene.active_region.avatar.motor.get_rid()]
+	return world_scene.active_region.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+
+func _setup_world() -> void:
+	if authority_host == null or _defer_genesis_until_save: return
+	var region := world_scene.active_region.record.definition
+	var terrain := world_scene.active_region.get_node("Terrain")
+	var authored := terrain.get_children()
+	streamer = ChunkStreamer.new()
+	streamer.generation = genesis
+	streamer.living = living
+	streamer.items = items
+	streamer.persistence = persistence
+	streamer.player = player.state
+	streamer.region = region
+	streamer.background_work_allowed = _world_stream_work_allowed
+	terrain.add_child(streamer)
+	var error := streamer.initialize()
+	if error != OK:
+		startup_error = error
+		push_error("Canonical chunk attachment failed: " + str(streamer.metrics.last_error))
+		_freeze_world_failure()
+		return
+	for child in authored: child.free()
+	items_panel.attach_chunk_candidates(streamer.resource_candidates)
+	living_runtime = LivingRuntime.new()
+	living_runtime.module = living
+	living_runtime.root_host = authority_host
+	living_runtime.targeting = targeting.service
+	living_runtime.region = region
+	living_runtime.active_chunks = streamer.active_chunk
+	living_runtime.spatial_gate = _world_visible
+	living_runtime.route_port = streamer.route
+	world_scene.active_region.add_child(living_runtime)
+	enemies.relevant = func(actor: EnemyActor) -> bool: return streamer.active_chunk(region.chunk_id(region.to_local_position(actor.position)))
+	_enemy_cell = Vector2i(1000000, 1000000)
+	if OS.is_debug_build():
+		var canvas := CanvasLayer.new()
+		_world_label = Label.new()
+		_world_label.position = Vector2(560, 255)
+		_world_label.add_theme_font_size_override("font_size", 16)
+		canvas.add_child(_world_label)
+		world_scene.active_region.add_child(canvas)
+
+func _sync_enemy_bodies() -> void:
+	if not is_instance_valid(streamer) or "--combat-actions-acceptance" in OS.get_cmdline_user_args(): return
+	var definition := world_scene.active_region.record.definition
+	var cell := definition.chunk_at(definition.to_local_position(player.state.position))
+	if cell == _enemy_cell and core.clock.tick % 5 != 0: return
+	_enemy_cell = cell
+	var actors: Array = [enemies.actor]
+	actors.append_array(enemies.companions)
+	for actor: EnemyActor in actors:
+		var relevant := streamer.active_chunk(definition.chunk_id(definition.to_local_position(actor.position)))
+		var body: EnemyBody = enemy_body if actor == enemies.actor else null
+		if actor != enemies.actor:
+			for candidate in companion_bodies:
+				if candidate.actor == actor: body = candidate; break
+		if relevant and not is_instance_valid(body):
+			body = EnemyBody.new()
+			body.actor = actor
+			world_scene.active_region.get_node("Actors").add_child(body)
+			if actor == enemies.actor: enemy_body = body; enemies.controller.move_toward = body.approach
+			else:
+				companion_bodies.append(body)
+				for ai in enemies.companion_controllers:
+					if ai.actor == actor: ai.move_toward = body.approach
+			targeting.service.register(actor.entity_id, func() -> Vector3: return actor.position)
+			combat_feedback.attach_actor(actor.entity_id, body.marker)
+		elif not relevant and is_instance_valid(body):
+			actor.actions.interrupt()
+			targeting.service.unregister(actor.entity_id)
+			if actor == enemies.actor: enemy_body = null; enemies.controller.move_toward = Callable()
+			else:
+				companion_bodies.erase(body)
+				for ai in enemies.companion_controllers:
+					if ai.actor == actor: ai.move_toward = Callable()
+			body.free()
+
+func _freeze_world_failure() -> void:
+	set_process(false)
+	var avatar := world_scene.active_region.avatar
+	avatar.motor.set_physics_process(false)
+	avatar.input.set_physics_process(false)
+	persistence.writes_blocked = true
+	persistence.suppress_autosave = true
+	startup_message = Label.new()
+	startup_message.text = "Canonical world attachment failed. Saved data has been preserved."
+	add_child(startup_message)
+
+func _world_stream_work_allowed() -> bool:
+	if player_combat.actions.phase not in [ActionExecutor.Phase.IDLE, ActionExecutor.Phase.CANCELLED]: return false
+	if enemies.actor.combatant.lifecycle == Combatant.Lifecycle.ALIVE and enemies.actor.position.distance_squared_to(player.state.position) < 196.0: return false
+	for actor: EnemyActor in enemies.companions:
+		if actor.combatant.lifecycle == Combatant.Lifecycle.ALIVE and actor.position.distance_squared_to(player.state.position) < 196.0: return false
+	return true

@@ -121,6 +121,8 @@ func tick() -> void:
 
 func _choose(actor: LivingActorState, tick_value: int) -> Dictionary:
 	if module.actors[actor.actor_id].combatant.lifecycle != Combatant.Lifecycle.ALIVE: return {"kind": "idle"}
+	if not actor.plan_dirty and not actor.plan.is_empty() and tick_value < int(actor.plan.get("expires_tick", 0)):
+		return module.decisions.choose(actor, tick_value)
 	var context := {}
 	if actor.kind == "bot" and actor.fidelity == LivingActorState.Fidelity.L0:
 		context = queries.observed_target(actor)

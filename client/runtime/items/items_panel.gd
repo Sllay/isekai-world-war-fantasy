@@ -16,6 +16,14 @@ var _revision := -1
 var _elapsed := 0.0
 var _token := 0
 var _dirty := true
+var external_world_markers := false
+var candidate_nodes: Callable
+
+func attach_chunk_candidates(provider: Callable) -> void:
+	external_world_markers = true
+	candidate_nodes = provider
+	for marker in _markers.values(): marker.free()
+	_markers.clear()
 
 func _ready() -> void:
 	var canvas := CanvasLayer.new()
@@ -56,6 +64,7 @@ func _ready() -> void:
 	utility.add_child(_button("Interact (R)", _interact))
 	utility.add_child(_button("Use balm (U)", _use_balm))
 	for authored in items.content.nodes:
+		if external_world_markers: break
 		var profile := items.content.profile(authored.profile_id)
 		var marker := _world_marker(authored.position, Color(0.25, 0.6, 0.22) if profile.kind == "tree" else (Color(0.3, 0.6, 0.9) if profile.kind == "ore" else Color(0.55, 0.55, 0.58)), profile.display_name)
 		_markers[authored.node_id] = marker
@@ -98,6 +107,7 @@ func _refresh() -> void:
 	_context.text = "Nearby: " + target.get("id", "none") + " · " + items.last_result
 	var view := items.state_view()
 	for id: String in view.nodes:
+		if not _markers.has(id): continue
 		var state: Dictionary = view.nodes[id]
 		_markers[id].get_node("Label").text = "%s %d/%d" % [state.display_name, state.remaining, state.max_reserves]
 		_markers[id].get_node("Mesh").scale.y = 0.25 if state.remaining == 0 else 1.0
@@ -128,7 +138,10 @@ func nearest() -> Dictionary:
 		var point := Vector3(drop.position[0], drop.position[1], drop.position[2])
 		var squared := items.player.position.distance_squared_to(point)
 		if not drop.claimed and squared <= distance: best = {"kind": "item.pickup", "id": id}; distance = squared
-	for node in items.content.nodes:
+	var candidates: Array = candidate_nodes.call() if candidate_nodes.is_valid() else items.resources.node_ids()
+	for node_id: String in candidates:
+		var node := items.resources.definition(node_id)
+		if node == null: continue
 		var squared := items.player.position.distance_squared_to(node.position)
 		if squared <= distance: best = {"kind": "item.harvest", "id": node.node_id}; distance = squared
 	return best

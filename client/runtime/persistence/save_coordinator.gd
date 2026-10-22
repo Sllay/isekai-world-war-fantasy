@@ -16,6 +16,10 @@ var delete_code := "NOT_DELETED"
 var writes_blocked := false
 var last_save_code := "NOT_SAVED"
 var last_resume_code := "NOT_RESUMED"
+var checkpoint_committed: Callable
+var migration_pending := false
+var timing := {"capture_us": 0, "validate_us": 0, "write_us": 0, "total_us": 0}
+var max_commit_timing: Dictionary = {}
 
 func _init(save_slot: LocalSaveSlot, modules: CoreModuleRegistry, adapter: CoreSaveStore, world_scene: WorldScene, content: WorldDefinition) -> void:
 	slot = save_slot
@@ -52,17 +56,44 @@ func save_game() -> Error:
 		return _save_failure("SAVE_BLOCKED", ERR_UNCONFIGURED)
 	# Main-thread synchronous capture has no await: physics, clock and modules
 	# cannot advance between capture, validation and the atomic replacement.
+	var started := Time.get_ticks_usec()
 	var snapshot := capture_snapshot()
+	timing.capture_us = Time.get_ticks_usec() - started
+	var validated := Time.get_ticks_usec()
 	var staged := integrity.prepare(snapshot)
+	timing.validate_us = Time.get_ticks_usec() - validated
 	if staged.is_empty():
 		return _save_failure("SAVE_INVALID", ERR_INVALID_DATA, integrity.reason)
+	var writing := Time.get_ticks_usec()
 	var error := slot.write(store, staged)
+	timing.write_us = Time.get_ticks_usec() - writing
+	timing.total_us = Time.get_ticks_usec() - started
 	if error != OK:
 		return _save_failure("SAVE_WRITE_FAILED", error)
 	suppress_autosave = false
+	migration_pending = false
 	last_save_code = "SAVE_OK"
+	if checkpoint_committed.is_valid(): checkpoint_committed.call()
 	_report(last_save_code)
 	return OK
+
+# Generation's staged section is validated and durably committed before the
+# owning ledger installs it. No provisional record leaks into canonical state.
+func commit_section(section_id: String, candidate: Dictionary) -> Error:
+	if not ready or writes_blocked or scene.active_region == null or not registry.modules.has(section_id): return ERR_UNCONFIGURED
+	var started := Time.get_ticks_usec()
+	var snapshot := capture_snapshot()
+	if not snapshot.sections.has(section_id): return ERR_INVALID_DATA
+	snapshot.sections[section_id].state = candidate.duplicate(true)
+	var captured := Time.get_ticks_usec()
+	var staged := integrity.prepare(snapshot)
+	if staged.is_empty(): return ERR_INVALID_DATA
+	var validated := Time.get_ticks_usec()
+	var error := slot.write(store, staged)
+	var ended := Time.get_ticks_usec()
+	var measured := {"capture_us": captured - started, "validate_us": validated - captured, "write_us": ended - validated, "total_us": ended - started}
+	if measured.total_us > int(max_commit_timing.get("total_us", 0)): max_commit_timing = measured
+	return error
 
 func resume_game() -> Error:
 	return _resume_read(slot.read(store))
@@ -94,6 +125,7 @@ func _resume_read(loaded: Dictionary) -> Error:
 		return _resume_failure("RESUME_ATTACH_FAILED", "error=%d rollback=%d" % [error, rollback])
 	ready = true
 	writes_blocked = false
+	migration_pending = loaded.snapshot.game_version != SaveIntegrity.GAME_VERSION
 	last_resume_code = "RESUME_OK"
 	_report(last_resume_code)
 	return OK

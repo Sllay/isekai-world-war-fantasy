@@ -1,7 +1,7 @@
 class_name SaveIntegrity
 extends RefCounted
 
-const GAME_VERSION := "0.4.0"
+const GAME_VERSION := "0.5.0"
 
 var registry: CoreModuleRegistry
 var store: CoreSaveStore
@@ -16,7 +16,7 @@ func _init(modules: CoreModuleRegistry, adapter: CoreSaveStore, definition: Worl
 # Pure with respect to canonical state. Core prepares/migrates every section first.
 func prepare(snapshot: Dictionary) -> Dictionary:
 	reason = "SCHEMA_INVALID"
-	var upgraded := _upgrade_p2(_upgrade_a1(_upgrade_enemy_release(_upgrade_legacy(snapshot))))
+	var upgraded := _upgrade_p3(_upgrade_p2(_upgrade_a1(_upgrade_enemy_release(_upgrade_legacy(snapshot)))))
 	if upgraded.is_empty():
 		return _reject("LEGACY_SAVE_INVALID")
 	var staged := store.prepare_restore(registry, upgraded)
@@ -56,6 +56,7 @@ func prepare(snapshot: Dictionary) -> Dictionary:
 	if registry.modules.has("gameplay.items_resources"):
 		if not staged.sections.has("gameplay.items_resources"): return _reject("ITEMS_SECTION_MISSING")
 		if not _items_consistent(staged, entity_id, regions): return _reject("ITEMS_CUSTODY_OR_EQUIPMENT_MISMATCH")
+	if registry.modules.has("foundation.world_genesis") and not _world_consistent(staged, entity_id, regions): return _reject("GENERATED_WORLD_OR_ACTOR_MISMATCH")
 	# Known finite void positions from old slots recover through the authored
 	# Region contract. Gross/nonfinite corruption still fails Player validation.
 	var player_state: Dictionary = staged.sections["foundation.player"].state
@@ -105,7 +106,7 @@ func _upgrade_enemy_release(snapshot: Dictionary) -> Dictionary:
 	if snapshot.is_empty() or not registry.modules.has("gameplay.enemies") or not snapshot.get("modules") is Dictionary or snapshot.modules.has("gameplay.enemies"):
 		return snapshot
 	var previous := ["core.runtime", "foundation.player", "foundation.world", "foundation.regions", "foundation.combat", "foundation.player_combat"]
-	if snapshot.get("game_version") not in ["0.2.0", GAME_VERSION] or snapshot.modules.size() != previous.size() or not snapshot.get("sections") is Dictionary:
+	if snapshot.get("game_version") != "0.2.0" or snapshot.modules.size() != previous.size() or not snapshot.get("sections") is Dictionary:
 		return {}
 	for id in previous:
 		if snapshot.modules.get(id) != "1.0.0":
@@ -162,9 +163,9 @@ func _upgrade_a1(snapshot: Dictionary) -> Dictionary:
 
 func _upgrade_p2(snapshot: Dictionary) -> Dictionary:
 	if snapshot.is_empty() or snapshot.get("game_version") != "0.3.0" or not registry.modules.has("gameplay.items_resources"): return snapshot
-	if not snapshot.get("modules") is Dictionary or not snapshot.get("sections") is Dictionary or snapshot.modules.has("gameplay.items_resources") or snapshot.sections.has("gameplay.items_resources") or snapshot.modules.size() != registry.modules.size() - 1: return {}
+	if not snapshot.get("modules") is Dictionary or not snapshot.get("sections") is Dictionary or snapshot.modules.has("gameplay.items_resources") or snapshot.sections.has("gameplay.items_resources") or snapshot.modules.size() != 8: return {}
 	for id in registry.modules:
-		if id != "gameplay.items_resources" and snapshot.modules.get(id) != registry.modules[id].version: return {}
+		if id not in ["gameplay.items_resources", "foundation.world_genesis", "gameplay.living"] and snapshot.modules.get(id) != registry.modules[id].version: return {}
 	var player: Variant = snapshot.sections.get("foundation.player", {}).get("state")
 	var actors: Variant = snapshot.sections.get("foundation.regions", {}).get("state", {}).get("regions", {}).get("region.home_valley", {}).get("actors")
 	if not player is Dictionary or not PlayerState.valid(player) or not actors is Dictionary or actors.size() != 2: return {}
@@ -173,7 +174,7 @@ func _upgrade_p2(snapshot: Dictionary) -> Dictionary:
 	if not actors.get("spawn.melee_skirmisher_second") is Dictionary or not enemies.companions[0].valid(actors["spawn.melee_skirmisher_second"]): return {}
 	var owner := registry.modules["gameplay.items_resources"] as ItemsModule
 	var result := snapshot.duplicate(true)
-	result.game_version = GAME_VERSION
+	result.game_version = "0.4.0"
 	result.modules[owner.id] = owner.version
 	result.sections[owner.id] = {"version": owner.state_version, "state": owner.initial_state(player.entity_id, actors)}
 	return result
@@ -215,4 +216,83 @@ func _items_consistent(staged: Dictionary, owner_id: String, regions: Dictionary
 		var resource_catalog: ResourceCatalog = module.content
 		var profile := resource_catalog.profile(node.profile_id)
 		if node.regeneration_tick > staged.sections["core.runtime"].state.clock.tick + profile.regeneration_ticks: return false
+	return true
+
+func _upgrade_p3(snapshot: Dictionary) -> Dictionary:
+	if snapshot.is_empty() or snapshot.get("game_version") != "0.4.0" or not registry.modules.has("foundation.world_genesis"): return snapshot
+	if not snapshot.get("modules") is Dictionary or not snapshot.get("sections") is Dictionary or snapshot.modules.size() != 9 or snapshot.sections.size() != 6: return {}
+	for id in registry.modules:
+		if id in ["foundation.world_genesis", "gameplay.living"]:
+			if snapshot.modules.has(id) or snapshot.sections.has(id): return {}
+		elif snapshot.modules.get(id) != registry.modules[id].version: return {}
+	var player: Variant = snapshot.sections.get("foundation.player", {}).get("state")
+	if not player is Dictionary or not PlayerState.valid(player): return {}
+	var result := snapshot.duplicate(true)
+	result.game_version = GAME_VERSION
+	var generation := registry.modules["foundation.world_genesis"] as WorldGenerationModule
+	var living := registry.modules["gameplay.living"] as LivingModule
+	for module: CoreModule in [generation, living]: result.modules[module.id] = module.version
+	result.sections[generation.id] = {"version": generation.state_version, "state": {"blueprint": generation.ledger.blueprint.duplicate(true), "chunks": {}}}
+	result.sections[living.id] = {"version": living.state_version, "state": living.initial_state(player.entity_id)}
+	return result
+
+func _world_consistent(snapshot: Dictionary, player_id: String, regions: Dictionary) -> bool:
+	if not snapshot.sections.has("foundation.world_genesis") or not snapshot.sections.has("gameplay.living"): return false
+	var generated: Dictionary = snapshot.sections["foundation.world_genesis"].state
+	if generated.blueprint.world_id != snapshot.world_id or generated.blueprint.world_seed != snapshot.world_seed: return false
+	for region_id: String in generated.blueprint.regions:
+		if not regions.has(region_id): return false
+	var placement := WorldGenerationModule.placements(generated)
+	var resources: Dictionary = snapshot.sections["gameplay.items_resources"].state.resources.nodes
+	for node_id: String in resources:
+		if not placement.has(node_id): return false
+		var node: Dictionary = resources[node_id]
+		var authored: Dictionary = placement[node_id]
+		if node.profile_id != authored.profile_id or node.region_id != authored.region_id or Vector3(node.position[0], node.position[1], node.position[2]) != Vector3(authored.position_mm[0], authored.position_mm[1], authored.position_mm[2]) / 1000.0: return false
+	var ids: Array = snapshot.sections["core.runtime"].state.entities.ids
+	var valid_actor := func(id_value: String) -> bool: return ids.has(id_value)
+	var known_sources := placement.duplicate()
+	var spawns := {}
+	var claims := {}
+	for record: Dictionary in generated.chunks.values():
+		for landmark: Dictionary in record.base.landmarks: known_sources[landmark.id] = true
+		for spawn: Dictionary in record.base.spawns:
+			if spawns.has(spawn.actor_id): return false
+			spawns[spawn.actor_id] = spawn
+			if record.delta.spawn_claims.has(spawn.spawn_id): claims[spawn.actor_id] = true
+		for removed: String in record.delta.removed_resources:
+			if not resources.has(removed) or resources[removed].remaining != 0: return false
+	var item_content := ResourceCatalog.defaults()
+	for recipe in item_content.recipes: known_sources[recipe.recipe_id] = true
+	var valid_source := func(id_value: String) -> bool: return ids.has(id_value) or known_sources.has(id_value)
+	var state: Dictionary = snapshot.sections["gameplay.living"].state
+	var living := registry.modules["gameplay.living"] as LivingModule
+	var rpg_catalog: LivingCatalog = living.catalog
+	var identity_class: ClassDefinition = rpg_catalog.character_class(state.player.class_id)
+	var progression: ProgressionDefinition = rpg_catalog.progression(identity_class.progression_id)
+	if state.player.id != player_id or not LivingProgression.valid(state.player.progression, progression, valid_source): return false
+	if state.actors.size() != claims.size(): return false
+	var occupied := {player_id: true}
+	for region: Dictionary in regions.values():
+		for actor: Dictionary in region.get("actors", {}).values(): occupied[actor.entity_id] = true
+	for key: String in state.actors:
+		var actor: Dictionary = state.actors[key].state
+		if occupied.has(key) or not ids.has(key) or not claims.has(key) or not spawns.has(key) or not LivingActorState.valid(actor, living.catalog, valid_actor, valid_source): return false
+		occupied[key] = true
+		if actor.world_id != snapshot.world_id or actor.region_id != spawns[key].region_id or actor.region_id not in regions: return false
+		if actor.kind != ("bot" if spawns[key].profile_id == "spawn.profile.traveler_bot" else "npc"): return false
+		if actor.inventory_id != "inventory.actor.a" + key or actor.equipment_id != "equipment.actor.a" + key: return false
+		var position: Array = actor.movement.position
+		var definition := content.region(actor.region_id)
+		var point := Vector3(position[0], position[1], position[2])
+		var cell := definition.chunk_at(definition.to_local_position(point))
+		if actor.chunk_id != WorldGenIds.chunk(actor.region_id, cell) or not WorldBlueprint.contains(generated.blueprint, cell, actor.region_id) or not definition.safe_position(point): return false
+		var activity_points: Array = [actor.home, actor.work]
+		if not actor.activity.is_empty(): activity_points.append_array([actor.activity.origin, actor.activity.destination])
+		for saved_point: Array in activity_points:
+			var location := Vector3(saved_point[0], saved_point[1], saved_point[2])
+			if not definition.safe_position(location) or not WorldBlueprint.contains(generated.blueprint, definition.chunk_at(definition.to_local_position(location)), actor.region_id): return false
+		for container: Dictionary in state.actors[key].inventory.containers:
+			for entry: Dictionary in container.entries:
+				if not ids.has(entry.owner_id): return false
 	return true

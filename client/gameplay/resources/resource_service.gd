@@ -15,6 +15,9 @@ func node_ids() -> Array[String]:
 	result.sort()
 	return result
 
+func node_count() -> int:
+	return _nodes.size()
+
 # Trusted world placement adapter. Existing reserves are never reset on residency.
 func register_node(authored: ResourceNodeDefinition) -> Error:
 	if authored == null or not authored.valid() or catalog.profile(authored.profile_id) == null: return ERR_INVALID_DATA

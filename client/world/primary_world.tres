@@ -8,7 +8,7 @@ region_id = "region.home_valley"
 entries = Dictionary[String, Vector3]({"entry.arrival": Vector3(0, 0.1, 8), "entry.ridge": Vector3(0, 3.1, -24), "entry.respawn": Vector3(-14, 0.1, 14)})
 scene = ExtResource("3")
 recovery_y = -12.0
-safety_bounds = Rect2(-48, -48, 96, 96)
+safety_bounds = Rect2(-128, -128, 288, 288)
 safety_surface = PackedVector2Array(48, 0, -4, 0, -16, 3, -48, 3)
 actor_spawns = Dictionary[String, Vector3]({"spawn.melee_skirmisher": Vector3(4, 0, 2), "spawn.melee_skirmisher_second": Vector3(18, 0, -2)})
 [resource]

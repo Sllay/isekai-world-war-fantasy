@@ -6,6 +6,7 @@ cd "$ROOT_DIR"
 
 GODOT_VERSION="4.7.2"
 TESTS=(
+  world_living
   items_resources
   authority
   core
@@ -26,7 +27,7 @@ Commands:
   mcp-status             Check runtime MCP/LSP ports without retry loops.
   godot-check            Import/parse the Godot project headlessly.
   test all               Run all current deterministic test suites.
-  test <name>            Run one suite: items_resources, core, player, combat, combat_actions,
+  test <name>            Run one suite: world_living, items_resources, core, player, combat, combat_actions,
                          enemy_telegraphs, world, save_resume.
   test affected [base]   Conservative path-based affected-suite selection.
                          Defaults to git merge-base HEAD origin/main; falls back
@@ -130,7 +131,7 @@ unique_tests_from_diff() {
   local base="$1" files
   files="$(git diff --name-only "$base"...HEAD 2>/dev/null || true)"
   if [[ -z "$files" ]]; then printf '%s\n' "${TESTS[@]}"; return 0; fi
-  if printf '%s\n' "$files" | rg -q '^(client/core/|client/runtime/|client/foundation/authority/|client/foundation/items/|client/gameplay/items/|client/gameplay/resources/|client/project\.godot|shared/|data/|\.codex/|\.serena/|tools/dev/)'; then printf '%s\n' "${TESTS[@]}"; return 0; fi
+  if printf '%s\n' "$files" | rg -q '^(client/core/|client/runtime/|client/foundation/authority/|client/foundation/items/|client/foundation/worldgen/|client/gameplay/living/|client/gameplay/items/|client/gameplay/resources/|client/project\.godot|shared/|data/|\.codex/|\.serena/|tools/dev/)'; then printf '%s\n' "${TESTS[@]}"; return 0; fi
 
   local selected=()
   add() { local candidate="$1" existing; for existing in "${selected[@]:-}"; do [[ "$existing" == "$candidate" ]] && return 0; done; selected+=("$candidate"); }

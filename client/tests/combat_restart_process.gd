@@ -31,7 +31,7 @@ func run() -> void:
 		check(state.health == 63 and state.resource == 39 and state.max_health() == 125 and state.max_resource() == 70, "nondefault current/max state")
 		check(runtime.save_game() == OK, "actual combat section written to disk")
 		var file := FileAccess.open(proof_path, FileAccess.WRITE)
-		file.store_string(FileAccess.get_file_as_string(path))
+		file.store_string(JSON.stringify(runtime.core.saves.read_snapshot(path), "", true, true))
 		file.close()
 	else:
 		var expected: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(proof_path))

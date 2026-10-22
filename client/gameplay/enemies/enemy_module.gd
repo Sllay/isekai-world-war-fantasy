@@ -1,6 +1,8 @@
 class_name EnemyModule
 extends CoreModule
 
+var relevant: Callable
+
 const ARCHETYPE = preload("res://gameplay/enemies/melee_skirmisher.tres")
 const SPAWN := "spawn.melee_skirmisher"
 var companions: Array[EnemyActor] = []
@@ -68,7 +70,9 @@ func bind_residency() -> void:
 	if record.lifecycle != RegionState.Lifecycle.LOADED:
 		return
 	disposition.groups[actor.entity_id] = "disposition.hostile"
-	targeting.register(actor.entity_id, func() -> Variant: return actor.position if record.lifecycle == RegionState.Lifecycle.LOADED else null)
+	targeting.register(actor.entity_id, func() -> Variant:
+		if record.lifecycle != RegionState.Lifecycle.LOADED: return null
+		return actor.position)
 	_registered_id = actor.entity_id
 	actor.actions.position_of = targeting.position_of
 	for old_id in _companion_registered:
@@ -77,7 +81,9 @@ func bind_residency() -> void:
 	_companion_registered.clear()
 	for extra in companions:
 		disposition.groups[extra.entity_id] = "disposition.hostile"
-		targeting.register(extra.entity_id, func() -> Variant: return extra.position if record.lifecycle == RegionState.Lifecycle.LOADED else null)
+		targeting.register(extra.entity_id, func() -> Variant:
+			if record.lifecycle != RegionState.Lifecycle.LOADED: return null
+			return extra.position)
 		extra.actions.position_of = targeting.position_of
 		_companion_registered.append(extra.entity_id)
 	for ai in companion_controllers:
@@ -85,13 +91,14 @@ func bind_residency() -> void:
 
 func tick() -> void:
 	if record.lifecycle == RegionState.Lifecycle.LOADED:
-		controller.tick()
+		if not relevant.is_valid() or bool(relevant.call(actor)): controller.tick()
 		for ai in companion_controllers:
-			ai.tick()
+			if not relevant.is_valid() or bool(relevant.call(ai.actor)): ai.tick()
 	else:
 		targeting.unregister(actor.entity_id)
 
 func dispose() -> void:
+	relevant = Callable()
 	if combat == null:
 		return
 	combat.events.unsubscribe(_defeat_token)

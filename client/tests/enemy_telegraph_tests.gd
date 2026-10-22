@@ -195,8 +195,9 @@ func run() -> void:
 	check(runtime.persistence.integrity.prepare(missing).is_empty(), "missing current actor state cannot silently respawn")
 	var previous := current_snapshot.duplicate(true)
 	previous.game_version = "0.2.0"
-	previous.modules.erase("gameplay.items_resources")
-	previous.sections.erase("gameplay.items_resources")
+	for id in ["gameplay.items_resources", "foundation.world_genesis", "gameplay.living"]:
+		previous.modules.erase(id)
+		previous.sections.erase(id)
 	previous.modules.erase("gameplay.enemies")
 	previous.modules.erase("foundation.targeting")
 	previous.sections["foundation.regions"].version = 1
@@ -220,7 +221,7 @@ func run() -> void:
 	check(not record.definition.safe_position(player.position), "nonfinite position is unsafe")
 	recovery.observe()
 	check(player.position == Vector3(2, 0, 8), "nonfinite runtime position recovers safely")
-	check(not record.definition.safe_position(Vector3(100, 0, 8)), "Region safety bounds own horizontal invalidity")
+	check(not record.definition.safe_position(Vector3(record.definition.safety_bounds.end.x + 1, 0, record.definition.safety_bounds.end.y + 1)), "Region safety bounds own horizontal invalidity")
 	check(safe.position == [2.0, 0.0, 8.0], "healthy grounded position updates recovery")
 	recovery.last_safe = {}
 	player.position = Vector3(0, -40, 0)

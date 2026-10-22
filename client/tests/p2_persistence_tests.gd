@@ -49,8 +49,9 @@ func run() -> void:
 	check(not runtime.persistence.integrity.prepare(starter).is_empty(), "current starter snapshot validates")
 	var legacy := starter.duplicate(true)
 	legacy.game_version = "0.3.0"
-	legacy.modules.erase(ITEMS)
-	legacy.sections.erase(ITEMS)
+	for id in [ITEMS, "foundation.world_genesis", "gameplay.living"]:
+		legacy.modules.erase(id)
+		legacy.sections.erase(id)
 	legacy.sections["foundation.player_combat"].state.combatant.health = 73
 	legacy.sections["foundation.player_combat"].state.combatant.resource = 29
 	legacy.sections["foundation.player_combat"].state.actions.cooldowns["combat.action.strong_strike"] = 17
@@ -60,7 +61,7 @@ func run() -> void:
 	actors["spawn.melee_skirmisher_second"].combatant.health = 64
 	var old_copy := legacy.duplicate(true)
 	var upgraded: Dictionary = runtime.persistence.integrity.prepare(legacy)
-	check(not upgraded.is_empty() and upgraded.game_version == "0.4.0", "explicit P1 release upgrades to P2")
+	check(not upgraded.is_empty() and upgraded.game_version == SaveIntegrity.GAME_VERSION, "explicit P1 release upgrades through P2 into current release")
 	if not upgraded.is_empty():
 		check(upgraded.sections["foundation.player_combat"].state == legacy.sections["foundation.player_combat"].state, "P1 upgrade preserves health/resources/actions/defense exactly")
 		check(upgraded.sections["foundation.regions"] == legacy.sections["foundation.regions"], "P1 upgrade preserves both actors and region state")
@@ -269,4 +270,8 @@ func test_pending_work(starter: Dictionary) -> void:
 	check(runtime.player_combat.actions.phase == ActionExecutor.Phase.IDLE and runtime.player_combat.actions.current == null, "pending item action is discarded on resume")
 	check(runtime.items.inventory.capture() == inventory_before and runtime.items.resources.capture() == nodes_before, "resume preserves exact precommit custody and reserves")
 	for _step in range(20): runtime._process(0.05)
-	check(runtime.items.inventory.capture() == inventory_before and runtime.items.resources.capture() == nodes_before, "discarded pending context cannot commit later")
+	var current_nodes: Dictionary = runtime.items.resources.capture().nodes
+	var unchanged := true
+	for id in nodes_before.nodes:
+		if current_nodes.get(id) != nodes_before.nodes[id]: unchanged = false
+	check(runtime.items.inventory.capture() == inventory_before and unchanged, "discarded pending context cannot commit later; streaming may register new untouched nodes")
