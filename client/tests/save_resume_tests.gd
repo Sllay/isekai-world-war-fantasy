@@ -44,7 +44,7 @@ func run() -> void:
 	var tick: int = runtime.core.clock.tick
 	var original_json := JSON.stringify(good)
 	check(not runtime.persistence.integrity.prepare(good).is_empty() and JSON.stringify(good) == original_json, "complete snapshot validates without mutation")
-	check(good.sections.size() == 5 and good.format_version == 1, "five versioned module sections")
+	check(good.sections.size() == 6 and good.format_version == 1, "six versioned module sections including items/resources")
 	check(not JSON.stringify(good).contains("Camera") and not good.sections["foundation.regions"].state.regions["region.home_valley"].has("lifecycle"), "snapshot excludes residency and visual state")
 	runtime.free()
 	runtime = start_runtime()

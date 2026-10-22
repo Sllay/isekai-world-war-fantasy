@@ -62,11 +62,13 @@ func run() -> void:
 	check(world.persistence.integrity.prepare(broken).is_empty(), "missing current-release opponent cannot reset to defaults")
 	var previous := broken.duplicate(true)
 	previous.game_version = "0.2.0"
+	previous.modules.erase("gameplay.items_resources")
+	previous.sections.erase("gameplay.items_resources")
 	previous.sections["foundation.player_combat"].version = 2
 	previous.sections["foundation.player_combat"].state.erase("defense")
 	previous.sections["core.runtime"].state.entities.ids.erase(world.enemies.companions[0].entity_id)
 	var upgraded: Dictionary = world.persistence.integrity.prepare(previous)
-	check(not upgraded.is_empty() and upgraded.game_version == "0.3.0", "explicit old release introduces second opponent safely")
+	check(not upgraded.is_empty() and upgraded.game_version == SaveIntegrity.GAME_VERSION, "explicit old release introduces second opponent safely")
 	check(not upgraded.is_empty() and upgraded.sections["foundation.regions"].state.regions["region.home_valley"].actors[EnemyModule.SPAWN].combatant.health == first_health, "migration cannot heal the existing enemy")
 	var path: String = world.save_slot.path
 	world.free()

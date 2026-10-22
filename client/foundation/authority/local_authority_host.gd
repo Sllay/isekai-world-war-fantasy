@@ -25,6 +25,16 @@ var _input_tick := -100
 var _dead_until := -1
 var respawns := 0
 var last_result := "READY"
+var command_ports: Dictionary[String, AuthorityCommandPort] = {}
+var extension_snapshot: Callable
+
+func register_command_port(kinds: Array[String], port: AuthorityCommandPort) -> Error:
+	if port == null: return ERR_INVALID_PARAMETER
+	for kind in kinds:
+		if command_ports.has(kind) or kind in ["move", "action", "guard", "dodge", "cancel", "respawn"]:
+			return ERR_ALREADY_EXISTS
+	for kind in kinds: command_ports[kind] = port
+	return OK
 
 func configure(service: CombatService, executor: ActionExecutor, state: PlayerState, session: String) -> void:
 	combat = service
@@ -85,7 +95,9 @@ func submit(session: String, command: Dictionary) -> Dictionary:
 			if not p.is_empty():
 				return _reject("FORGED_STATE")
 		_:
-			return _reject("UNKNOWN_COMMAND")
+			if not command_ports.has(command.kind): return _reject("UNKNOWN_COMMAND")
+			var code := command_ports[command.kind].validate(command.kind, p)
+			if code != "OK": return _reject(code)
 	if _queue.size() >= 8:
 		return _reject("QUEUE_FULL")
 	_last_sequence = int(command.sequence)
@@ -170,6 +182,8 @@ func _execute(command: Dictionary) -> void:
 			last_result = defense.dodge(player.entity_id) if actions.phase != ActionExecutor.Phase.RECOVERY else "ACTION_ACTIVE"
 		"cancel": last_result = actions.cancel()
 		"respawn": last_result = "NOT_DEFEATED"
+		_:
+			last_result = command_ports[command.kind].execute(player.entity_id, command.kind, p)
 
 func _respawn() -> void:
 	if not safe_spawn.is_valid():
@@ -194,18 +208,27 @@ func _respawn() -> void:
 
 func snapshot() -> Dictionary:
 	var actor := combat.combatant(player.entity_id)
-	return {"tick": combat.clock.tick, "ack": _ack, "player": player.capture(), "health": actor.health, "resource": actor.resource, "lifecycle": Combatant.Lifecycle.keys()[actor.lifecycle], "defense": defense.state(player.entity_id).duplicate(true), "actions": actions.development_state(), "loadout": loadout_state(), "respawn_in": maxi(0, _dead_until - combat.clock.tick) if _dead_until >= 0 else 0, "respawns": respawns, "result": last_result}
+	var result := {"tick": combat.clock.tick, "ack": _ack, "player": player.capture(), "health": actor.health, "resource": actor.resource, "lifecycle": Combatant.Lifecycle.keys()[actor.lifecycle], "defense": defense.state(player.entity_id).duplicate(true), "actions": actions.development_state(), "loadout": loadout_state(), "respawn_in": maxi(0, _dead_until - combat.clock.tick) if _dead_until >= 0 else 0, "respawns": respawns, "result": last_result}
+	if extension_snapshot.is_valid(): result["items"] = extension_snapshot.call()
+	return result
 
 func save_game() -> Error:
 	return checkpoint.call() if checkpoint.is_valid() else ERR_UNCONFIGURED
 
 func dispose() -> void:
+	var unique: Array[AuthorityCommandPort] = []
+	for port in command_ports.values():
+		if port not in unique: unique.append(port)
+	for port in unique: port.dispose()
+	command_ports.clear()
+	extension_snapshot = Callable()
 	defense.dispose()
 	for executor: ActionExecutor in actor_executors.values():
 		executor.activation_gate = Callable()
 		executor.mobility_gate = Callable()
 		executor.target_gate = Callable()
 		executor.target_resolver.world_query = Callable()
+		executor.capability_port = null
 	actor_executors.clear()
 	move_port = Callable()
 	recovery_port = Callable()

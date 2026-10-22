@@ -43,7 +43,8 @@ corrects a separate mirror and rejects obsolete corrections. Full prediction,
 pending-input replay and remote interpolation are not claimed.
 
 Host loadout slots reference trusted action definitions. Combat modifiers remain
-the equipment/stat extension point; there is no separate equipment framework.
+the equipment/stat extension point; P2's equipment references canonical inventory
+instances and supplies contributions through that same modifier contract.
 Host-owned SaveCoordinator capture/resume retains canonical domain state; client
 snapshots are value copies and cannot mutate the host. Tests exercise adversarial
 ingress, direct-domain equivalence, defense, stagger, death and an entire playable
@@ -52,7 +53,8 @@ scenario; see `client/tests/authority_tests.gd` and `a1_scenario_tests.gd`.
 C1-R1-P1 uses an authority-installed ActionLoadout (primary, skill_1/2/3; optional
 empty skills). Legacy strong/heal commands alias slots 1/2. Action ingress accepts
 either the original slot/target pair or the pair plus finite world direction/point
-hints; arbitrary extra fields remain rejected. No client equip command exists.
+hints; arbitrary extra fields remain rejected. P2 extends this with validated
+`skill.equip` requests against authority-owned learning/equipment sources.
 World queries are authority-only ports and return bounded candidate IDs; the
 existing executor revalidates them at commit and spends cost/cooldown once. Target
 selection and commit share physics visibility, independent of camera rendering.
@@ -60,6 +62,17 @@ See ADR-0017 and `client/tests/c1_foundation_tests.gd`.
 The remote-without-transport runtime disables both motor and autonomous Region
 recovery; raw input cannot advance actions/combat, recover a transform or save
 untrusted state. `remote_authority_tests.gd` boots that actual application mode.
+
+### C1-R1-P2 item and resource boundary
+
+AuthorityCommandPort extends the same host envelope/actor/inbox validation.
+ItemsAuthorityPort accepts semantic pickup/equip/transfer/split/merge/harvest/
+craft/consume and eligible skill-slot requests, never final grants, yields or
+outputs. ItemsModule owns canonical stock/custody, equipment, learning and world
+resource/drop state. Work commits through existing ActionExecutor capability
+effects and revalidates canonical context at commit. The remote-disconnected
+regression now also proves rejected item requests leave all P2 state unchanged.
+See [Items and resources](ITEMS_RESOURCES_FOUNDATION.md) and ADR-0018.
 
 A production client may submit semantic input/intent, but it does not authoritatively submit final gameplay outcomes.
 

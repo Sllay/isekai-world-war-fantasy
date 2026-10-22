@@ -11,6 +11,7 @@ var mouse_rotating := false
 var guard_touch := -1
 var pointer_aim := false
 var pointer_position := Vector2.ZERO
+var ui_hit_test: Callable
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -46,6 +47,8 @@ func _draw() -> void:
 		draw_circle(Vector2(size.x - 80, 90), 40, Color(1, 1, 1, 0.25))
 
 func _input(event: InputEvent) -> void:
+	if (event is InputEventScreenTouch or event is InputEventMouseButton) and event.pressed and ui_hit_test.is_valid() and bool(ui_hit_test.call(event.position)):
+		return
 	if event is InputEventScreenTouch or event is InputEventJoypadMotion:
 		pointer_aim = false
 	if event is InputEventMouseMotion and not mouse_rotating and _action_slot(event.position) < 0:

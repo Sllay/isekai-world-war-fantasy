@@ -194,6 +194,9 @@ func run() -> void:
 	missing.sections["foundation.regions"].state.regions[actor.region_id].erase("actors")
 	check(runtime.persistence.integrity.prepare(missing).is_empty(), "missing current actor state cannot silently respawn")
 	var previous := current_snapshot.duplicate(true)
+	previous.game_version = "0.2.0"
+	previous.modules.erase("gameplay.items_resources")
+	previous.sections.erase("gameplay.items_resources")
 	previous.modules.erase("gameplay.enemies")
 	previous.modules.erase("foundation.targeting")
 	previous.sections["foundation.regions"].version = 1

@@ -60,6 +60,8 @@ func run() -> void:
 	# Old M1.3 is recognized by its original game version and exact module set.
 	var legacy := good.duplicate(true)
 	legacy.game_version = "0.1.0"
+	legacy.modules.erase("gameplay.items_resources")
+	legacy.sections.erase("gameplay.items_resources")
 	legacy.modules.erase("gameplay.enemies")
 	legacy.modules.erase("foundation.targeting")
 	legacy.sections["foundation.regions"].version = 1

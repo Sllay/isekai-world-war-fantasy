@@ -24,6 +24,8 @@ ADRs registram decisões arquiteturais importantes para preservar contexto hist�
 - ADR-0014 — Production Combat Action Execution
 - ADR-0015 — Region Actor State and Recovery
 - **ADR-0016 — Online-first Authority Boundary**
+- ADR-0017 — Authority Loadouts and World-space Target Queries
+- ADR-0018 — Authoritative Item Custody and Transactional Work
 
 ### Proposed / proof candidates
 

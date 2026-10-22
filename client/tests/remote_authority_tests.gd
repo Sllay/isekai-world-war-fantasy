@@ -32,6 +32,8 @@ func run() -> void:
 	avatar.intent.guard = true
 	avatar.intent.jump = true
 	var combat_before: Dictionary = runtime.player_combat.state.capture()
+	var items_before: Dictionary = runtime.items.capture_state()
+	check(not runtime.authority_gateway.request("item.harvest", {"node": "resource.node.common_tree"}).accepted and not runtime.authority_gateway.request("item.pickup", {"drop": "drop.spawn.melee_skirmisher"}).accepted, "missing server never grants local items authority")
 	var enemy_before: Vector3 = runtime.enemies.actor.position
 	# Even an invalid local mirror cannot authorize a canonical recovery/teleport.
 	runtime.player.state.position = Vector3(0, -100, 0)
@@ -42,6 +44,7 @@ func run() -> void:
 	check(runtime.player.state.position == Vector3(0, -100, 0) and region.record.recovery.recovery_count == recoveries, "missing server never activates local transform recovery")
 	check(runtime.player_combat.state.capture() == combat_before and runtime.player_combat.actions.phase == ActionExecutor.Phase.IDLE, "raw input cannot authoritatively spend, damage or defend while disconnected")
 	check(runtime.enemies.actor.position == enemy_before and runtime.authority_host == null, "simulation remains frozen without promoting client authority")
+	check(runtime.items.capture_state() == items_before, "disconnected input cannot mutate inventory/equipment/resources")
 	check(runtime.save_game() == ERR_UNCONFIGURED and not FileAccess.file_exists(path), "untrusted client state cannot be saved as canonical gameplay")
 	runtime.free()
 	await process_frame

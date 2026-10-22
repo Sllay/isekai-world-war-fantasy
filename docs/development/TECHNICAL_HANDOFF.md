@@ -1,5 +1,37 @@
 # Developer <-> Technical Design Handoff
 
+## 2026-10-22 — C1-R1-P2 integrated foundation
+
+- P1 is completed and Android-accepted per BK; P2 continues its remote SHA
+  `86d0c49bbf001415963a74ad2475b6cea13a3f48`. Preserve the common host/executor,
+  actual-stock custody, source-owned modifiers and skill cooldown identity.
+- Item custody distinguishes holder from legal provenance owner. Humanoid defeat
+  transfers existing stock once; claimed tombstones and old-release dead-actor
+  migration must never introduce retroactive loot or refill on resume.
+- Save version 0.4.0 adds ItemsModule v1. Validate all sections before mutation;
+  current missing data rejects. Cache/actor positions compare exact canonical
+  Vector3 values, because repeated JSON float64 parsing is not bit-identical to
+  the original float32 components. A displaced cache still rejects. Preserve the
+  repeated-save regression and pure restore checks.
+- Godot 4.7.2 retained loaded scripts when SaveIntegrity inferred a chained
+  `module.content.profile(...)` expression. A separately typed ResourceCatalog
+  local removes the reproducible load-only leak. Do not replace this with leak
+  suppression, ignored errors or Environment changes.
+- Runtime/Serena/Diagnostics were invoked through installed stdio servers; native
+  tools are not registered in this agent session. Godot MCP needed a 3-second
+  post-connect handshake. The prescribed launcher reported the existing editor
+  healthy; no editor restart or cloud reconfiguration was performed.
+- Work uses one SELF capability effect with no extra resource cost. Expanding to
+  mixed inventory/combat effects needs an explicit transactional contract, not an
+  animation callback or another work executor.
+- Live application timing excludes physics/render. Cloud profiler snapshots and
+  the bounded two-opponent/four-node scenario do not establish Android frame-rate
+  or population capacity. Only new technical-panel touch comfort/readability
+  remains subjective device acceptance; deterministic outcomes are automated.
+- Stable nonperishable goods intentionally do not claim completed decay/cohort,
+  hunger/thirst, final economy, final UI or full materials-processing content.
+  See ADR-0018 and the P2 mission/validation record. Needs Technical Design: No.
+
 ## C1-R1-P1 continuation of the integrated A1 foundation
 
 - Run 1 explicitly accepts representative procedural presentation; final Chapter

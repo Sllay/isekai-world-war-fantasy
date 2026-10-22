@@ -42,6 +42,10 @@ func valid(data: CoreDataRegistry) -> bool:
 	for effect in effects:
 		if effect == null or not effect.valid(data):
 			return false
+		# Cross-domain transactions are one self-owned capability effect, never a
+		# mixed health/inventory list with partial cost/effect commits.
+		if effect.kind == ActionEffect.Kind.CAPABILITY and (effects.size() != 1 or target_mode != TargetMode.SELF or resource_cost != 0):
+			return false
 	var seen: Dictionary = {}
 	for tag in tags:
 		if not CoreIds.valid(tag) or seen.has(tag):

@@ -23,8 +23,8 @@ func unequip(slot: String) -> Error:
 	return OK if _slots.erase(slot) else ERR_DOES_NOT_EXIST
 
 func is_equipped(container_id: String, entry_id: String) -> bool:
-	for reference: Dictionary in _slots.values():
-		if reference.container_id == container_id and reference.entry_id == entry_id:
+	for item_ref: Dictionary in _slots.values():
+		if item_ref.container_id == container_id and item_ref.entry_id == entry_id:
 			return true
 	return false
 
@@ -41,8 +41,8 @@ func definitions(inventory: InventoryService) -> Dictionary:
 		return result
 	for slot: String in SLOTS:
 		if _slots.has(slot):
-			var reference: Dictionary = _slots[slot]
-			var stack := inventory.entry(reference.container_id, reference.entry_id)
+			var item_ref: Dictionary = _slots[slot]
+			var stack := inventory.entry(item_ref.container_id, item_ref.entry_id)
 			result[slot] = inventory.catalog.lookup(stack.definition_id)
 	return result
 
@@ -59,18 +59,18 @@ func validate_state(value: Dictionary, inventory: InventoryService) -> Error:
 	for slot: Variant in value.slots:
 		if slot not in SLOTS or not value.slots[slot] is Dictionary or not InventoryService._keys(value.slots[slot], ["container_id", "entry_id"]):
 			return ERR_INVALID_DATA
-		var reference: Dictionary = value.slots[slot]
-		if not reference.container_id is String or not reference.entry_id is String or seen.has(reference.entry_id):
+		var item_ref: Dictionary = value.slots[slot]
+		if not item_ref.container_id is String or not item_ref.entry_id is String or seen.has(item_ref.entry_id):
 			return ERR_INVALID_DATA
-		var container := inventory.snapshot(reference.container_id)
-		var stack := inventory.entry(reference.container_id, reference.entry_id)
+		var container := inventory.snapshot(item_ref.container_id)
+		var stack := inventory.entry(item_ref.container_id, item_ref.entry_id)
 		# Possession controls equipment. Legal owner can differ after valid loot/theft.
 		if container.is_empty() or container.owner_id != value.owner_id or stack.is_empty() or stack.quantity != 1:
 			return ERR_INVALID_DATA
 		var definition := inventory.catalog.lookup(stack.definition_id)
 		if definition == null or definition.equipment_slot != slot:
 			return ERR_INVALID_DATA
-		seen[reference.entry_id] = true
+		seen[item_ref.entry_id] = true
 	return OK
 
 func restore(value: Dictionary, inventory: InventoryService) -> Error:

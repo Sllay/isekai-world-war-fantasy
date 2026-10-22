@@ -10,6 +10,7 @@ var position_of: Callable
 var activation_gate: Callable
 var mobility_gate: Callable
 var target_gate: Callable
+var capability_port: ActionCapabilityPort
 var target_resolver := ActionTargetResolver.new()
 var _target_hint := ActionTarget.new()
 var _resolved_targets: Array[String] = []
@@ -80,7 +81,7 @@ func _validate(definition: ActionDefinition, hint: ActionTarget, starting: bool)
 		return "COOLDOWN"
 	if definition.resource_cost > 0 and (owner.resource_id != definition.resource_id or owner.resource < definition.resource_cost):
 		return "INSUFFICIENT_RESOURCE"
-	var resolution := target_resolver.resolve(definition, owner_id, hint, combat, position_of, target_gate)
+	var resolution := target_resolver.resolve(definition, owner_id, hint, combat, position_of, target_gate, capability_port)
 	if resolution.code == "OK":
 		_resolved_targets.assign(resolution.targets)
 	return resolution.code
@@ -115,7 +116,7 @@ func advance() -> void:
 				target_id = _resolved_targets[0]
 				effect_results.clear()
 				for id: String in _resolved_targets:
-					effect_results.append_array(ActionEffectRunner.execute(combat, current, owner_id, id, execution_id))
+					effect_results.append_array(ActionEffectRunner.execute(combat, current, owner_id, id, execution_id, capability_port))
 				last_result = "COMMITTED"
 				_emit(ActionCommitted.new(), tick)
 				phase = Phase.RECOVERY

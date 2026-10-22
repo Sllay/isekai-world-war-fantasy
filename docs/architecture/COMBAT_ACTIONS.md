@@ -1,5 +1,17 @@
 # Production combat actions — C1-R1-P1
 
+## C1-R1-P2 extension
+
+P2 adds validated `skill.equip` against persisted LearnedSkillSet sources and
+ActionLoadout, preserving action-ID cooldown identity. Equipment contributes via
+existing CombatModifier; it does not calculate UI-side damage. Harvest/craft/
+consume use the same executor and typed ActionCapabilityPort effects. Missing
+ports fail closed; the transactional form permits one SELF capability effect
+with zero resource cost, avoiding mixed partially committed inventory/combat
+effect lists. Authority revalidates semantic context at activation and commit.
+See [Items/resources contracts](ITEMS_RESOURCES_FOUNDATION.md) and ADR-0018.
+The fixed-loadout persistence statements below describe P1, before this extension.
+
 ## Run 1 loadouts and targeting
 
 ActionLoadout supplies primary and skill_1/2/3 from validated trusted content.

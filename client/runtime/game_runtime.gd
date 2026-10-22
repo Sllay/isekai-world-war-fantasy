@@ -27,11 +27,13 @@ var authority_input := PlayerAuthorityAdapter.new()
 var combat_feedback: Node
 var prediction_mirror := PlayerState.new()
 var reconciler := PlayerReconciler.new()
+var items := ItemsModule.new()
+var items_panel: ItemsPanel
 
 func _ready() -> void:
 	var core_only := "--core-smoke" in OS.get_cmdline_user_args()
 	if not core_only:
-		for module in [player, world, regions, combat, player_combat, targeting, enemies]:
+		for module in [player, world, regions, combat, player_combat, targeting, enemies, items]:
 			var error := registry.add(module)
 			if error != OK:
 				push_error("Production module registration failed: %s" % error)
@@ -40,6 +42,8 @@ func _ready() -> void:
 	super._ready()
 	if registry.state != CoreModuleRegistry.State.RUNNING or core_only:
 		return
+	items.bind(enemies, WORLD_CONTENT)
+	items.restore_state(items.initial_state(player.state.entity_id, items.actor_map()))
 	world_scene = WORLD_SCENE.instantiate() as WorldScene
 	world_scene.directory = regions.directory
 	world_scene.player = player.state
@@ -282,6 +286,15 @@ func _setup_authority(avatar: PlayerAvatar) -> void:
 	for body in companion_bodies:
 		combat_feedback.attach_actor(body.actor.entity_id, body.marker)
 	authority_host.checkpoint = persistence.save_game
+	var item_commands := ItemsAuthorityPort.new()
+	item_commands.bind(authority_host, items)
+	item_commands.region_id = func() -> String: return regions.directory.world.current_region_id
+	item_commands.spatial_gate = _authority_world_visible
+	items_panel = ItemsPanel.new()
+	items_panel.items = items
+	items_panel.gateway = authority_gateway
+	world_scene.active_region.add_child(items_panel)
+	avatar.input.ui_hit_test = items_panel.owns_point
 	if "--combat-actions-acceptance" not in OS.get_cmdline_user_args():
 		authority_host.enemy_step = enemies.tick
 	authority_host.safe_spawn = func() -> void:
@@ -312,5 +325,14 @@ func _authority_line_of_sight(source: String, destination: String) -> bool:
 	if is_instance_valid(enemy_body): excluded.append(enemy_body.get_rid())
 	for body in companion_bodies:
 		excluded.append(body.get_rid())
+	query.exclude = excluded
+	return world_scene.active_region.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+
+func _authority_world_visible(point: Vector3) -> bool:
+	if not point.is_finite(): return false
+	var query := PhysicsRayQueryParameters3D.create(player.state.position + Vector3.UP, point + Vector3.UP, 1)
+	var excluded: Array[RID] = [world_scene.active_region.avatar.motor.get_rid()]
+	if is_instance_valid(enemy_body): excluded.append(enemy_body.get_rid())
+	for body in companion_bodies: excluded.append(body.get_rid())
 	query.exclude = excluded
 	return world_scene.active_region.get_world_3d().direct_space_state.intersect_ray(query).is_empty()

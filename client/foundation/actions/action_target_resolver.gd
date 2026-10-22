@@ -6,7 +6,7 @@ extends RefCounted
 # No query means directional/point actions fail closed. Clients cannot set ports.
 var world_query: Callable
 
-func resolve(definition: ActionDefinition, owner: String, hint: ActionTarget, combat: CombatService, position_of: Callable, visible: Callable) -> Dictionary:
+func resolve(definition: ActionDefinition, owner: String, hint: ActionTarget, combat: CombatService, position_of: Callable, visible: Callable, capabilities: ActionCapabilityPort = null) -> Dictionary:
 	if not hint.direction.is_finite() or not hint.point.is_finite():
 		return _failure("INVALID_AIM")
 	var chosen: Array[String] = []
@@ -53,7 +53,7 @@ func resolve(definition: ActionDefinition, owner: String, hint: ActionTarget, co
 				return _failure("OUT_OF_RANGE")
 			if visible.is_valid() and not bool(visible.call(owner, id)):
 				return _failure("TARGET_OCCLUDED")
-		var code := ActionEffectRunner.validate(combat, definition, owner, id)
+		var code := ActionEffectRunner.validate(combat, definition, owner, id, capabilities)
 		if code != "OK":
 			return _failure(code)
 	return {"code": "OK", "targets": chosen}

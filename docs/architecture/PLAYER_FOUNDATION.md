@@ -1,5 +1,12 @@
 # Production Player Foundation
 
+P2 attaches canonical InventoryService, EquipmentState and LearnedSkillSet under
+`foundation.inventory`, `foundation.equipment` and `foundation.skills` in the
+existing Player EntityComponents. Restore reattaches validated instances; equip
+mutates the referenced EquipmentState in place. Items UI blocks its own pointer
+rectangles from movement input and sends semantic gateway requests. It owns no
+gameplay results. See [Items/resources](ITEMS_RESOURCES_FOUNDATION.md).
+
 ## Current authority interpretation
 
 A1 now implements the seam described here: the LocalAuthorityHost owns canonical

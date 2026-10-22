@@ -2,6 +2,24 @@
 
 Todas as mudanças relevantes de escopo, arquitetura e implementação serão registradas aqui.
 
+## C1-R1-P2 — Items, Resources & Survival Foundation (2026-10-22)
+
+- Continued the completed, Android-accepted P1 on its own P2 branch; retained
+  CombatService, ActionExecutor, semantic intent and the same authority inbox.
+- Added typed item definitions, atomic bounded inventory/stack/custody, instance
+  equipment, source-owned skill learning/grants and eligible persistent loadouts.
+- Connected actual enemy carried stock to one-time world loot/pickup, authored
+  wood/stone/ore nodes, equipped tools, seeded gathering and atomic material-aware
+  hand/forge recipes. Stable balm consumes owned stock through canonical healing;
+  finite coins share the same inventory path.
+- Added minimal desktop/touch Items controls and world silhouettes; no final UI,
+  item catalog, economy, survival balance or external server transport.
+- Added save 0.4.0 with explicit P1 migration, custody/equipment/skill/resource
+  cross-checks, forged/replay tests and exact fresh-process runtime validation.
+  Repeated-save cache positions retain canonical transform precision.
+- Preserved P1 gameplay assertions; old-release fixtures now explicitly remove
+  the new module when modeling pre-P2 saves. See the P2 mission validation record.
+
 ## C1-R1-P1 — Foundation candidate (2026-10-21)
 
 - Continued the integrated A1 Player/Combat/Authority implementation without

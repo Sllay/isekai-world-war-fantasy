@@ -1,7 +1,7 @@
 class_name ActionEffect
 extends Resource
 
-enum Kind { DAMAGE, HEALING }
+enum Kind { DAMAGE, HEALING, CAPABILITY }
 @export var kind: Kind = Kind.DAMAGE
 @export_range(0, 1000000000) var amount: int = 0
 @export var damage_type_id := "combat.damage.physical"
@@ -11,11 +11,16 @@ enum Kind { DAMAGE, HEALING }
 @export var allow_neutral := false
 @export var friendly_fire := false
 @export var allow_self := false
+@export var capability_id := ""
 
 func valid(data: CoreDataRegistry) -> bool:
+	if kind == Kind.CAPABILITY:
+		return amount == 0 and CoreIds.valid(capability_id)
 	return kind in Kind.values() and amount >= 0 and amount <= CombatNumbers.MAX_UNITS and (kind != Kind.DAMAGE or data.lookup(damage_type_id).get("kind") == "damage")
 
 func request(source: String, target: String, action: ActionDefinition) -> CombatRequest:
+	if kind == Kind.CAPABILITY:
+		return null
 	var result: CombatRequest
 	if kind == Kind.DAMAGE:
 		var hit := DamageRequest.new(source, target, amount)

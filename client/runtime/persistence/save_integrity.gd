@@ -1,7 +1,7 @@
 class_name SaveIntegrity
 extends RefCounted
 
-const GAME_VERSION := "0.3.0"
+const GAME_VERSION := "0.4.0"
 
 var registry: CoreModuleRegistry
 var store: CoreSaveStore
@@ -16,7 +16,7 @@ func _init(modules: CoreModuleRegistry, adapter: CoreSaveStore, definition: Worl
 # Pure with respect to canonical state. Core prepares/migrates every section first.
 func prepare(snapshot: Dictionary) -> Dictionary:
 	reason = "SCHEMA_INVALID"
-	var upgraded := _upgrade_a1(_upgrade_enemy_release(_upgrade_legacy(snapshot)))
+	var upgraded := _upgrade_p2(_upgrade_a1(_upgrade_enemy_release(_upgrade_legacy(snapshot))))
 	if upgraded.is_empty():
 		return _reject("LEGACY_SAVE_INVALID")
 	var staged := store.prepare_restore(registry, upgraded)
@@ -53,6 +53,9 @@ func prepare(snapshot: Dictionary) -> Dictionary:
 			if seen.has(actor.entity_id) or not staged.sections["core.runtime"].state.entities.ids.has(actor.entity_id):
 				return _reject("ACTOR_ID_ORPHANED_OR_DUPLICATE")
 			seen[actor.entity_id] = true
+	if registry.modules.has("gameplay.items_resources"):
+		if not staged.sections.has("gameplay.items_resources"): return _reject("ITEMS_SECTION_MISSING")
+		if not _items_consistent(staged, entity_id, regions): return _reject("ITEMS_CUSTODY_OR_EQUIPMENT_MISMATCH")
 	# Known finite void positions from old slots recover through the authored
 	# Region contract. Gross/nonfinite corruption still fails Player validation.
 	var player_state: Dictionary = staged.sections["foundation.player"].state
@@ -145,7 +148,7 @@ func _upgrade_a1(snapshot: Dictionary) -> Dictionary:
 	if not saved is Dictionary or not saved.get("actors") is Dictionary or saved.actors.size() != 1 or not ids is Array or not saved.actors.has(EnemyModule.SPAWN) or not owner.actor.valid(saved.actors[EnemyModule.SPAWN]):
 		return {}
 	var result := snapshot.duplicate(true)
-	result.game_version = GAME_VERSION
+	result.game_version = "0.3.0"
 	for key in owner.companion_initial:
 		var added: Dictionary = owner.companion_initial[key].duplicate(true)
 		if ids.has(added.entity_id):
@@ -156,3 +159,60 @@ func _upgrade_a1(snapshot: Dictionary) -> Dictionary:
 		result.sections["foundation.regions"].state.regions[owner.actor.region_id].actors[key] = added
 		result.sections["core.runtime"].state.entities.ids.append(added.entity_id)
 	return result
+
+func _upgrade_p2(snapshot: Dictionary) -> Dictionary:
+	if snapshot.is_empty() or snapshot.get("game_version") != "0.3.0" or not registry.modules.has("gameplay.items_resources"): return snapshot
+	if not snapshot.get("modules") is Dictionary or not snapshot.get("sections") is Dictionary or snapshot.modules.has("gameplay.items_resources") or snapshot.sections.has("gameplay.items_resources") or snapshot.modules.size() != registry.modules.size() - 1: return {}
+	for id in registry.modules:
+		if id != "gameplay.items_resources" and snapshot.modules.get(id) != registry.modules[id].version: return {}
+	var player: Variant = snapshot.sections.get("foundation.player", {}).get("state")
+	var actors: Variant = snapshot.sections.get("foundation.regions", {}).get("state", {}).get("regions", {}).get("region.home_valley", {}).get("actors")
+	if not player is Dictionary or not PlayerState.valid(player) or not actors is Dictionary or actors.size() != 2: return {}
+	var enemies := registry.modules["gameplay.enemies"] as EnemyModule
+	if not actors.get(EnemyModule.SPAWN) is Dictionary or not enemies.actor.valid(actors[EnemyModule.SPAWN]): return {}
+	if not actors.get("spawn.melee_skirmisher_second") is Dictionary or not enemies.companions[0].valid(actors["spawn.melee_skirmisher_second"]): return {}
+	var owner := registry.modules["gameplay.items_resources"] as ItemsModule
+	var result := snapshot.duplicate(true)
+	result.game_version = GAME_VERSION
+	result.modules[owner.id] = owner.version
+	result.sections[owner.id] = {"version": owner.state_version, "state": owner.initial_state(player.entity_id, actors)}
+	return result
+
+func _items_consistent(staged: Dictionary, owner_id: String, regions: Dictionary) -> bool:
+	var state: Dictionary = staged.sections["gameplay.items_resources"].state
+	if state.owner_id != owner_id or state.equipment.owner_id != owner_id or state.skills.owner_id != owner_id: return false
+	var ids: Array = staged.sections["core.runtime"].state.entities.ids
+	var holders := {}
+	for container: Dictionary in state.inventory.containers:
+		if not ids.has(container.owner_id): return false
+		holders[container.id] = container
+		for entry: Dictionary in container.entries:
+			if not ids.has(entry.owner_id): return false
+	var actors: Dictionary = regions["region.home_valley"].actors
+	for spawn: String in state.looted:
+		if not actors.has(spawn) or not holders.has(ItemsModule.npc_container(spawn)): return false
+		var held: Dictionary = holders[ItemsModule.npc_container(spawn)]
+		if held.owner_id != actors[spawn].entity_id or state.looted[spawn] != (actors[spawn].combatant.lifecycle == Combatant.Lifecycle.DEFEATED): return false
+		if state.looted[spawn] and not held.entries.is_empty(): return false
+	for drop: Dictionary in state.drops.values():
+		var source_position: Array = actors[drop.source].position
+		# JSON numbers are doubles; actor transforms are canonical float32 Vector3.
+		# Compare at that same precision after repeated disk round-trips.
+		if Vector3(drop.position[0], drop.position[1], drop.position[2]) != Vector3(source_position[0], source_position[1], source_position[2]): return false
+	var module := registry.modules["gameplay.items_resources"] as ItemsModule
+	var ledger := InventoryService.new(module.catalog)
+	ledger.restore(state.inventory)
+	var gear := EquipmentState.new(owner_id)
+	gear.restore(state.equipment, ledger)
+	var definitions := gear.definitions(ledger)
+	var bonus: int = definitions.weapon.damage_bonus if definitions.has("weapon") else 0
+	var modifiers: Array = staged.sections["foundation.player_combat"].state.combatant.modifiers
+	var contribution: Array = modifiers.filter(func(value: Dictionary) -> bool: return value.source_id == ItemsModule.EQUIPMENT_SOURCE)
+	if bonus == 0 and not contribution.is_empty(): return false
+	if bonus > 0 and (contribution.size() != 1 or contribution[0].stat != CombatModifier.Stat.DAMAGE_SCALE or contribution[0].operator != CombatModifier.Operator.ADD or contribution[0].value != bonus): return false
+	for node_id: String in state.resources.nodes:
+		var node: Dictionary = state.resources.nodes[node_id]
+		var resource_catalog: ResourceCatalog = module.content
+		var profile := resource_catalog.profile(node.profile_id)
+		if node.regeneration_tick > staged.sections["core.runtime"].state.clock.tick + profile.regeneration_ticks: return false
+	return true

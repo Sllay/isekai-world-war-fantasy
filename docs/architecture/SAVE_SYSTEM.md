@@ -1,5 +1,22 @@
 # Production local save / resume
 
+## Current C1-R1-P2 release
+
+Application game version is now **0.4.0**, generic format remains 1. P1 was 0.3.0;
+the version descriptions below retain their historical release context. Current
+runtime has nine enabled modules and six persistent sections (the five below
+plus `gameplay.items_resources` v1). This section stores canonical inventory,
+equipment, skill ownership/loadout, recipes, resource reserves/deadlines and cache
+custody/completion. SaveIntegrity validates these against Player/Core/Enemy IDs
+and Combat modifiers before any live/residency changes.
+
+Explicit 0.3.0 migration introduces starting P2 state once and preserves saved
+P1 HP, actions/cooldowns and enemies; dead P1 actors receive no retroactive stock.
+Current missing P2 state rejects. Pending work and UI are transient. Exact fresh
+process restoration of all six sections is covered by tests and live Runtime MCP.
+The historical MCP-unavailable note below does not describe the current session.
+See [Items/resources persistence](ITEMS_RESOURCES_FOUNDATION.md).
+
 - **Status:** Implemented — M1.3 accepted; Phase 2 combat integration added
 - **Updated:** 2026-10-15
 
