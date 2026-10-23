@@ -98,11 +98,11 @@ static func _hash(value: String) -> bool:
 	return value.length() == 64 and value == value.to_lower() and value.is_valid_hex_number(false)
 
 # Lossless record codec: JSON's parser can alter the final bits of fractional
-# doubles. Integer-valued numbers normalize; other doubles keep their IEEE bytes.
+# doubles. Floats keep their type and IEEE bytes, including integral floats;
+# plain JSON integer tokens normalize back to integers when decoded.
 # Clock fractions and domain precision must never be rounded to obtain cache hits.
 static func _encode(value: Variant) -> Variant:
 	if value is float:
-		if is_finite(value) and absf(value) <= 9007199254740991.0 and value == int(value): return int(value)
 		return {"_core_float64": PackedFloat64Array([value]).to_byte_array().hex_encode()}
 	if value is Array:
 		var result: Array = []

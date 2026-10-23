@@ -59,6 +59,12 @@ Sistemas reutilizados por grande parte do gameplay:
 
 A Foundation pode definir contratos genéricos; não deve virar um saco de regras específicas de conteúdo.
 
+C1-R1-P3 adds `WorldGenerationModule` as the genesis/canonical-chunk capability
+beside the existing World/Region ownership. Its pure `ChunkLedger` owns validated
+baked records and revisioned mutations. `ChunkStreamer` is a scene adapter that
+loads canonical data, registers existing P2 resources and materializes bounded
+terrain; it does not create another world state or resource service.
+
 ### Gameplay Modules
 
 Features independentes e expansíveis:
@@ -78,6 +84,11 @@ Features independentes e expansíveis:
 - trading;
 - infiltration;
 - ecology.
+
+P3's `LivingModule` composes persistent actor data, the existing Combat/Actions/
+Items capabilities and typed RPG/faction definitions. `LivingRuntime` only adapts
+relevant actors to transient bodies, targeting and authority hosts. Logical actors
+remain in the domain layer when their bodies unload.
 
 ## Client / Authority Separation
 
@@ -217,6 +228,23 @@ Canonical world state can be represented at multiple fidelities:
 
 Promotion/demotion changes representation cost, not reality. Inventory, unique items, relationships and other canonical state must survive fidelity transitions.
 
+The P3 first-scope scheduler has at most 256 logical actors and eight due jobs
+per advance. At the current 20 Hz Core step, L0 decisions can run each tick, L1
+every five ticks (4 Hz), L2 activity work every twenty ticks and L3 at activity
+deadlines. It resolves elapsed activities analytically. L2 currently proves the
+regional/activity seam rather than a complete aggregate economy. Up to four
+nearby living actors receive runtime bodies; 24m enter/28m leave hysteresis and
+chunk relevance govern attachment. Materialization epochs reject stale active
+intents after a fidelity change.
+
+NPC decisions combine reactive safety, bounded utility selection and cached
+plans. Trusted hearing events and indexed proximity/visibility queries create
+knowledge; Node existence grants none. Bots produce canonical semantic intents
+through the existing authority host and P1/P2 validators, with the same shared
+guard authority. They do not directly settle damage, inventory or XP. Local path
+requests are capped at 32 queued/two resolved per tick; current open-terrain
+corridors are an adapter seam, not a global navigation mesh.
+
 ## Scheduling
 
 Prefer:
@@ -243,6 +271,13 @@ Replication uses dirty revisions, frequency tiers and dormancy rather than broad
 
 Perception can further restrict what information a client is allowed to receive.
 
+P3's `StreamingRelevance` initially uses 32m Region-defined chunks, active radius
+one, one prefetch ring, a 25-view cap and twelve ticks of unload hysteresis outside
+that ring. Startup establishes the nine nearby collision chunks before Player
+physics. Later frames perform at most one materialization/data job and one unload;
+dirty canonical mutations must save before their view unloads. Prefetch produces
+canonical data without requiring a visible Node for every record.
+
 ## Persistence
 
 Canonical persistence belongs to authority.
@@ -252,6 +287,15 @@ Persist structured state and explicit transactions; do not infer it from client 
 Private/local single-host server experiments may use SQLite/WAL; larger official deployments can use a client/server database behind an adapter.
 
 Prefer incremental dirty-state writes/snapshots rather than whole-world serialization on the active simulation tick.
+
+P3 concretely uses generate → validate → bake → atomic commit → install. Persisted
+chunk requests never call the generator, even on a fresh process; generator
+version incompatibility/corruption fails visibly. Immutable base data and mutable
+deltas share the existing Core save/prepare/restore contract. Generic immutable
+record pages prevent unchanged chunk/actor rewrites while the ordinary atomic
+manifest remains the commit point. Full capture/validation still covers the
+bounded first-scope snapshot; larger storage backends must preserve this logical
+contract. See [ADR-0019](../adr/ADR-0019-canonical-world-chunks-and-living-actors.md).
 
 ## Failure and Load Policy
 

@@ -55,6 +55,7 @@ func run() -> void:
 	check(decoded_actor.position[1] == original_actor.position[1] and decoded_actor.fraction == original_actor.fraction, "fractional transform and clock-like value preserve exact IEEE bits")
 	check(decoded_actor.annotations == original_actor.annotations, "literal reserved codec tag objects remain ordinary data")
 	check(store.read_snapshot(slot).sections["foundation.player"].state.clock_fraction == initial.sections["foundation.player"].state.clock_fraction, "unpaged tiny clock fractions retain exact IEEE precision too")
+	check(store.read_snapshot(slot).sections["foundation.player"].state.position == initial.sections["foundation.player"].state.position, "integral float coordinates preserve their canonical numeric types")
 	check(store.write_snapshot(slot, initial) == OK and store.pages.metrics.pages_written == 4 and store.pages.metrics.pages_reused == 4, "unchanged records reuse pages without rewriting immutable world data")
 	var after_read := store.read_snapshot(slot)
 	var written: int = store.pages.metrics.pages_written

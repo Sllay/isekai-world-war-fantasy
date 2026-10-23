@@ -42,6 +42,13 @@ Therefore:
 
 ## Completed Foundation History
 
+C1 Run1 Parts1–2 remain the accepted combat/items base. Part3's integrated world,
+RPG and living-entity implementation extends that base on
+`impl/c1-r1-p3-world-rpg-living`; see its
+[mission](../missions/C1_R1_P3_FOUNDATION.md) and
+[validation](../missions/C1_R1_P3_VALIDATION.md). This does not mark the broader
+A2/A4/A5 content macros complete or finalize LPC art, ecology or progression.
+
 - **M1.1 — Technical Foundation Research:** Completed (2026-10-13).
 - **M1.2 — Project Bootstrap & Client/World Proof:** Completed (2026-10-13).
 - **M1.3 — Core Production Foundation:** Completed and accepted on Android (2026-10-15). See `M1_3_CORE_PRODUCTION_FOUNDATION.md`.
