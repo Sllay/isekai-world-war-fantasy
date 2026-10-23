@@ -1,0 +1,814 @@
+{
+  "mission": "C1-R1-P3",
+  "collected_at_utc": "2026-10-23T03:17:26.280706+00:00",
+  "implementation_checkpoint": "bdad904b0beb05a05e46e9c6b1f9c856b03a9fe3",
+  "p2_base": "c06d513e1df6705016c4f70f78b0e1232bb9b958",
+  "approved_docs_source": "7d3f394208c3973ea0752b2084da1b1f19288afd",
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "transport": {
+    "native_tools_exposed": false,
+    "stdio_runtime_mcp": true,
+    "stdio_diagnostics_mcp": true,
+    "stdio_serena": true,
+    "lsp_port": 6008,
+    "bridge_port": 6550
+  },
+  "scenario": {
+    "scene": "res://tests/p3_acceptance.tscn",
+    "semantic_input_only": true,
+    "checkpoint_passed": true,
+    "fresh_process_passed": true,
+    "rematerialization_passed": true,
+    "elapsed_ticks": 1173,
+    "initial_chunk_hash": "7835a013868dd84c4c4778b0cb426a7e14f6f7fa5f0c40bc0fa8056aba813fd1",
+    "final_chunk_hash": "7835a013868dd84c4c4778b0cb426a7e14f6f7fa5f0c40bc0fa8056aba813fd1",
+    "received_damage": true,
+    "health_after_combat": 84,
+    "defeat_xp": 25,
+    "depleted_node": "resource.node.stone",
+    "depleted_remaining": 0,
+    "mutation_after_stream": true,
+    "heard_event": true,
+    "npc_goal": "inspect",
+    "player_xp": 80,
+    "player_level": 3,
+    "bot_wood": 6,
+    "bot_xp": 9,
+    "bot_host_shared_defense": true,
+    "npc_memory_count": 4,
+    "npc_memory_count_after_stream": 4,
+    "outbound": [
+      {
+        "actors": 0,
+        "bodies": 0,
+        "chunks": 12,
+        "generation_count": 30,
+        "memory_bytes": 69849931,
+        "position": [
+          16.1314067840576,
+          0.000911774928681552,
+          3.99496364593506
+        ]
+      },
+      {
+        "actors": 6,
+        "bodies": 0,
+        "chunks": 12,
+        "generation_count": 31,
+        "memory_bytes": 70802811,
+        "position": [
+          39.9814071655273,
+          -0.000100602686870843,
+          3.9999988079071
+        ]
+      },
+      {
+        "actors": 12,
+        "bodies": 4,
+        "chunks": 12,
+        "generation_count": 40,
+        "memory_bytes": 72245523,
+        "position": [
+          72.023551940918,
+          0.481568515300751,
+          3.99927616119385
+        ]
+      },
+      {
+        "actors": 18,
+        "bodies": 4,
+        "chunks": 12,
+        "generation_count": 40,
+        "memory_bytes": 73256263,
+        "position": [
+          104.16561126709,
+          0.961234271526337,
+          3.9992516040802
+        ]
+      }
+    ],
+    "inbound": [
+      {
+        "actors": 18,
+        "bodies": 4,
+        "chunks": 12,
+        "generation_count": 40,
+        "memory_bytes": 73336043,
+        "position": [
+          104.026657104492,
+          0.963380336761475,
+          4.04451322555542
+        ]
+      },
+      {
+        "actors": 18,
+        "bodies": 4,
+        "chunks": 12,
+        "generation_count": 40,
+        "memory_bytes": 73346283,
+        "position": [
+          72.0762023925781,
+          0.482628434896469,
+          3.99996447563171
+        ]
+      },
+      {
+        "actors": 18,
+        "bodies": 0,
+        "chunks": 12,
+        "generation_count": 40,
+        "memory_bytes": 72961587,
+        "position": [
+          39.924991607666,
+          0.000936213065870106,
+          4.00001859664917
+        ]
+      },
+      {
+        "actors": 18,
+        "bodies": 0,
+        "chunks": 15,
+        "generation_count": 40,
+        "memory_bytes": 73344727,
+        "position": [
+          4.07500553131104,
+          0.000936101365368813,
+          4.00000143051147
+        ]
+      }
+    ]
+  },
+  "fresh_process": {
+    "exact_snapshot": true,
+    "sections": {
+      "core.runtime": true,
+      "foundation.player": true,
+      "foundation.player_combat": true,
+      "foundation.regions": true,
+      "foundation.world": true,
+      "foundation.world_genesis": true,
+      "gameplay.items_resources": true,
+      "gameplay.living": true
+    },
+    "generator_before": 0,
+    "generator_after": 0,
+    "canonical_chunks": 40,
+    "logical_actors": 18,
+    "rematerialization": {
+      "faction_preserved": true,
+      "generator_calls": 0,
+      "npc_health_preserved": true,
+      "npc_inventory_preserved": true,
+      "npc_materialized": true,
+      "passed": true,
+      "same_actor_ids": true
+    }
+  },
+  "determinism": {
+    "independent_processes": 2,
+    "equal_canonical_output": true,
+    "proof": {
+      "actors": [
+        "25c7ccbd2aa7d711ab9b564e7a9ef922",
+        "d9d6301b336c37a718e33fcb84a53a82"
+      ],
+      "base_hash": "84a668f3643136222d536cf7a0931d0f3d1b39b2bc7038a504785d29520ad850",
+      "blueprint_hash": "e5289876d73d1a2f1f04385ee04cae631725499badb9cb881c14d831c6fec5b4",
+      "resources": [
+        "resource.generated.h97930451383159900c9568b3fd5ee222",
+        "resource.generated.hc5d56eb4ecc33b274780edf56c2812d5"
+      ]
+    }
+  },
+  "streaming": {
+    "canonical_chunks": 40,
+    "generation_invocation_count": 40,
+    "generation_pipeline_us": 12756,
+    "generation_us": 1394,
+    "loaded": [
+      "region.home_valley:1:-1",
+      "region.home_valley:1:0",
+      "region.home_valley:1:1",
+      "region.home_valley:2:0",
+      "region.home_valley:2:-1",
+      "region.home_valley:2:1",
+      "region.home_valley:3:0",
+      "region.home_valley:3:-1",
+      "region.home_valley:3:1",
+      "region.home_valley:0:0",
+      "region.home_valley:0:-1",
+      "region.home_valley:0:1",
+      "region.home_valley:-1:0",
+      "region.home_valley:-1:-1",
+      "region.home_valley:-1:1"
+    ],
+    "loaded_count": 15,
+    "max_generation_pipeline_us": 1536329,
+    "metrics": {
+      "last_error": "OK",
+      "materializations": 27,
+      "materialize_us": 1369,
+      "peak_loaded": 15,
+      "prefetches": 29,
+      "unload_us": 563,
+      "unloads": 12
+    },
+    "persisted_load_count": 16,
+    "persisted_load_us": 1434
+  },
+  "living": {
+    "bot_harvests": 12,
+    "dematerializations": 16,
+    "fidelity": {
+      "L0": 0,
+      "L1": 0,
+      "L2": 12,
+      "L3": 6
+    },
+    "intents": 208,
+    "logical_actors": 18,
+    "materializations": 16,
+    "materialized_actors": 0,
+    "path_requests": 27,
+    "paths_resolved": 27,
+    "peak_materialized": 4,
+    "perception_queries": 23,
+    "resource_candidates": 7082,
+    "resource_queries": 769,
+    "scheduler": {
+      "aggregate_jobs": 153,
+      "completed_activities": 26,
+      "decisions_l0": 1842,
+      "decisions_l1": 1326,
+      "demotions": 40,
+      "jobs": 3327,
+      "latent_jobs": 6,
+      "peak_backlog": 18,
+      "promotions": 34
+    }
+  },
+  "performance": {
+    "units": "microseconds unless explicitly named bytes/count/ticks",
+    "first_chunk_generation_pipeline_us": 12756,
+    "last_pure_generation_us": 1394,
+    "max_observed_cold_pipeline_us": 1536329,
+    "fresh_hydrated_chunk_request_us": 532,
+    "played_hydrated_chunk_request_us": 1434,
+    "materialization_us": 1369,
+    "unload_us": 563,
+    "final_unchanged_save": {
+      "capture_us": 5809,
+      "total_us": 93717,
+      "validate_us": 45393,
+      "write_us": 42509
+    },
+    "max_observed_commit": {
+      "capture_us": 196188,
+      "total_us": 1065632,
+      "validate_us": 286883,
+      "write_us": 582561
+    },
+    "unchanged_record_pages_written": 0,
+    "unchanged_records_reused": 58,
+    "integrated_memory_before_bytes": 67828855,
+    "integrated_memory_after_bytes": 73349955,
+    "integrated_memory_delta_bytes": 5521100,
+    "streaming_round_trips": {
+      "materialized_peak": 4,
+      "peak_node_delta": 20,
+      "post_unload_memory_samples": [
+        27716528,
+        27716608,
+        27716608,
+        27716632
+      ],
+      "post_warmup_memory_delta": 104
+    },
+    "living_benchmark": {
+      "decision_work_us": 30014,
+      "l0": 2,
+      "l1": 4,
+      "logical_actors": 128,
+      "long_advance_jobs": 128,
+      "max_jobs_per_tick": 8,
+      "queue_peak": 128,
+      "scheduled_jobs": 799,
+      "ticks": 100
+    },
+    "save_size": {
+      "after_bytes": 35683,
+      "before_bytes": 23312,
+      "delta_bytes": 12371
+    },
+    "dirty_pages": {
+      "bytes_written": 29337,
+      "last_write_us": 3882,
+      "load_us": 3128,
+      "pages_loaded": 24,
+      "pages_reused": 122,
+      "pages_written": 14
+    },
+    "interpretation": "Cloud software-rendered/debugger wall times under concurrent gates are not Android FPS certification. Full bounded snapshot capture/validation and cold atomic commits remain synchronous; isolated cold/loading/checkpoint pauses are measured, not claimed eliminated. Incremental pages reduce unchanged record I/O, not all snapshot CPU work.",
+    "fresh_snapshot_storage": {
+      "bytes_written": 0,
+      "load_us": 57643,
+      "pages_loaded": 58,
+      "pages_reused": 0,
+      "pages_written": 0
+    }
+  },
+  "diagnostics": {
+    "scripts": 68,
+    "errors": 0,
+    "warnings": 0
+  },
+  "android_acceptance": "Pending: one integrated device outing for controls, terrain readability and streaming/save pauses.",
+  "release_gates": {
+    "godot_check": {
+      "exit_code": 0,
+      "parse_errors": 0
+    },
+    "affected": {
+      "exit_code": 0,
+      "suites": [
+        "world_living",
+        "items_resources",
+        "authority",
+        "core",
+        "player",
+        "combat",
+        "combat_actions",
+        "enemy_telegraphs",
+        "world",
+        "save_resume"
+      ],
+      "checks": 1597,
+      "failures": 0,
+      "groups": [
+        {
+          "group": "P3 world generation tests",
+          "checks": 39,
+          "failures": 0
+        },
+        {
+          "group": "P3 chunk lifecycle tests",
+          "checks": 100,
+          "failures": 0
+        },
+        {
+          "group": "P3 streaming tests",
+          "checks": 21,
+          "failures": 0
+        },
+        {
+          "group": "P3 RPG tests",
+          "checks": 63,
+          "failures": 0
+        },
+        {
+          "group": "P3 perception tests",
+          "checks": 28,
+          "failures": 0
+        },
+        {
+          "group": "P3 LOD tests",
+          "checks": 28,
+          "failures": 0
+        },
+        {
+          "group": "P3 Bot authority tests",
+          "checks": 45,
+          "failures": 0
+        },
+        {
+          "group": "P3 actor materialization tests",
+          "checks": 29,
+          "failures": 0
+        },
+        {
+          "group": "P3 save pages tests",
+          "checks": 29,
+          "failures": 0
+        },
+        {
+          "group": "P3 persistence tests",
+          "checks": 97,
+          "failures": 0
+        },
+        {
+          "group": "P3 semantic scenario tests",
+          "checks": 1,
+          "failures": 0
+        },
+        {
+          "group": "P3 fresh-process save tests",
+          "checks": 18,
+          "failures": 0
+        },
+        {
+          "group": "P3 fresh-process resume tests",
+          "checks": 18,
+          "failures": 0
+        },
+        {
+          "group": "Item inventory tests",
+          "checks": 87,
+          "failures": 0
+        },
+        {
+          "group": "Resource foundation tests",
+          "checks": 79,
+          "failures": 0
+        },
+        {
+          "group": "P2 authority tests",
+          "checks": 102,
+          "failures": 0
+        },
+        {
+          "group": "P2 persistence tests",
+          "checks": 85,
+          "failures": 0
+        },
+        {
+          "group": "P2 scenario tests",
+          "checks": 8,
+          "failures": 0
+        },
+        {
+          "group": "P2 restart save tests",
+          "checks": 1,
+          "failures": 0
+        },
+        {
+          "group": "P2 restart resume tests",
+          "checks": 1,
+          "failures": 0
+        },
+        {
+          "group": "Authority tests",
+          "checks": 52,
+          "failures": 0
+        },
+        {
+          "group": "C1 foundation tests",
+          "checks": 44,
+          "failures": 0
+        },
+        {
+          "group": "Remote authority tests",
+          "checks": 11,
+          "failures": 0
+        },
+        {
+          "group": "A1 scenario tests",
+          "checks": 13,
+          "failures": 0
+        },
+        {
+          "group": "Core tests",
+          "checks": 55,
+          "failures": 0
+        },
+        {
+          "group": "Player tests",
+          "checks": 23,
+          "failures": 0
+        },
+        {
+          "group": "Combat tests",
+          "checks": 86,
+          "failures": 0
+        },
+        {
+          "group": "Combat persistence tests",
+          "checks": 20,
+          "failures": 0
+        },
+        {
+          "group": "Combat restart save tests",
+          "checks": 4,
+          "failures": 0
+        },
+        {
+          "group": "Combat restart resume tests",
+          "checks": 9,
+          "failures": 0
+        },
+        {
+          "group": "Combat Action tests",
+          "checks": 68,
+          "failures": 0
+        },
+        {
+          "group": "Combat Action runtime tests",
+          "checks": 26,
+          "failures": 0
+        },
+        {
+          "group": "Combat Action restart save tests",
+          "checks": 4,
+          "failures": 0
+        },
+        {
+          "group": "Combat Action restart resume tests",
+          "checks": 10,
+          "failures": 0
+        },
+        {
+          "group": "Enemy Telegraph tests",
+          "checks": 98,
+          "failures": 0
+        },
+        {
+          "group": "Enemy restart save tests",
+          "checks": 5,
+          "failures": 0
+        },
+        {
+          "group": "Enemy restart resume tests",
+          "checks": 10,
+          "failures": 0
+        },
+        {
+          "group": "Enemy restart cast tests",
+          "checks": 9,
+          "failures": 0
+        },
+        {
+          "group": "Enemy restart defeated tests",
+          "checks": 11,
+          "failures": 0
+        },
+        {
+          "group": "World tests",
+          "checks": 50,
+          "failures": 0
+        },
+        {
+          "group": "Save/resume tests",
+          "checks": 90,
+          "failures": 0
+        },
+        {
+          "group": "Restart save tests",
+          "checks": 5,
+          "failures": 0
+        },
+        {
+          "group": "Restart resume tests",
+          "checks": 11,
+          "failures": 0
+        },
+        {
+          "group": "Restart exit tests",
+          "checks": 4,
+          "failures": 0
+        }
+      ],
+      "log_sha256": "27dc80a26c702ed0c49babc1fa547e7f4859ef94ad811e1710921bbbcf1f61a6"
+    },
+    "all": {
+      "exit_code": 0,
+      "suites": [
+        "world_living",
+        "items_resources",
+        "authority",
+        "core",
+        "player",
+        "combat",
+        "combat_actions",
+        "enemy_telegraphs",
+        "world",
+        "save_resume"
+      ],
+      "checks": 1597,
+      "failures": 0,
+      "groups": [
+        {
+          "group": "P3 world generation tests",
+          "checks": 39,
+          "failures": 0
+        },
+        {
+          "group": "P3 chunk lifecycle tests",
+          "checks": 100,
+          "failures": 0
+        },
+        {
+          "group": "P3 streaming tests",
+          "checks": 21,
+          "failures": 0
+        },
+        {
+          "group": "P3 RPG tests",
+          "checks": 63,
+          "failures": 0
+        },
+        {
+          "group": "P3 perception tests",
+          "checks": 28,
+          "failures": 0
+        },
+        {
+          "group": "P3 LOD tests",
+          "checks": 28,
+          "failures": 0
+        },
+        {
+          "group": "P3 Bot authority tests",
+          "checks": 45,
+          "failures": 0
+        },
+        {
+          "group": "P3 actor materialization tests",
+          "checks": 29,
+          "failures": 0
+        },
+        {
+          "group": "P3 save pages tests",
+          "checks": 29,
+          "failures": 0
+        },
+        {
+          "group": "P3 persistence tests",
+          "checks": 97,
+          "failures": 0
+        },
+        {
+          "group": "P3 semantic scenario tests",
+          "checks": 1,
+          "failures": 0
+        },
+        {
+          "group": "P3 fresh-process save tests",
+          "checks": 18,
+          "failures": 0
+        },
+        {
+          "group": "P3 fresh-process resume tests",
+          "checks": 18,
+          "failures": 0
+        },
+        {
+          "group": "Item inventory tests",
+          "checks": 87,
+          "failures": 0
+        },
+        {
+          "group": "Resource foundation tests",
+          "checks": 79,
+          "failures": 0
+        },
+        {
+          "group": "P2 authority tests",
+          "checks": 102,
+          "failures": 0
+        },
+        {
+          "group": "P2 persistence tests",
+          "checks": 85,
+          "failures": 0
+        },
+        {
+          "group": "P2 scenario tests",
+          "checks": 8,
+          "failures": 0
+        },
+        {
+          "group": "P2 restart save tests",
+          "checks": 1,
+          "failures": 0
+        },
+        {
+          "group": "P2 restart resume tests",
+          "checks": 1,
+          "failures": 0
+        },
+        {
+          "group": "Authority tests",
+          "checks": 52,
+          "failures": 0
+        },
+        {
+          "group": "C1 foundation tests",
+          "checks": 44,
+          "failures": 0
+        },
+        {
+          "group": "Remote authority tests",
+          "checks": 11,
+          "failures": 0
+        },
+        {
+          "group": "A1 scenario tests",
+          "checks": 13,
+          "failures": 0
+        },
+        {
+          "group": "Core tests",
+          "checks": 55,
+          "failures": 0
+        },
+        {
+          "group": "Player tests",
+          "checks": 23,
+          "failures": 0
+        },
+        {
+          "group": "Combat tests",
+          "checks": 86,
+          "failures": 0
+        },
+        {
+          "group": "Combat persistence tests",
+          "checks": 20,
+          "failures": 0
+        },
+        {
+          "group": "Combat restart save tests",
+          "checks": 4,
+          "failures": 0
+        },
+        {
+          "group": "Combat restart resume tests",
+          "checks": 9,
+          "failures": 0
+        },
+        {
+          "group": "Combat Action tests",
+          "checks": 68,
+          "failures": 0
+        },
+        {
+          "group": "Combat Action runtime tests",
+          "checks": 26,
+          "failures": 0
+        },
+        {
+          "group": "Combat Action restart save tests",
+          "checks": 4,
+          "failures": 0
+        },
+        {
+          "group": "Combat Action restart resume tests",
+          "checks": 10,
+          "failures": 0
+        },
+        {
+          "group": "Enemy Telegraph tests",
+          "checks": 98,
+          "failures": 0
+        },
+        {
+          "group": "Enemy restart save tests",
+          "checks": 5,
+          "failures": 0
+        },
+        {
+          "group": "Enemy restart resume tests",
+          "checks": 10,
+          "failures": 0
+        },
+        {
+          "group": "Enemy restart cast tests",
+          "checks": 9,
+          "failures": 0
+        },
+        {
+          "group": "Enemy restart defeated tests",
+          "checks": 11,
+          "failures": 0
+        },
+        {
+          "group": "World tests",
+          "checks": 50,
+          "failures": 0
+        },
+        {
+          "group": "Save/resume tests",
+          "checks": 90,
+          "failures": 0
+        },
+        {
+          "group": "Restart save tests",
+          "checks": 5,
+          "failures": 0
+        },
+        {
+          "group": "Restart resume tests",
+          "checks": 11,
+          "failures": 0
+        },
+        {
+          "group": "Restart exit tests",
+          "checks": 4,
+          "failures": 0
+        }
+      ],
+      "log_sha256": "32aedf29139dbb553a7f36e165e635f28621be46e21ef613ce792be660d5648e"
+    },
+    "p1_regression": "PASS",
+    "p2_regression": "PASS"
+  }
+}

@@ -133,6 +133,15 @@ Use the shortest entry that preserves the useful fact.
 
 ## Current open / recent notes
 
+### 2026-10-23 — P3 canonical world, living actors and device timing
+- **Status:** INFO
+- **Branch / slice:** `impl/c1-r1-p3-world-rpg-living` / C1-R1-P3.
+- **Developer note:** Worldgen v1 commits baked chunk data once; reload never invokes the generator. Actor state survives without Nodes. Bots share P1 defense and P1/P2 action/item validation. Immutable record pages reuse unchanged chunks/actors, including after hydration; the atomic manifest still commits through CoreSaveStore.
+- **Impact:** Preserve these boundaries when extending navigation, ecology, content or persistence. Full bounded snapshot capture/validation remains synchronous. Cloud MCP measured a 1.536 s worst cold generation/commit pipeline under concurrent gates, a 93.7 ms final unchanged checkpoint, and 1.37 ms last scene materialization. These are measured limitations, not an Android frame-rate claim; device streaming/save pauses require the single integrated acceptance outing. Do not extrapolate the first 9×9 region/128-logical-actor proof into final population capacity.
+- **Evidence:** `docs/adr/ADR-0019-canonical-world-chunks-and-living-actors.md`; `docs/missions/C1_R1_P3_VALIDATION.md`; `docs/missions/C1_R1_P3_RUNTIME_EVIDENCE.json`.
+- **Needs Technical Design:** No new design decision; BK device acceptance remains pending.
+- **Resolution:** Keep cold work outside active Player actions/nearby P1 threats. If device measurements exceed the performance contract, optimize the storage/capture boundary while preserving prepare/validate/atomic commit and fail-closed restore.
+
 ### 2026-10-15 — Slice 3 live Godot MCP unavailable
 - **Status:** RESOLVED
 - **Branch / slice:** `phase2/enemy-telegraphs` / Phase 2 Slice 3

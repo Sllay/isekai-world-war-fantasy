@@ -1,8 +1,9 @@
 # C1-R1-P3 — World, RPG & Living Entities Foundation
 
-Status: IMPLEMENTATION INTEGRATED; delivery validation in progress. Issue #11,
-Chapter1 / Run1 / Part3, one integrated macro. This document records the current
-contracts; it does not assert Runtime MCP, publication or Foundation Complete.
+Status: FOUNDATION COMPLETE / ENGINEERING COMPLETE; Android acceptance pending.
+Issue #11, Chapter1 / Run1 / Part3, one integrated macro. Deterministic gates,
+real stdio Runtime MCP and fresh-process resume passed. This is the scoped Run1
+foundation, not final Chapter1 content or device performance certification.
 P2 base `c06d513e1df6705016c4f70f78b0e1232bb9b958`; approved GDD/LPC/offline
 direction `7d3f394208c3973ea0752b2084da1b1f19288afd` merged only into
 `impl/c1-r1-p3-world-rpg-living`. Both ancestry gates passed. Preserve main/P1/P2,
@@ -146,11 +147,16 @@ replay across resume. Invalid disk resumes must preserve every live section and
 the current resident scene. Dirty-write tests measure unchanged saves, one changed
 actor and unchanged save after hydration.
 
-Final command results, actual Runtime MCP scenario evidence, measured performance
-and local/remote SHA verification remain to be recorded by the integrating agent.
-Do not infer them from this list of implemented tests. Cloud timings establish
-first-scope costs only; device FPS, control comfort and presentation readability
-require the integrated Android acceptance when requested.
+Final Godot Check passed. Both affected and all passed ten suites/44 test groups,
+1,597 checks each, including 516 P3 checks and P1/P2 regressions. Diagnostics/LSP
+returned no findings across 68 scripts. Actual stdio Runtime MCP proved the played
+scenario, exact eight-section fresh-process resume with zero generator calls,
+and semantic return/rematerialization without identity/custody/health/faction loss.
+Checkpoint `bdad904b0beb05a05e46e9c6b1f9c856b03a9fe3` was pushed and its remote
+SHA verified before the final gates, as requested. Detailed command/measurement
+evidence is in [validation](C1_R1_P3_VALIDATION.md) and the adjacent machine-readable
+runtime evidence. Cloud timings establish first-scope costs only; device FPS,
+control comfort and presentation readability require the one Android outing.
 
 ## Completion gates
 
